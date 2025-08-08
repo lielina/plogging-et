@@ -1,0 +1,206 @@
+import { useState, useEffect } from 'react'
+import { apiClient, Event } from '@/lib/api'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Calendar, Clock, MapPin, Users, ArrowRight } from 'lucide-react'
+
+export default function Events() {
+  const [events, setEvents] = useState<Event[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setIsLoading(true)
+        setError('')
+        
+        const response = await apiClient.getAvailableEvents()
+        setEvents(response.data)
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch events')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEvents()
+  }, [])
+
+  const handleEnroll = async (eventId: number) => {
+    try {
+      await apiClient.enrollInEvent(eventId)
+      // Refresh events to update enrollment status
+      const response = await apiClient.getAvailableEvents()
+      setEvents(response.data)
+    } catch (error) {
+      console.error('Error enrolling in event:', error)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const formatTime = (timeString: string) => {
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading events...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Plogging Events
+        </h1>
+        <p className="text-gray-600">
+          Join upcoming plogging events and make a difference in your community.
+        </p>
+      </div>
+
+      {/* Events Grid */}
+      {events.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {events.map((event) => (
+            <Card key={event.event_id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg mb-2">{event.event_name}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {event.description}
+                    </CardDescription>
+                  </div>
+                  <Badge 
+                    variant={event.status === 'Active' ? 'default' : 'secondary'}
+                    className="ml-2"
+                  >
+                    {event.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {/* Date and Time */}
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDate(event.event_date)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {formatTime(event.start_time)} - {formatTime(event.end_time)}
+                    </span>
+                  </div>
+
+                  {/* Location */}
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    <span className="line-clamp-1">{event.location_name}</span>
+                  </div>
+
+                  {/* Duration and Capacity */}
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Clock className="h-4 w-4" />
+                      <span>{event.estimated_duration_hours} hours</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Users className="h-4 w-4" />
+                      <span>Max {event.max_volunteers}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={() => handleEnroll(event.event_id)}
+                  >
+                    <span>Enroll Now</span>
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">
+            No Events Available
+          </h3>
+          <p className="text-gray-500 mb-6">
+            There are currently no upcoming plogging events. Check back later for new opportunities!
+          </p>
+          <Button variant="outline">
+            Refresh Events
+          </Button>
+        </div>
+      )}
+
+      {/* Event Information */}
+      <div className="mt-12 bg-green-50 rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-green-800 mb-4">
+          About Plogging Events
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <h3 className="font-medium text-green-700 mb-2">What to Bring</h3>
+            <ul className="text-sm text-green-600 space-y-1">
+              <li>• Comfortable walking/running shoes</li>
+              <li>• Water bottle</li>
+              <li>• Weather-appropriate clothing</li>
+              <li>• Enthusiasm and energy!</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-medium text-green-700 mb-2">What We Provide</h3>
+            <ul className="text-sm text-green-600 space-y-1">
+              <li>• Gloves and safety equipment</li>
+              <li>• Collection bags and tools</li>
+              <li>• Refreshments and snacks</li>
+              <li>• Certificate of participation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+} 
