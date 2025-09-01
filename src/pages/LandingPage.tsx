@@ -9,11 +9,13 @@ import {
   Leaf,
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const faqItems = [
     {
@@ -68,6 +70,34 @@ export default function LandingPage() {
     },
   ];
 
+  // Intersection Observer to detect when sections are in view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const index = Number(entry.target.getAttribute('data-section-index'));
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => new Set(prev).add(index));
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    sectionRefs.current.forEach((ref, index) => {
+      if (ref) {
+        ref.setAttribute('data-section-index', index.toString());
+        observer.observe(ref);
+      }
+    });
+
+    return () => {
+      sectionRefs.current.forEach(ref => {
+        if (ref) observer.unobserve(ref);
+      });
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -78,7 +108,7 @@ export default function LandingPage() {
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
                 <img
-                  src="/logo.png" // <-- replace with actual logo file
+                  src="/logo.png"
                   alt="Plogging Ethiopia Logo"
                   className="h-28 w-auto ml-5"
                 />
@@ -151,6 +181,8 @@ export default function LandingPage() {
           )}
         </div>
       </header>
+
+      {/* Hero Section */}
       <section className="relative h-screen w-full flex items-center text-white overflow-hidden">
         {/* Background Image with Black Overlay */}
         <div className="absolute inset-0 z-0">
@@ -161,8 +193,6 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-black/70"></div>
           </div>
         </div>
-
-        {/* Subtle Green Diagonal Overlay with White Borders */}
 
         {/* Bold Green Diagonal Overlay with White Borders */}
         <div className="absolute right-0 top-0 h-full w-[30%] transform -skew-x-[30deg] origin-top-right z-10 flex">
@@ -177,13 +207,13 @@ export default function LandingPage() {
         </div>
 
         {/* Content - positioned above backgrounds */}
-        <main className="relative z-20 w-full flex flex-col items-center gap-20 pb-20">
-          <div className="grid md:grid-cols-2 w-full text-white font-[Poppins] py-10 pl-5">
+        <main className="relative z-20 w-full flex flex-col items-center gap-20 pb-0">
+          <div className="grid md:grid-cols-2 w-full text-white font-[serf] py-10 pl-5">
             <div className="flex flex-col items-center justify-around w-full gap-10">
               <h1 className="md:text-7xl text-4xl font-normal text-left text-wrap">
-                Welcome to Plogging Ethiopia
+                Welcome to <span className="flex flex-col">Plogging Ethiopia</span>
               </h1>
-              <p className="italic text-2xl">
+              <p className="italic text-3xl">
                 Stride with purpose, and cleanse with passion!
               </p>
               <div className="flex items-center justify-between">
@@ -205,18 +235,19 @@ export default function LandingPage() {
         </main>
       </section>
 
-      {/* Our Story Section */}
+      {/* Our Story Section with transition */}
       <section
-        data-aos="fade-up"
-        className="py-16 px-4 bg-white w-full flex flex-col items-center justify-center"
+        ref={el => sectionRefs.current[0] = el}
+        className={`py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 transform ${
+          visibleSections.has(0) 
+            ? 'translate-y-0 opacity-100' 
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
             {/* Text Content */}
-            <div
-              data-aos="fade-up"
-              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4"
-            >
+            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
                 Our Story
               </h2>
@@ -242,12 +273,9 @@ export default function LandingPage() {
             </div>
 
             {/* Image Section */}
-            <div
-              data-aos="fade-up"
-              className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4"
-            >
+            <div className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4">
               <img
-                src="/story-1.png" // Replace with your actual image path
+                src="/story-1.png"
                 alt="Plogging Activity"
                 className="w-full h-80 object-cover rounded-lg shadow-lg"
               />
@@ -256,30 +284,28 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* What is Plogging Section */}
+      {/* What is Plogging Section with transition */}
       <section
-        data-aos="fade-up"
-        className="py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center"
+        ref={el => sectionRefs.current[1] = el}
+        className={`py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-100 transform ${
+          visibleSections.has(1)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
             {/* Image Section */}
-            <div
-              data-aos="fade-up"
-              className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4"
-            >
+            <div className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4">
               <img
-                src="/story-2.png" // Replace with your actual image path
+                src="/story-2.png"
                 alt="What is Plogging"
                 className="w-full h-80 object-cover rounded-lg shadow-lg"
               />
             </div>
 
             {/* Text Content */}
-            <div
-              data-aos="fade-up"
-              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4"
-            >
+            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
                 What is Plogging?
               </h2>
@@ -302,19 +328,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Mission Section */}
-      {/* Mission Section */}
+      {/* Mission Section with transition */}
       <section
-        data-aos="fade-up"
-        className="py-16 px-4 bg-white w-full flex flex-col items-center justify-center"
+        ref={el => sectionRefs.current[2] = el}
+        className={`py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 delay-200 transform ${
+          visibleSections.has(2)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
             {/* Text Content */}
-            <div
-              data-aos="fade-up"
-              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4"
-            >
+            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
                 Mission
               </h2>
@@ -336,13 +362,10 @@ export default function LandingPage() {
             </div>
 
             {/* Image Section */}
-            <div
-              data-aos="fade-up"
-              className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4"
-            >
+            <div className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4">
               <div className="w-80 h-80 rounded-full overflow-hidden shadow-lg">
                 <img
-                  src="/story-3.png" // Replace with your actual image path
+                  src="/story-3.png"
                   alt="Mission"
                   className="w-full h-full object-cover"
                 />
@@ -352,21 +375,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Our Impact Section */}
+      {/* Our Impact Section with transition */}
       <section
-        data-aos="fade-up"
-        className="py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center"
+        ref={el => sectionRefs.current[3] = el}
+        className={`py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-300 transform ${
+          visibleSections.has(3)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
             {/* Image Section */}
-            <div
-              data-aos="fade-up"
-              className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4"
-            >
+            <div className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4">
               <div className="w-80 h-80 rounded-full overflow-hidden shadow-lg">
                 <img
-                  src="/story-4.png" // Replace with your actual image path
+                  src="/story-4.png"
                   alt="Our Impact"
                   className="w-full h-full object-cover"
                 />
@@ -374,10 +398,7 @@ export default function LandingPage() {
             </div>
 
             {/* Text Content */}
-            <div
-              data-aos="fade-up"
-              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4"
-            >
+            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
                 Our Impact
               </h2>
@@ -398,17 +419,21 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-      {/* About Us Section */}
+
+      {/* About Us Section with transition */}
       <section
-        data-aos="fade-up"
+        ref={el => sectionRefs.current[4] = el}
         id="aboutus"
-        className="relative grid md:grid-cols-2 w-[90%] mx-auto md:h-[85vh] shadow-lg aos-init aos-animate"
+        className={`relative grid md:grid-cols-2 w-[90%] mx-auto md:h-[85vh] shadow-lg transition-all duration-700 delay-400 transform ${
+          visibleSections.has(4)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         {/* Left Image */}
         <img
           src="/about-5.png"
-          className="rounded-md aos-init aos-animate"
-          data-aos="fade-up"
+          className="rounded-md"
           alt="story"
         />
 
@@ -416,20 +441,13 @@ export default function LandingPage() {
         <div className="hidden md:block"></div>
 
         {/* Floating Content Block with Headings and Paragraph */}
-        <div
-          data-aos="fade-up"
-          className="md:absolute p-4 right-0 top-1/3 md:w-4/5 w-full flex flex-col md:flex-row justify-around gap-5 ml-auto aos-init aos-animate"
-        >
+        <div className="md:absolute p-4 right-0 top-1/3 md:w-4/5 w-full flex flex-col md:flex-row justify-around gap-5 ml-auto">
           <img
             src="/about-6.png"
-            data-aos="fade-up"
-            className="rounded-md aos-init aos-animate"
+            className="rounded-md"
             alt="story"
           />
-          <div
-            data-aos="fade-up"
-            className="flex flex-col items-start md:w-3/4 w-[90%] gap-6 text-left aos-init aos-animate"
-          >
+          <div className="flex flex-col items-start md:w-3/4 w-[90%] gap-6 text-left">
             <h1 className="text-4xl md:text-5xl font-bold font-sans mt-4">
               About us
             </h1>
@@ -446,24 +464,30 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-      {/* Landing Form Section */}
+
+      {/* Landing Form Section with transition */}
       <section
-        data-aos="fade-up"
-        className="w-full grid place-items-center mt-20 landing-form aos-init aos-animate"
+        ref={el => sectionRefs.current[5] = el}
+        className={`w-full grid place-items-center mt-20 landing-form transition-all duration-700 delay-500 transform ${
+          visibleSections.has(5)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         {/* You can insert your form or content here */}
       </section>
 
-      {/* Message From The Founder Section */}
+      {/* Message From The Founder Section with transition */}
       <section
-        data-aos="fade-up"
-        className="founder-message grid md:grid-cols-2 place-items-center w-[90%] mx-auto gap-6 shadow-lg aos-init aos-animate"
+        ref={el => sectionRefs.current[6] = el}
+        className={`founder-message grid md:grid-cols-2 place-items-center w-[90%] mx-auto gap-6 shadow-lg transition-all duration-700 delay-600 transform ${
+          visibleSections.has(6)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         {/* Text Block */}
-        <div
-          data-aos="fade-up"
-          className="flex flex-col text-left gap-6 p-4 aos-init aos-animate"
-        >
+        <div className="flex flex-col text-left gap-6 p-4">
           <h1 className="text-2xl font-semibold text-gray-800">
             Message From The Founder
           </h1>
@@ -503,14 +527,19 @@ export default function LandingPage() {
         {/* Founder Image */}
         <img
           src="/founder-photo.png"
-          data-aos="fade-up"
-          className="w-full h-full object-cover rounded-md aos-init aos-animate"
+          className="w-full h-full object-cover rounded-md"
           alt="Mr. Firew Kefyalew"
         />
       </section>
+
+      {/* FAQ Section with transition */}
       <section
-        data-aos="fade-up"
-        className="w-full flex flex-col items-center mt-20 aos-init aos-animate"
+        ref={el => sectionRefs.current[7] = el}
+        className={`w-full flex flex-col items-center mt-20 transition-all duration-700 delay-700 transform ${
+          visibleSections.has(7)
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-10 opacity-0'
+        }`}
       >
         <div className="w-[90%] flex flex-col gap-5">
           <h1 className="text-5xl mb-10 text-start">FAQ?</h1>
@@ -538,6 +567,7 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
       {/* Footer */}
       <footer className="w-full flex flex-col items-center bg-green-500/10">
         <section className="flex justify-between w-[80%] py-10 md:flex-row flex-col gap-10">
@@ -586,7 +616,6 @@ export default function LandingPage() {
           <div className="flex flex-col items-start gap-3">
             <h1 className="text-green-600 font-semibold">Social Media</h1>
             <div className="flex gap-6 items-center">
-              {/* Replace these with actual icon components or <img> tags */}
               <Facebook className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
               <Instagram className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
               <Twitter className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
