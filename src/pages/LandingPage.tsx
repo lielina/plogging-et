@@ -1,6 +1,16 @@
 import { Button } from "@/components/ui/button"
-import { Leaf, Users, Menu, ChevronDown, Facebook, Twitter, Instagram, Youtube, Linkedin } from "lucide-react"
-import { Link } from "react-router-dom"
+import {
+  Users,
+  Menu,
+  ChevronDown,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  Linkedin,
+  Leaf,
+} from "lucide-react"
+import { Link, NavLink } from "react-router-dom"
 import { useState } from "react"
 
 export default function LandingPage() {
@@ -40,7 +50,8 @@ export default function LandingPage() {
     },
     {
       question: "How often do you organize Plogging events?",
-      answer: "We organize events every weekend, with special events during environmental awareness days and holidays.",
+      answer:
+        "We organize events every weekend, with special events during environmental awareness days and holidays.",
     },
     {
       question: "Can I organize a Plogging event in my area?",
@@ -62,48 +73,52 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center border-2 border-green-500">
-                <div className="relative">
-                  <Leaf className="w-6 h-6 text-white" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-                    <Users className="w-2 h-2 text-green-600" />
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center space-x-2">
+                <img
+                  src="/logo.png" // <-- replace with actual logo file
+                  alt="Plogging Ethiopia Logo"
+                  className="h-28 w-auto ml-5"
+                />
+              </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              <Link to="/" className="text-green-600 font-medium">
-                Home
-              </Link>
-              <Link to="/about" className="text-gray-700 hover:text-green-600 transition-colors">
-                About
-              </Link>
-              <Link to="/membership" className="text-gray-700 hover:text-green-600 transition-colors">
-                Membership
-              </Link>
-              <Link to="/gallery" className="text-gray-700 hover:text-green-600 transition-colors">
-                Gallery
-              </Link>
-              <Link to="/blog" className="text-gray-700 hover:text-green-600 transition-colors">
-                Blog
-              </Link>
-              <Link to="/events" className="text-gray-700 hover:text-green-600 transition-colors">
-                Event
-              </Link>
-              <Link to="/contact" className="text-gray-700 hover:text-green-600 transition-colors">
-                Contact
-              </Link>
+            <nav className="hidden lg:flex items-center space-x-12 mr-10">
+              {[
+                { name: "Home", to: "/" },
+                { name: "About", to: "/about" },
+                { name: "Membership", to: "/membership" },
+                { name: "Gallery", to: "/gallery" },
+                { name: "Blog", to: "/blog" },
+                { name: "Event", to: "/events" },
+                { name: "Contact", to: "/contact" },
+              ].map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `relative pb-1 font-normal text-xl transition-colors ${
+                      isActive
+                        ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
+                        : "text-black hover:text-green-600"
+                    }`
+                  }
+                >
+                  {link.name}
+                </NavLink>
+              ))}
             </nav>
 
             {/* Mobile Menu Button */}
-            <button className="lg:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <button
+              className="lg:hidden p-2"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
               <Menu className="w-6 h-6 text-gray-600" />
             </button>
           </div>
@@ -112,33 +127,32 @@ export default function LandingPage() {
           {isMenuOpen && (
             <nav className="lg:hidden mt-4 pb-4 border-t border-gray-100 pt-4">
               <div className="flex flex-col space-y-3">
-                <Link to="/" className="text-green-600 font-medium">
-                  Home
-                </Link>
-                <Link to="/about" className="text-gray-700">
-                  About
-                </Link>
-                <Link to="/membership" className="text-gray-700">
-                  Membership
-                </Link>
-                <Link to="/gallery" className="text-gray-700">
-                  Gallery
-                </Link>
-                <Link to="/blog" className="text-gray-700">
-                  Blog
-                </Link>
-                <Link to="/events" className="text-gray-700">
-                  Event
-                </Link>
-                <Link to="/contact" className="text-gray-700">
-                  Contact
-                </Link>
+                {[
+                  { name: "Home", to: "/" },
+                  { name: "About", to: "/about" },
+                  { name: "Membership", to: "/membership" },
+                  { name: "Gallery", to: "/gallery" },
+                  { name: "Blog", to: "/blog" },
+                  { name: "Event", to: "/events" },
+                  { name: "Contact", to: "/contact" },
+                ].map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    className={({ isActive }) =>
+                      isActive
+                        ? "text-green-600 font-medium"
+                        : "text-gray-700 hover:text-green-600"
+                    }
+                  >
+                    {link.name}
+                  </NavLink>
+                ))}
               </div>
             </nav>
           )}
         </div>
       </header>
-
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-green-600 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/40"></div>
@@ -170,7 +184,7 @@ export default function LandingPage() {
 
             {/* Right Content - Group Photo */}
             <div className="relative">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div className="bg-url(src/) backdrop-blur-sm rounded-lg p-4">
                 <img
                   src="/placeholder.svg?height=400&width=600&text=Community+Group+Photo"
                   alt="Plogging Ethiopia Community"
