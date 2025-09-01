@@ -1,21 +1,19 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
-  Users,
   Menu,
-  ChevronDown,
   Facebook,
-  Twitter,
   Instagram,
+  Twitter,
   Youtube,
   Linkedin,
   Leaf,
-} from "lucide-react"
-import { Link, NavLink } from "react-router-dom"
-import { useState } from "react"
+} from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
+import { useState } from "react";
 
 export default function LandingPage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const faqItems = [
     {
@@ -68,7 +66,7 @@ export default function LandingPage() {
       answer:
         "Follow us on social media, subscribe to our newsletter, or check our website regularly for the latest updates on events and news.",
     },
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -153,74 +151,103 @@ export default function LandingPage() {
           )}
         </div>
       </header>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-green-600 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                Welcome to
-                <br />
-                <span className="text-green-400">Plogging Ethiopia</span>
+      <section className="relative h-screen w-full flex items-center text-white overflow-hidden">
+        {/* Background Image with Black Overlay */}
+        <div className="absolute inset-0 z-0">
+          <div
+            className="w-full h-full bg-cover bg-center"
+            style={{ backgroundImage: "url('/header-left.png')" }}
+          >
+            <div className="absolute inset-0 bg-black/70"></div>
+          </div>
+        </div>
+
+        {/* Subtle Green Diagonal Overlay with White Borders */}
+
+        {/* Bold Green Diagonal Overlay with White Borders */}
+        <div className="absolute right-0 top-0 h-full w-[30%] transform -skew-x-[30deg] origin-top-right z-10 flex">
+          {/* Left white edge */}
+          <div className="w-10 h-full bg-white/30"></div>
+
+          {/* Green diagonal */}
+          <div className="flex-1 bg-green-600 opacity-80 shadow-xl"></div>
+
+          {/* Right white edge */}
+          <div className="w-10 h-full bg-white/30"></div>
+        </div>
+
+        {/* Content - positioned above backgrounds */}
+        <main className="relative z-20 w-full flex flex-col items-center gap-20 pb-20">
+          <div className="grid md:grid-cols-2 w-full text-white font-[Poppins] py-10 pl-5">
+            <div className="flex flex-col items-center justify-around w-full gap-10">
+              <h1 className="md:text-7xl text-4xl font-normal text-left text-wrap">
+                Welcome to Plogging Ethiopia
               </h1>
-              <p className="text-xl text-gray-200">Stride with purpose and cleanse with passion!</p>
-              <Button className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 text-lg">Join Now</Button>
-
-              {/* Logo */}
-              <div className="mt-8">
-                <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center">
-                  <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <Users className="w-8 h-8 mx-auto mb-1" />
-                      <div className="text-xs font-bold">PLOGGING</div>
-                      <div className="text-xs">ETHIOPIA</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Content - Group Photo */}
-            <div className="relative">
-              <div className="bg-url(src/) backdrop-blur-sm rounded-lg p-4">
+              <p className="italic text-2xl">
+                Stride with purpose, and cleanse with passion!
+              </p>
+              <div className="flex items-center justify-between">
+                <button className="bg-green-500 hover:bg-green-700 text-white h-fit font-light py-2 px-4 rounded self-start">
+                  <a href="/#aboutus">Read More +</a>
+                </button>
                 <img
-                  src="/placeholder.svg?height=400&width=600&text=Community+Group+Photo"
-                  alt="Plogging Ethiopia Community"
-                  className="w-full h-80 object-cover rounded-lg"
+                  className="w-1/2 rounded-full pl-2 pt-1 bg-green-500"
+                  alt="Plogging Ethiopia"
+                  src="/logo.png"
                 />
               </div>
             </div>
+
+            <div className="relative z-20">
+              <img src="/header-left.png" alt="Plogging illustration" />
+            </div>
           </div>
-        </div>
+        </main>
       </section>
 
       {/* Our Story Section */}
-      <section className="py-16 px-4 bg-white">
+      <section
+        data-aos="fade-up"
+        className="py-16 px-4 bg-white w-full flex flex-col items-center justify-center"
+      >
         <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-6">Our Story</h2>
-              <div className="text-gray-600 leading-relaxed space-y-4">
-                <p>
-                  Plogging-Ethiopia traces its origins back to a family excursion that spanned more than five years
-                  before officially launching in January 2021 at Entoto Park, Addis Ababa. The individuals behind this
-                  initiative are Firew Kefyalew, a father, and his three sons – Yeab, Lihiq, and Amnen.
-                </p>
-                <p>
-                  Plogging-Ethiopia goes beyond simply collecting trash; it represents a dynamic movement that combines
-                  physical fitness, community involvement, and environmental responsibility. The concept, originating
-                  from Sweden, quickly gained momentum as Firew and a growing community of volunteers realized its
-                  potential to make a meaningful impact in Ethiopia. Our dedicated volunteers, comprising students and
-                  professionals alike, unite under a shared objective: fostering a healthier Ethiopia by tackling
-                  plastic pollution and advocating for an active way of life.
-                </p>
-              </div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+            {/* Text Content */}
+            <div
+              data-aos="fade-up"
+              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+                Our Story
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                Plogging-Ethiopia traces its origins back to a family excursion
+                that spanned more than five years before officially launching in
+                January 2021 at Entoto Park, Addis Ababa. The individuals behind
+                this initiative are Firew Kefyalew, a father, and his three sons
+                – Yeab, Lihiq, and Amnen.
+              </p>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                Plogging-Ethiopia goes beyond simply collecting trash; it
+                represents a dynamic movement that combines physical fitness,
+                community involvement, and environmental responsibility. The
+                concept, originating from Sweden, quickly gained momentum as
+                Firew and a growing community of volunteers realized its
+                potential to make a meaningful impact in Ethiopia. Our dedicated
+                volunteers, comprising students and professionals alike, unite
+                under a shared objective: fostering a healthier Ethiopia by
+                tackling plastic pollution and advocating for an active way of
+                life.
+              </p>
             </div>
-            <div>
+
+            {/* Image Section */}
+            <div
+              data-aos="fade-up"
+              className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4"
+            >
               <img
-                src="/placeholder.svg?height=400&width=500&text=Plogging+Activity+Photo"
+                src="/story-1.png" // Replace with your actual image path
                 alt="Plogging Activity"
                 className="w-full h-80 object-cover rounded-lg shadow-lg"
               />
@@ -230,60 +257,92 @@ export default function LandingPage() {
       </section>
 
       {/* What is Plogging Section */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section
+        data-aos="fade-up"
+        className="py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center"
+      >
         <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+            {/* Image Section */}
+            <div
+              data-aos="fade-up"
+              className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4"
+            >
               <img
-                src="/placeholder.svg?height=400&width=500&text=Outdoor+Plogging+Scene"
+                src="/story-2.png" // Replace with your actual image path
                 alt="What is Plogging"
                 className="w-full h-80 object-cover rounded-lg shadow-lg"
               />
             </div>
-            <div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-6">What is Plogging?</h2>
-              <div className="text-gray-600 leading-relaxed space-y-4">
-                <p>
-                  Plogging is more than an exercise routine; it's a revolutionary approach to environmental stewardship.
-                  Participants jog or walk, intermittently stopping to pick up litter along their route. This simple yet
-                  powerful activity not only promotes physical fitness but also raises awareness about the impact of
-                  plastic pollution on our communities and environment.
-                </p>
-                <p>
-                  The beauty of plogging lies in its accessibility and immediate impact. Whether you're a seasoned
-                  runner or prefer a leisurely walk, plogging adapts to your fitness level while contributing to a
-                  cleaner, healthier environment for everyone.
-                </p>
-              </div>
+
+            {/* Text Content */}
+            <div
+              data-aos="fade-up"
+              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+                What is Plogging?
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                Plogging is more than an exercise routine; it's a revolutionary
+                approach to environmental stewardship. Participants jog or walk,
+                intermittently stopping to pick up litter along their route.
+                This simple yet powerful activity not only promotes physical
+                fitness but also raises awareness about the impact of plastic
+                pollution on our communities and environment.
+              </p>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                The beauty of plogging lies in its accessibility and immediate
+                impact. Whether you're a seasoned runner or prefer a leisurely
+                walk, plogging adapts to your fitness level while contributing
+                to a cleaner, healthier environment for everyone.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 px-4 bg-white">
+      {/* Mission Section */}
+      <section
+        data-aos="fade-up"
+        className="py-16 px-4 bg-white w-full flex flex-col items-center justify-center"
+      >
         <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-6">Mission</h2>
-              <div className="text-gray-600 leading-relaxed space-y-4">
-                <p>
-                  At the core of Plogging-Ethiopia is a mission to create a cleaner, greener Ethiopia while promoting
-                  physical fitness and community engagement. Every stride has impact, can pave the way for substantial
-                  change. By encouraging plogging, we aim to inspire people to take responsibility for their environment
-                  while promoting an active and healthy lifestyle.
-                </p>
-                <p>
-                  We believe that small actions, when multiplied by millions of people, can transform the world. Our
-                  mission extends beyond cleaning up litter – we're building a movement that fosters environmental
-                  consciousness and community solidarity across Ethiopia.
-                </p>
-              </div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+            {/* Text Content */}
+            <div
+              data-aos="fade-up"
+              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+                Mission
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                At the core of Plogging-Ethiopia is a mission to create a
+                cleaner, greener Ethiopia while promoting physical fitness and
+                community engagement. Every stride has impact, can pave the way
+                for substantial change. By encouraging plogging, we aim to
+                inspire people to take responsibility for their environment
+                while promoting an active and healthy lifestyle.
+              </p>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                We believe that small actions, when multiplied by millions of
+                people, can transform the world. Our mission extends beyond
+                cleaning up litter – we're building a movement that fosters
+                environmental consciousness and community solidarity across
+                Ethiopia.
+              </p>
             </div>
-            <div className="flex justify-center">
+
+            {/* Image Section */}
+            <div
+              data-aos="fade-up"
+              className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4"
+            >
               <div className="w-80 h-80 rounded-full overflow-hidden shadow-lg">
                 <img
-                  src="/placeholder.svg?height=320&width=320&text=Mission+Circle+Photo"
+                  src="/story-3.png" // Replace with your actual image path
                   alt="Mission"
                   className="w-full h-full object-cover"
                 />
@@ -294,199 +353,263 @@ export default function LandingPage() {
       </section>
 
       {/* Our Impact Section */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section
+        data-aos="fade-up"
+        className="py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center"
+      >
         <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="flex justify-center">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+            {/* Image Section */}
+            <div
+              data-aos="fade-up"
+              className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4"
+            >
               <div className="w-80 h-80 rounded-full overflow-hidden shadow-lg">
                 <img
-                  src="/placeholder.svg?height=320&width=320&text=Environmental+Impact"
+                  src="/story-4.png" // Replace with your actual image path
                   alt="Our Impact"
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
-            <div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-6">Our Impact</h2>
-              <div className="text-gray-600 leading-relaxed space-y-4">
-                <p>
-                  Plogging Ethiopia's remarkable achievements have gained both national and international recognition.
-                  Since our inception, we have organized numerous events, contributed to Ethiopia's Prime Minister for
-                  their exceptional community service. Despite starting from humble beginnings without an official
-                  office, our impact has been profound. We have successfully organized events that have attracted
-                  hundreds of participants, collected tons of waste, and raised collective action and the positive
-                  energy that drives social change. Our movement has become a symbol of grassroots environmental
-                  activism in Ethiopia, inspiring similar initiatives across the country.
-                </p>
-              </div>
+
+            {/* Text Content */}
+            <div
+              data-aos="fade-up"
+              className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+                Our Impact
+              </h2>
+              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+                Plogging Ethiopia's remarkable achievements have gained both
+                national and international recognition. Since our inception, we
+                have organized numerous events, contributed to Ethiopia's Prime
+                Minister for their exceptional community service. Despite
+                starting from humble beginnings without an official office, our
+                impact has been profound. We have successfully organized events
+                that have attracted hundreds of participants, collected tons of
+                waste, and raised collective action and the positive energy that
+                drives social change. Our movement has become a symbol of
+                grassroots environmental activism in Ethiopia, inspiring similar
+                initiatives across the country.
+              </p>
             </div>
           </div>
         </div>
       </section>
-
       {/* About Us Section */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">About us</h2>
-          <h3 className="text-2xl font-semibold text-green-600 mb-8">Welcome to Plogging-Ethiopia</h3>
+      <section
+        data-aos="fade-up"
+        id="aboutus"
+        className="relative grid md:grid-cols-2 w-[90%] mx-auto md:h-[85vh] shadow-lg aos-init aos-animate"
+      >
+        {/* Left Image */}
+        <img
+          src="/about-5.png"
+          className="rounded-md aos-init aos-animate"
+          data-aos="fade-up"
+          alt="story"
+        />
 
-          <div className="max-w-4xl mx-auto text-gray-600 leading-relaxed mb-12">
-            <p>
-              Embark on a journey of impact and sustainability with Plogging-Ethiopia! As pioneers of the plogging
-              movement in Ethiopia, we are more than just an ordinary initiative – we are a community dedicated to
-              transforming lives and environments, one stride at a time.
+        {/* Empty Spacer or Background Column */}
+        <div className="hidden md:block"></div>
+
+        {/* Floating Content Block with Headings and Paragraph */}
+        <div
+          data-aos="fade-up"
+          className="md:absolute p-4 right-0 top-1/3 md:w-4/5 w-full flex flex-col md:flex-row justify-around gap-5 ml-auto aos-init aos-animate"
+        >
+          <img
+            src="/about-6.png"
+            data-aos="fade-up"
+            className="rounded-md aos-init aos-animate"
+            alt="story"
+          />
+          <div
+            data-aos="fade-up"
+            className="flex flex-col items-start md:w-3/4 w-[90%] gap-6 text-left aos-init aos-animate"
+          >
+            <h1 className="text-4xl md:text-5xl font-bold font-sans mt-4">
+              About us
+            </h1>
+            <h2 className="text-3xl text-left font-semibold mt-2 text-center">
+              Welcome to Plogging-Ethiopia
+            </h2>
+            <p className="font-sans text-lg">
+              Embark on a journey of impact and sustainability with
+              Plogging-Ethiopia! As trailblazers in the movement for a greener
+              Ethiopia, we are more than a voluntary initiative — we are a
+              community dedicated to transforming lives and our environment, one
+              stride at a time.
             </p>
           </div>
-
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <img
-              src="/placeholder.svg?height=300&width=400&text=Community+Action+Photo"
-              alt="Community in Action"
-              className="w-full h-64 object-cover rounded-lg shadow-lg"
-            />
-            <img
-              src="/placeholder.svg?height=300&width=400&text=Group+Celebration+Photo"
-              alt="Group Celebration"
-              className="w-full h-64 object-cover rounded-lg shadow-lg"
-            />
-          </div>
         </div>
       </section>
+      {/* Landing Form Section */}
+      <section
+        data-aos="fade-up"
+        className="w-full grid place-items-center mt-20 landing-form aos-init aos-animate"
+      >
+        {/* You can insert your form or content here */}
+      </section>
 
-      {/* Message From Founder Section */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-gray-800 mb-8 text-center">Message From The Founder</h2>
+      {/* Message From The Founder Section */}
+      <section
+        data-aos="fade-up"
+        className="founder-message grid md:grid-cols-2 place-items-center w-[90%] mx-auto gap-6 shadow-lg aos-init aos-animate"
+      >
+        {/* Text Block */}
+        <div
+          data-aos="fade-up"
+          className="flex flex-col text-left gap-6 p-4 aos-init aos-animate"
+        >
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Message From The Founder
+          </h1>
+          <p className="font-sans text-lg text-gray-700">
+            Welcome, Esteemed Visitors!
+          </p>
+          <p className="font-sans text-lg text-gray-700">
+            Step into the world of Plogging-Ethiopia's website, where passion
+            and purpose unite to create a cleaner and healthier Ethiopia. As the
+            founder, I am absolutely thrilled to have you explore our website
+            and witness the incredible efforts of individuals who are dedicated
+            to the well-being of our environment through plogging.
+          </p>
+          <p className="font-sans text-lg text-gray-700">
+            We are a young and vibrant organization, constantly striving to
+            inspire change one eco-friendly stride at a time. By harnessing the
+            power of positive energy expressed through volunteerism, we aim to
+            bring about organic social change driven by individuals like
+            yourself. Take a deep dive into our pages to discover our
+            initiatives, join our events, and find valuable resources to embrace
+            sustainable living. Together, we can make a lasting impact on our
+            environment.
+          </p>
+          <p className="font-sans text-lg text-gray-700">
+            Thank you for embarking on this journey with us towards a more
+            vibrant and greener Ethiopia. Your support is truly invaluable.
+          </p>
+          <p className="font-sans text-lg text-gray-700">With warm regards,</p>
+          <p className="font-sans text-lg font-semibold text-gray-800">
+            Firew Kefyalew
+          </p>
+          <p className="font-sans text-lg text-gray-600">
+            Founder, Plogging-Ethiopia.
+          </p>
+        </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="text-gray-600 leading-relaxed space-y-4">
-                <p className="font-semibold text-gray-800">Welcome, Esteemed Visitors,</p>
-                <p>
-                  Step into the world of Plogging-Ethiopia's website, where passion meets purpose online to create a
-                  cleaner and healthier Ethiopia. As the founder, I am delighted to invite you to explore our digital
-                  space, a reflection of our unwavering commitment to environmental stewardship and community
-                  well-being. Here, you will discover the heart and soul of our movement in the well-being of our
-                  environment through plogging.
-                </p>
-                <p>
-                  Our website serves as a gateway to a community united by a shared vision of a cleaner, healthier
-                  Ethiopia at home. By combining the power of positive energy running through volunteering, we aim to
-                  bring about positive change that resonates far beyond our immediate surroundings. As you navigate
-                  through our pages, you will witness the transformative power of collective action and the profound
-                  impact that each individual can have on our environment.
-                </p>
-                <p>
-                  Together, let us embark on this journey towards a more sustainable and greener Ethiopia. Your support
-                  is truly invaluable.
-                </p>
-                <div className="mt-6">
-                  <p className="font-semibold text-gray-800">Firew Kefyalew</p>
-                  <p className="text-gray-600">Founder, Plogging-Ethiopia</p>
+        {/* Founder Image */}
+        <img
+          src="/founder-photo.png"
+          data-aos="fade-up"
+          className="w-full h-full object-cover rounded-md aos-init aos-animate"
+          alt="Mr. Firew Kefyalew"
+        />
+      </section>
+      <section
+        data-aos="fade-up"
+        className="w-full flex flex-col items-center mt-20 aos-init aos-animate"
+      >
+        <div className="w-[90%] flex flex-col gap-5">
+          <h1 className="text-5xl mb-10 text-start">FAQ?</h1>
+
+          {faqItems.map((item, index) => (
+            <div key={index} className="w-full text-left">
+              <button
+                onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                className="cursor-pointer bg-green-500/20 w-full px-5 py-4 flex justify-between items-center"
+              >
+                <span className="font-none text-2xl text-gray-800">
+                  {item.question}
+                </span>
+                <span className="text-2xl font-bold text-gray-800">
+                  {openFaq === index ? "–" : "+"}
+                </span>
+              </button>
+
+              {openFaq === index && (
+                <div className="w-full px-5 py-2 bg-white text-lg">
+                  <p className="text-gray-700 leading-relaxed">{item.answer}</p>
                 </div>
-              </div>
+              )}
             </div>
-            <div className="flex justify-center">
-              <div className="bg-gray-200 rounded-lg p-8 max-w-sm">
-                <img
-                  src="/placeholder.svg?height=400&width=300&text=Founder+Portrait"
-                  alt="Firew Kefyalew - Founder"
-                  className="w-full h-80 object-cover rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
-
-      {/* FAQ Section */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-4xl font-bold text-gray-800 mb-8 text-center">FAQ?</h2>
-
-          <div className="space-y-4">
-            {faqItems.map((item, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg">
-                <button
-                  className="w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors"
-                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                >
-                  <span className="font-medium text-gray-800">{item.question}</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openFaq === index ? "rotate-180" : ""}`}
-                  />
-                </button>
-                {openFaq === index && (
-                  <div className="px-6 pb-4">
-                    <p className="text-gray-600 leading-relaxed">{item.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="bg-green-600 text-white py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            {/* Contact Info */}
-            <div>
-              <h4 className="font-semibold mb-4">Contact Info</h4>
-              <ul className="space-y-2 text-sm text-green-100">
-                <li>Addis Ababa</li>
-                <li>Ethiopia</li>
-                <li>Gallery</li>
-                <li>Blog</li>
-                <li>Contact Us</li>
-              </ul>
-            </div>
-
-            {/* Subscribe */}
-            <div>
-              <h4 className="font-semibold mb-4">Subscribe</h4>
-              <p className="text-sm text-green-100 mb-4">
-                Sign up with your email address to receive news and updates.
-              </p>
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  className="flex-1 px-3 py-2 text-gray-800 rounded-l-md"
-                />
-                <Button className="bg-green-700 hover:bg-green-800 rounded-l-none">Sign Up</Button>
-              </div>
-            </div>
-
-            {/* Social Media */}
-            <div>
-              <h4 className="font-semibold mb-4">Follow Us</h4>
-              <div className="flex space-x-3">
-                <Facebook className="w-6 h-6 text-green-100 hover:text-white cursor-pointer" />
-                <Twitter className="w-6 h-6 text-green-100 hover:text-white cursor-pointer" />
-                <Instagram className="w-6 h-6 text-green-100 hover:text-white cursor-pointer" />
-                <Youtube className="w-6 h-6 text-green-100 hover:text-white cursor-pointer" />
-                <Linkedin className="w-6 h-6 text-green-100 hover:text-white cursor-pointer" />
-              </div>
-            </div>
-
-            {/* Logo */}
-            <div className="flex justify-center md:justify-end">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                  <Leaf className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
+      <footer className="w-full flex flex-col items-center bg-green-500/10">
+        <section className="flex justify-between w-[80%] py-10 md:flex-row flex-col gap-10">
+          {/* Useful Links */}
+          <div className="flex flex-col items-start gap-2">
+            <h1 className="text-green-500 font-semibold">Useful Links</h1>
+            <a className="hover:text-green-500" href="/">
+              Home
+            </a>
+            <a className="hover:text-green-500" href="/gallery">
+              Gallery
+            </a>
+            <a className="hover:text-green-500" href="/blog">
+              Blog
+            </a>
+            <a className="hover:text-green-500" href="/contact">
+              Contact Us
+            </a>
           </div>
 
-          <div className="border-t border-green-500 mt-8 pt-8 text-center text-sm text-green-100">
-            <p>&copy; 2024 Plogging Ethiopia. All rights reserved.</p>
-            <p className="mt-2">Powered by Pixel Addis Solutions</p>
+          {/* Subscribe */}
+          <div className="flex flex-col md:items-center gap-3">
+            <h1 className="uppercase font-semibold text-green-700">
+              Subscribe
+            </h1>
+            <p className="text-sm text-gray-700 text-center md:text-left">
+              Sign up with your email address to receive news and updates.
+            </p>
+            <form className="flex w-full max-w-md">
+              <input
+                name="email"
+                type="email"
+                className="p-2 rounded-l-md border-2 border-green-500 w-full border-r-0 focus:outline-none text-gray-800"
+                placeholder="Your email address"
+              />
+              <button
+                type="submit"
+                className="bg-green-500 hover:bg-green-700 border-2 border-green-500 text-white font-bold py-2 px-4 rounded-r-md"
+              >
+                Submit
+              </button>
+            </form>
           </div>
+
+          {/* Social Media */}
+          <div className="flex flex-col items-start gap-3">
+            <h1 className="text-green-600 font-semibold">Social Media</h1>
+            <div className="flex gap-6 items-center">
+              {/* Replace these with actual icon components or <img> tags */}
+              <Facebook className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+              <Instagram className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+              <Twitter className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+              <Youtube className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+              <Linkedin className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+            </div>
+          </div>
+        </section>
+
+        {/* Footer Bottom */}
+        <div className="w-full flex py-2 text-white items-center justify-around bg-green-500/80 text-sm">
+          <p>&copy; 2024 Plogging-Ethiopia, All rights reserved.</p>
+          <p>
+            Powered by{" "}
+            <a
+              href="https://kasmasolution.com"
+              className="hover:text-white/70 cursor-pointer"
+            >
+              Kasma Tech Solution
+            </a>
+          </p>
         </div>
       </footer>
     </div>
-  )
-} 
+  );
+}
