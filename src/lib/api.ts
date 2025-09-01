@@ -11,6 +11,60 @@ export interface Volunteer {
   total_hours_contributed: number;
 }
 
+export interface DetailedVolunteer extends Volunteer {
+  registration_date: string;
+  last_login: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  enrollments: VolunteerEnrollment[];
+  badges: VolunteerBadge[];
+  certificates: VolunteerCertificate[];
+}
+
+export interface VolunteerEnrollment {
+  enrollment_id: number;
+  volunteer_id: string;
+  event_id: string;
+  signup_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  event: Event;
+}
+
+export interface VolunteerBadge {
+  badge_id: number;
+  badge_name: string;
+  description: string;
+  image_url: string;
+  criteria_type: string;
+  criteria_value: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  pivot: {
+    volunteer_id: string;
+    badge_id: string;
+    earned_date: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+export interface VolunteerCertificate {
+  certificate_id: number;
+  volunteer_id: string;
+  event_id: string | null;
+  certificate_type: string;
+  hours_on_certificate: string;
+  generation_date: string;
+  file_path: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Admin {
   admin_id: number;
   username: string;
@@ -28,11 +82,12 @@ export interface Event {
   start_time: string;
   end_time: string;
   location_name: string;
-  latitude: number;
-  longitude: number;
-  estimated_duration_hours: number;
+  latitude: number | string;
+  longitude: number | string;
+  estimated_duration_hours: number | string;
   max_volunteers: number;
   status: string;
+  qr_code_path?: string;
 }
 
 export interface Badge {
@@ -94,6 +149,12 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors
+      if (response.status === 401 || response.status === 403) {
+        this.clearToken();
+      }
+      
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -195,10 +256,21 @@ class ApiClient {
     return this.request<{ data: Event }>(`/volunteer/events/${eventId}`);
   }
 
+  async getEventQRCode(eventId: number): Promise<{ data: { qr_code_path: string } }> {
+    return this.request<{ data: { qr_code_path: string } }>(`/admin/events/${eventId}/qr-code`);
+  }
+
   async enrollInEvent(eventId: number): Promise<{ data: any }> {
     return this.request<{ data: any }>('/enrollments', {
       method: 'POST',
       body: JSON.stringify({ event_id: eventId }),
+    });
+  }
+
+  async enrollVolunteerInEvent(eventId: number, volunteerId: number): Promise<{ data: any }> {
+    return this.request<{ data: any }>('/volunteer/enrollments', {
+      method: 'POST',
+      body: JSON.stringify({ event_id: eventId, volunteer_id: volunteerId }),
     });
   }
 
@@ -273,8 +345,8 @@ class ApiClient {
     });
   }
 
-  async getVolunteerDetails(volunteerId: number): Promise<{ data: Volunteer }> {
-    return this.request<{ data: Volunteer }>(`/admin/volunteers/${volunteerId}`);
+  async getVolunteerDetails(volunteerId: number): Promise<{ data: DetailedVolunteer }> {
+    return this.request<{ data: DetailedVolunteer }>(`/admin/volunteers/${volunteerId}`);
   }
 
   async updateVolunteer(volunteerId: number, data: Partial<Volunteer>): Promise<{ data: Volunteer }> {

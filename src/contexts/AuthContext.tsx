@@ -48,9 +48,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           .then(response => {
             setUser(response.data);
           })
-          .catch(() => {
-            // Clear invalid token
-            apiClient.clearToken();
+          .catch((error) => {
+            // Only clear token for 401/403 errors
+            if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+              apiClient.clearToken();
+            }
           })
           .finally(() => {
             setIsLoading(false);
@@ -62,17 +64,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(response.data);
             localStorage.setItem('userType', 'volunteer');
           })
-          .catch(() => {
-            // If volunteer profile fails, try admin profile
-            apiClient.getAdminProfile()
-              .then(response => {
-                setUser(response.data);
-                localStorage.setItem('userType', 'admin');
-              })
-              .catch(() => {
-                // Clear invalid token
-                apiClient.clearToken();
-              });
+          .catch((error) => {
+            // Only clear token for 401/403 errors
+            if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+              apiClient.clearToken();
+            } else {
+              // If volunteer profile fails, try admin profile
+              apiClient.getAdminProfile()
+                .then(response => {
+                  setUser(response.data);
+                  localStorage.setItem('userType', 'admin');
+                })
+                .catch((adminError) => {
+                  // Only clear token for 401/403 errors
+                  if (adminError.message && (adminError.message.includes('401') || adminError.message.includes('403'))) {
+                    apiClient.clearToken();
+                  }
+                });
+            }
           })
           .finally(() => {
             setIsLoading(false);

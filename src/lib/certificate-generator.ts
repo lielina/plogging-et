@@ -71,6 +71,50 @@ export const defaultTemplates: CertificateTemplate[] = [
     titlePosition: { x: 105, y: 60 },
     contentLayout: "modern",
   },
+  {
+    id: "premium-gold",
+    name: "Premium Gold",
+    type: "achievement",
+    backgroundColor: "#fefce8",
+    primaryColor: "#ca8a04",
+    secondaryColor: "#a16207",
+    logoPosition: { x: 105, y: 20 },
+    titlePosition: { x: 105, y: 60 },
+    contentLayout: "elegant",
+  },
+  {
+    id: "nature-inspired",
+    name: "Nature Inspired",
+    type: "participation",
+    backgroundColor: "#f0f9ff",
+    primaryColor: "#0ea5e9",
+    secondaryColor: "#0284c7",
+    logoPosition: { x: 105, y: 20 },
+    titlePosition: { x: 105, y: 60 },
+    contentLayout: "modern",
+  },
+  {
+    id: "classic-elegant",
+    name: "Classic Elegant",
+    type: "leadership",
+    backgroundColor: "#fafafa",
+    primaryColor: "#374151",
+    secondaryColor: "#1f2937",
+    logoPosition: { x: 105, y: 20 },
+    titlePosition: { x: 105, y: 60 },
+    contentLayout: "elegant",
+  },
+  {
+    id: "vibrant-community",
+    name: "Vibrant Community",
+    type: "milestone",
+    backgroundColor: "#fdf2f8",
+    primaryColor: "#ec4899",
+    secondaryColor: "#be185d",
+    logoPosition: { x: 105, y: 20 },
+    titlePosition: { x: 105, y: 60 },
+    contentLayout: "modern",
+  },
 ]
 
 export class CertificateGenerator {
@@ -87,105 +131,377 @@ export class CertificateGenerator {
   }
 
   private drawBackground() {
-    // Set background color
+    // Set background color with gradient effect
     this.pdf.setFillColor(this.template.backgroundColor)
     this.pdf.rect(0, 0, 297, 210, "F")
 
-    // Add decorative border
+    // Add gradient overlay
+    this.pdf.setFillColor(255, 255, 255, 0.1)
+    this.pdf.rect(0, 0, 297, 210, "F")
+
+    // Add decorative border with enhanced design
     this.pdf.setDrawColor(this.template.primaryColor)
-    this.pdf.setLineWidth(2)
+    this.pdf.setLineWidth(3)
     this.pdf.rect(10, 10, 277, 190)
 
-    // Add inner decorative elements
+    // Add inner decorative elements with pattern
     this.pdf.setDrawColor(this.template.secondaryColor)
     this.pdf.setLineWidth(0.5)
     this.pdf.rect(15, 15, 267, 180)
+
+    // Add decorative pattern elements
+    this.drawDecorativePattern()
 
     // Add corner decorations
     this.drawCornerDecorations()
   }
 
+  private drawDecorativePattern() {
+    // Draw sophisticated pattern elements based on template type
+    this.pdf.setDrawColor(this.template.secondaryColor)
+    this.pdf.setLineWidth(0.3)
+    
+    switch (this.template.id) {
+      case "premium-gold":
+        this.drawPremiumGoldPattern()
+        break
+      case "nature-inspired":
+        this.drawNaturePattern()
+        break
+      case "classic-elegant":
+        this.drawClassicPattern()
+        break
+      case "vibrant-community":
+        this.drawVibrantPattern()
+        break
+      default:
+        this.drawStandardPattern()
+    }
+  }
+
+  private drawStandardPattern() {
+    // Top pattern
+    for (let i = 0; i < 8; i++) {
+      const x = 25 + (i * 35)
+      this.pdf.line(x, 20, x + 15, 20)
+      this.pdf.line(x + 7.5, 20, x + 7.5, 25)
+    }
+
+    // Bottom pattern
+    for (let i = 0; i < 8; i++) {
+      const x = 25 + (i * 35)
+      this.pdf.line(x, 190, x + 15, 190)
+      this.pdf.line(x + 7.5, 190, x + 7.5, 185)
+    }
+
+    // Left pattern
+    for (let i = 0; i < 6; i++) {
+      const y = 35 + (i * 25)
+      this.pdf.line(20, y, 20, y + 15)
+      this.pdf.line(20, y + 7.5, 25, y + 7.5)
+    }
+
+    // Right pattern
+    for (let i = 0; i < 6; i++) {
+      const y = 35 + (i * 25)
+      this.pdf.line(277, y, 277, y + 15)
+      this.pdf.line(277, y + 7.5, 272, y + 7.5)
+    }
+  }
+
+  private drawPremiumGoldPattern() {
+    // Elegant gold pattern with stars and circles
+    this.pdf.setFillColor(this.template.secondaryColor, 0.3)
+    
+    // Top decorative elements
+    for (let i = 0; i < 10; i++) {
+      const x = 20 + (i * 28)
+      this.pdf.circle(x, 18, 2, "F")
+      this.pdf.text("★", x - 1, 20)
+    }
+
+    // Bottom decorative elements
+    for (let i = 0; i < 10; i++) {
+      const x = 20 + (i * 28)
+      this.pdf.circle(x, 192, 2, "F")
+      this.pdf.text("★", x - 1, 194)
+    }
+
+    // Side decorative elements
+    for (let i = 0; i < 8; i++) {
+      const y = 30 + (i * 20)
+      this.pdf.circle(18, y, 2, "F")
+      this.pdf.circle(279, y, 2, "F")
+    }
+  }
+
+  private drawNaturePattern() {
+    // Nature-inspired pattern with leaves and waves
+    this.pdf.setFillColor(this.template.secondaryColor, 0.2)
+    
+    // Top wave pattern
+    for (let i = 0; i < 12; i++) {
+      const x = 20 + (i * 23)
+      this.pdf.text("🌿", x, 20)
+      this.pdf.text("🍃", x + 11, 22)
+    }
+
+    // Bottom wave pattern
+    for (let i = 0; i < 12; i++) {
+      const x = 20 + (i * 23)
+      this.pdf.text("🍃", x, 190)
+      this.pdf.text("🌿", x + 11, 192)
+    }
+
+    // Side nature elements
+    for (let i = 0; i < 6; i++) {
+      const y = 35 + (i * 25)
+      this.pdf.text("🌸", 15, y)
+      this.pdf.text("🌱", 282, y)
+    }
+  }
+
+  private drawClassicPattern() {
+    // Classic elegant pattern with geometric shapes
+    this.pdf.setDrawColor(this.template.secondaryColor)
+    this.pdf.setLineWidth(0.5)
+    
+    // Top geometric pattern
+    for (let i = 0; i < 8; i++) {
+      const x = 25 + (i * 35)
+      this.pdf.line(x, 20, x + 10, 20)
+      this.pdf.line(x + 5, 20, x + 5, 25)
+      this.pdf.circle(x + 5, 27, 2, "F")
+    }
+
+    // Bottom geometric pattern
+    for (let i = 0; i < 8; i++) {
+      const x = 25 + (i * 35)
+      this.pdf.line(x, 190, x + 10, 190)
+      this.pdf.line(x + 5, 190, x + 5, 185)
+      this.pdf.circle(x + 5, 183, 2, "F")
+    }
+  }
+
+  private drawVibrantPattern() {
+    // Vibrant community pattern with hearts and stars
+    this.pdf.setFillColor(this.template.secondaryColor, 0.3)
+    
+    // Top vibrant elements
+    for (let i = 0; i < 10; i++) {
+      const x = 20 + (i * 28)
+      this.pdf.text("❤️", x, 20)
+      this.pdf.text("⭐", x + 14, 22)
+    }
+
+    // Bottom vibrant elements
+    for (let i = 0; i < 10; i++) {
+      const x = 20 + (i * 28)
+      this.pdf.text("⭐", x, 190)
+      this.pdf.text("❤️", x + 14, 192)
+    }
+
+    // Side community elements
+    for (let i = 0; i < 6; i++) {
+      const y = 35 + (i * 25)
+      this.pdf.text("🤝", 15, y)
+      this.pdf.text("🌟", 282, y)
+    }
+  }
+
   private drawCornerDecorations() {
-    const cornerSize = 15
+    const cornerSize = 18
     this.pdf.setFillColor(this.template.primaryColor)
 
-    // Top-left corner
-    this.pdf.circle(25, 25, cornerSize, "F")
-    // Top-right corner
-    this.pdf.circle(272, 25, cornerSize, "F")
-    // Bottom-left corner
-    this.pdf.circle(25, 185, cornerSize, "F")
-    // Bottom-right corner
-    this.pdf.circle(272, 185, cornerSize, "F")
+    // Enhanced corner decorations with multiple elements
+    const corners = [
+      { x: 25, y: 25 },    // Top-left
+      { x: 272, y: 25 },   // Top-right
+      { x: 25, y: 185 },   // Bottom-left
+      { x: 272, y: 185 }   // Bottom-right
+    ]
 
-    // Add leaf symbols in corners
+    corners.forEach(corner => {
+      // Main corner circle
+      this.pdf.circle(corner.x, corner.y, cornerSize, "F")
+      
+      // Inner decorative circle
+      this.pdf.setFillColor(255, 255, 255, 0.3)
+      this.pdf.circle(corner.x, corner.y, cornerSize - 5, "F")
+      
+      // Reset to primary color
+      this.pdf.setFillColor(this.template.primaryColor)
+      this.pdf.circle(corner.x, corner.y, cornerSize - 8, "F")
+    })
+
+    // Add environmental symbols in corners
     this.pdf.setTextColor(255, 255, 255)
-    this.pdf.setFontSize(12)
-    this.pdf.text("🌱", 22, 28)
-    this.pdf.text("🌱", 269, 28)
-    this.pdf.text("🌱", 22, 188)
+    this.pdf.setFontSize(14)
+    
+    // Top-left: Tree
+    this.pdf.text("🌳", 22, 28)
+    // Top-right: Leaf
+    this.pdf.text("🍃", 269, 28)
+    // Bottom-left: Flower
+    this.pdf.text("🌸", 22, 188)
+    // Bottom-right: Plant
     this.pdf.text("🌱", 269, 188)
+
+    // Add small decorative elements around corners
+    this.pdf.setFillColor(this.template.secondaryColor)
+    this.pdf.setFontSize(8)
+    
+    // Small decorative dots
+    const decorativeDots = [
+      { x: 15, y: 15 }, { x: 35, y: 15 }, { x: 15, y: 35 }, { x: 35, y: 35 },
+      { x: 262, y: 15 }, { x: 282, y: 15 }, { x: 262, y: 35 }, { x: 282, y: 35 },
+      { x: 15, y: 175 }, { x: 35, y: 175 }, { x: 15, y: 195 }, { x: 35, y: 195 },
+      { x: 262, y: 175 }, { x: 282, y: 175 }, { x: 262, y: 195 }, { x: 282, y: 195 }
+    ]
+
+    decorativeDots.forEach(dot => {
+      this.pdf.circle(dot.x, dot.y, 1, "F")
+    })
   }
 
   private drawLogo() {
-    // Draw circular logo background
+    const logoX = this.template.logoPosition.x
+    const logoY = this.template.logoPosition.y
+
+    // Enhanced logo design with multiple layers
+    // Outer ring
     this.pdf.setFillColor(this.template.primaryColor)
-    this.pdf.circle(this.template.logoPosition.x, this.template.logoPosition.y, 12, "F")
-
-    // Add logo text (in real implementation, you'd use an actual logo image)
+    this.pdf.circle(logoX, logoY, 20, "F")
+    
+    // Middle ring
+    this.pdf.setFillColor(255, 255, 255, 0.2)
+    this.pdf.circle(logoX, logoY, 16, "F")
+    
+    // Inner circle
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(logoX, logoY, 12, "F")
+    
+    // Center logo symbol
     this.pdf.setTextColor(255, 255, 255)
-    this.pdf.setFontSize(16)
-    this.pdf.text("🌿", this.template.logoPosition.x - 3, this.template.logoPosition.y + 2)
+    this.pdf.setFontSize(18)
+    this.pdf.text("🌿", logoX - 4, logoY + 3)
 
-    // Organization name
+    // Add decorative elements around logo
+    this.pdf.setFillColor(this.template.secondaryColor)
+    this.pdf.setFontSize(8)
+    
+    // Small decorative circles around logo
+    const logoDecorations = [
+      { x: logoX - 25, y: logoY - 25 }, { x: logoX + 25, y: logoY - 25 },
+      { x: logoX - 25, y: logoY + 25 }, { x: logoX + 25, y: logoY + 25 }
+    ]
+    
+    logoDecorations.forEach(dec => {
+      this.pdf.circle(dec.x, dec.y, 2, "F")
+    })
+
+    // Organization name with enhanced styling
     this.pdf.setTextColor(this.template.primaryColor)
-    this.pdf.setFontSize(14)
-    this.pdf.text("PLOGGING ETHIOPIA", this.template.logoPosition.x, this.template.logoPosition.y + 20, {
+    this.pdf.setFontSize(16)
+    this.pdf.setFont(undefined, 'bold')
+    this.pdf.text("PLOGGING ETHIOPIA", logoX, logoY + 35, {
       align: "center",
     })
+    
+    // Subtitle with decorative lines
     this.pdf.setFontSize(10)
+    this.pdf.setFont(undefined, 'normal')
     this.pdf.text(
       "Environmental Care + Community Wellness",
-      this.template.logoPosition.x,
-      this.template.logoPosition.y + 27,
+      logoX,
+      logoY + 42,
       { align: "center" },
     )
+
+    // Add decorative lines above and below organization name
+    this.pdf.setDrawColor(this.template.secondaryColor)
+    this.pdf.setLineWidth(0.5)
+    this.pdf.line(logoX - 40, logoY + 32, logoX + 40, logoY + 32)
+    this.pdf.line(logoX - 40, logoY + 45, logoX + 40, logoY + 45)
   }
 
   private drawTitle(certificateType: string) {
+    const titleX = this.template.titlePosition.x
+    const titleY = this.template.titlePosition.y
+
+    // Enhanced title with decorative elements
     this.pdf.setTextColor(this.template.primaryColor)
-    this.pdf.setFontSize(24)
+    this.pdf.setFontSize(28)
+    this.pdf.setFont(undefined, 'bold')
+    
+    // Main title
     this.pdf.text(
       "CERTIFICATE OF " + certificateType.toUpperCase(),
-      this.template.titlePosition.x,
-      this.template.titlePosition.y,
+      titleX,
+      titleY,
       { align: "center" },
     )
 
-    // Decorative line under title
+    // Add decorative elements around title
     this.pdf.setDrawColor(this.template.secondaryColor)
-    this.pdf.setLineWidth(1)
-    this.pdf.line(80, this.template.titlePosition.y + 5, 217, this.template.titlePosition.y + 5)
+    this.pdf.setLineWidth(2)
+    
+    // Top decorative line with ornaments
+    this.pdf.line(70, titleY - 8, 227, titleY - 8)
+    
+    // Bottom decorative line with ornaments
+    this.pdf.line(70, titleY + 8, 227, titleY + 8)
+
+    // Add decorative ornaments at line ends
+    this.pdf.setFillColor(this.template.secondaryColor)
+    this.pdf.circle(70, titleY - 8, 3, "F")
+    this.pdf.circle(227, titleY - 8, 3, "F")
+    this.pdf.circle(70, titleY + 8, 3, "F")
+    this.pdf.circle(227, titleY + 8, 3, "F")
+
+    // Add small decorative elements
+    this.pdf.setFontSize(12)
+    this.pdf.text("★", 65, titleY - 8)
+    this.pdf.text("★", 232, titleY - 8)
+    this.pdf.text("★", 65, titleY + 8)
+    this.pdf.text("★", 232, titleY + 8)
   }
 
   private drawContent(data: CertificateData) {
-    const startY = this.template.titlePosition.y + 25
+    const startY = this.template.titlePosition.y + 35
+    const centerX = 148.5
 
-    // Main content
+    // Add decorative background for content area
+    this.pdf.setFillColor(255, 255, 255, 0.3)
+    this.pdf.roundedRect(30, startY - 10, 237, 90, 5, 5, "F")
+
+    // Main content with enhanced styling
     this.pdf.setTextColor(51, 51, 51)
     this.pdf.setFontSize(14)
+    this.pdf.setFont(undefined, 'normal')
 
     const presentedText = "This certificate is proudly presented to"
-    this.pdf.text(presentedText, 148.5, startY, { align: "center" })
+    this.pdf.text(presentedText, centerX, startY, { align: "center" })
 
-    // Volunteer name (highlighted)
+    // Add decorative elements around presented text
+    this.pdf.setDrawColor(this.template.secondaryColor)
+    this.pdf.setLineWidth(0.5)
+    this.pdf.line(centerX - 60, startY - 3, centerX - 20, startY - 3)
+    this.pdf.line(centerX + 20, startY - 3, centerX + 60, startY - 3)
+
+    // Volunteer name (highlighted with decorative background)
+    this.pdf.setFillColor(this.template.primaryColor, 0.1)
+    this.pdf.roundedRect(centerX - 80, startY + 5, 160, 25, 3, 3, "F")
+    
     this.pdf.setTextColor(this.template.primaryColor)
-    this.pdf.setFontSize(20)
-    this.pdf.text(data.volunteerName.toUpperCase(), 148.5, startY + 15, { align: "center" })
+    this.pdf.setFontSize(22)
+    this.pdf.setFont(undefined, 'bold')
+    this.pdf.text(data.volunteerName.toUpperCase(), centerX, startY + 20, { align: "center" })
 
-    // Achievement description
+    // Achievement description with enhanced styling
     this.pdf.setTextColor(51, 51, 51)
-    this.pdf.setFontSize(12)
+    this.pdf.setFontSize(13)
+    this.pdf.setFont(undefined, 'normal')
 
     let achievementText = ""
     switch (this.template.type) {
@@ -203,61 +519,162 @@ export class CertificateGenerator {
         break
     }
 
-    this.pdf.text(achievementText, 148.5, startY + 30, { align: "center" })
+    this.pdf.text(achievementText, centerX, startY + 40, { align: "center" })
 
-    // Event details
+    // Event details in a structured layout
     this.pdf.setFontSize(11)
-    this.pdf.text(`Event: ${data.eventName}`, 148.5, startY + 45, { align: "center" })
-    this.pdf.text(`Date: ${data.eventDate} | Location: ${data.location}`, 148.5, startY + 52, { align: "center" })
-    this.pdf.text(`Hours Contributed: ${data.hoursContributed}`, 148.5, startY + 59, { align: "center" })
+    
+    // Left column
+    this.pdf.text(`Event: ${data.eventName}`, 60, startY + 55)
+    this.pdf.text(`Date: ${data.eventDate}`, 60, startY + 62)
+    
+    // Right column
+    this.pdf.text(`Location: ${data.location}`, 200, startY + 55)
+    this.pdf.text(`Hours: ${data.hoursContributed}`, 200, startY + 62)
 
-    // Recognition message
-    this.pdf.setFontSize(10)
+    // Add decorative separator
+    this.pdf.setDrawColor(this.template.secondaryColor)
+    this.pdf.setLineWidth(1)
+    this.pdf.line(centerX - 30, startY + 50, centerX + 30, startY + 50)
+
+    // Recognition message with enhanced styling
+    this.pdf.setFontSize(11)
     this.pdf.setTextColor(this.template.secondaryColor)
+    this.pdf.setFont(undefined, 'italic')
     const recognitionText = "In recognition of your commitment to environmental stewardship and community wellness"
-    this.pdf.text(recognitionText, 148.5, startY + 75, { align: "center" })
+    this.pdf.text(recognitionText, centerX, startY + 75, { align: "center" })
+
+    // Add decorative elements at the bottom of content
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(centerX - 40, startY + 85, 2, "F")
+    this.pdf.circle(centerX + 40, startY + 85, 2, "F")
+    this.pdf.setFontSize(10)
+    this.pdf.text("★", centerX - 40, startY + 85)
+    this.pdf.text("★", centerX + 40, startY + 85)
   }
 
   private drawSignatures(data: CertificateData) {
     const signatureY = 160
+    const centerX = 148.5
+
+    // Add decorative background for signatures
+    this.pdf.setFillColor(255, 255, 255, 0.2)
+    this.pdf.roundedRect(40, signatureY - 15, 217, 40, 3, 3, "F")
 
     // Left signature (Organizer)
     this.pdf.setDrawColor(this.template.primaryColor)
-    this.pdf.setLineWidth(0.5)
-    this.pdf.line(50, signatureY, 120, signatureY)
+    this.pdf.setLineWidth(1.5)
+    this.pdf.line(60, signatureY, 120, signatureY)
+
+    // Add decorative elements around signature line
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(60, signatureY, 2, "F")
+    this.pdf.circle(120, signatureY, 2, "F")
 
     this.pdf.setTextColor(51, 51, 51)
-    this.pdf.setFontSize(10)
-    this.pdf.text(data.organizerName, 85, signatureY + 8, { align: "center" })
-    this.pdf.text("Event Organizer", 85, signatureY + 15, { align: "center" })
+    this.pdf.setFontSize(11)
+    this.pdf.setFont(undefined, 'bold')
+    this.pdf.text(data.organizerName, 90, signatureY + 8, { align: "center" })
+    this.pdf.setFontSize(9)
+    this.pdf.setFont(undefined, 'normal')
+    this.pdf.text("Event Organizer", 90, signatureY + 15, { align: "center" })
+
+    // Center seal/emblem
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(centerX, signatureY - 5, 15, "F")
+    this.pdf.setFillColor(255, 255, 255)
+    this.pdf.circle(centerX, signatureY - 5, 12, "F")
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(centerX, signatureY - 5, 8, "F")
+    this.pdf.setTextColor(255, 255, 255)
+    this.pdf.setFontSize(12)
+    this.pdf.text("PE", centerX - 3, signatureY - 2, { align: "center" })
 
     // Right signature (Plogging Ethiopia)
-    this.pdf.line(177, signatureY, 247, signatureY)
-    this.pdf.text("Plogging Ethiopia Team", 212, signatureY + 8, { align: "center" })
-    this.pdf.text("Program Director", 212, signatureY + 15, { align: "center" })
+    this.pdf.setDrawColor(this.template.primaryColor)
+    this.pdf.setLineWidth(1.5)
+    this.pdf.line(177, signatureY, 237, signatureY)
+
+    // Add decorative elements around signature line
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(177, signatureY, 2, "F")
+    this.pdf.circle(237, signatureY, 2, "F")
+
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(11)
+    this.pdf.setFont(undefined, 'bold')
+    this.pdf.text("Plogging Ethiopia Team", 207, signatureY + 8, { align: "center" })
+    this.pdf.setFontSize(9)
+    this.pdf.setFont(undefined, 'normal')
+    this.pdf.text("Program Director", 207, signatureY + 15, { align: "center" })
+
+    // Add decorative elements between signatures
+    this.pdf.setFillColor(this.template.secondaryColor)
+    this.pdf.setFontSize(8)
+    this.pdf.text("★", centerX - 25, signatureY + 5)
+    this.pdf.text("★", centerX + 25, signatureY + 5)
   }
 
   private drawFooter(data: CertificateData) {
     const footerY = 185
 
-    // Certificate ID and issue date
+    // Add decorative background for footer
+    this.pdf.setFillColor(this.template.primaryColor, 0.1)
+    this.pdf.rect(0, footerY - 5, 297, 25, "F")
+
+    // Certificate ID and issue date with enhanced styling
     this.pdf.setTextColor(this.template.secondaryColor)
-    this.pdf.setFontSize(8)
+    this.pdf.setFontSize(9)
+    this.pdf.setFont(undefined, 'bold')
     this.pdf.text(`Certificate ID: ${data.certificateId}`, 20, footerY)
+    this.pdf.setFontSize(8)
+    this.pdf.setFont(undefined, 'normal')
     this.pdf.text(`Issued on: ${data.issueDate}`, 20, footerY + 5)
 
-    // Verification URL
-    this.pdf.text("Verify at: ploggingethiopia.org/verify", 20, footerY + 10)
+    // Verification URL with icon
+    this.pdf.setFontSize(8)
+    this.pdf.text("🔗 Verify at: ploggingethiopia.org/verify", 20, footerY + 10)
 
-    // Powered by
-    this.pdf.text("Powered by Pixel Addis Solutions PLC", 277, footerY + 10, { align: "right" })
+    // Powered by with enhanced styling
+    this.pdf.setFontSize(8)
+    this.pdf.setFont(undefined, 'italic')
+    this.pdf.text("Powered by Pixel Addis Solutions PLC", 277, footerY + 5, { align: "right" })
 
-    // QR Code placeholder (in real implementation, you'd generate an actual QR code)
+    // Enhanced QR Code placeholder with decorative border
     this.pdf.setDrawColor(this.template.primaryColor)
-    this.pdf.rect(250, footerY - 15, 20, 20)
+    this.pdf.setLineWidth(2)
+    this.pdf.rect(250, footerY - 15, 25, 25)
+    
+    // Inner QR code design
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.rect(252, footerY - 13, 21, 21, "F")
+    this.pdf.setFillColor(255, 255, 255)
+    this.pdf.rect(254, footerY - 11, 17, 17, "F")
+    
+    // QR code pattern (simplified)
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.rect(256, footerY - 9, 3, 3, "F")
+    this.pdf.rect(260, footerY - 9, 3, 3, "F")
+    this.pdf.rect(264, footerY - 9, 3, 3, "F")
+    this.pdf.rect(256, footerY - 5, 3, 3, "F")
+    this.pdf.rect(264, footerY - 5, 3, 3, "F")
+    this.pdf.rect(256, footerY - 1, 3, 3, "F")
+    this.pdf.rect(260, footerY - 1, 3, 3, "F")
+    this.pdf.rect(264, footerY - 1, 3, 3, "F")
+
+    // Add decorative elements around QR code
+    this.pdf.setFillColor(this.template.secondaryColor)
+    this.pdf.circle(250, footerY - 15, 3, "F")
+    this.pdf.circle(275, footerY - 15, 3, "F")
+    this.pdf.circle(250, footerY + 10, 3, "F")
+    this.pdf.circle(275, footerY + 10, 3, "F")
+
+    // Add small decorative elements
     this.pdf.setFontSize(6)
-    this.pdf.text("QR", 260, footerY - 5, { align: "center" })
-    this.pdf.text("VERIFY", 260, footerY - 1, { align: "center" })
+    this.pdf.text("★", 248, footerY - 15)
+    this.pdf.text("★", 277, footerY - 15)
+    this.pdf.text("★", 248, footerY + 10)
+    this.pdf.text("★", 277, footerY + 10)
   }
 
   public generateCertificate(data: CertificateData): jsPDF {

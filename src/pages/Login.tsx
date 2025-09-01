@@ -172,7 +172,7 @@ export default function Login() {
           </Tabs>
 
           {/* Registration Form */}
-          {!isVolunteerLogin && (
+          {isVolunteerLogin && (
             <div className="mt-6 pt-6 border-t">
               <h3 className="text-lg font-semibold mb-4">Register as Volunteer</h3>
               <form onSubmit={handleRegister} className="space-y-4">

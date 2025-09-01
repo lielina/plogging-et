@@ -4,7 +4,7 @@ import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, Crown, Medal, Star } from 'lucide-react'
 
 interface DashboardStats {
   total_events_attended: number;
@@ -14,11 +14,22 @@ interface DashboardStats {
   certificates_earned: number;
 }
 
+interface TopVolunteer {
+  volunteer_id: number;
+  name: string;
+  email: string;
+  total_hours: string;
+  events_attended: number;
+  badges_earned: number;
+  rank_value: string;
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<any[]>([])
   const [badges, setBadges] = useState<any[]>([])
+  const [topVolunteers, setTopVolunteers] = useState<TopVolunteer[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -37,6 +48,10 @@ export default function Dashboard() {
         // Fetch badges
         const badgesResponse = await apiClient.getVolunteerBadges()
         setBadges(badgesResponse.data)
+        
+        // Fetch top volunteers
+        const topVolunteersResponse = await apiClient.getTopVolunteersReport()
+        setTopVolunteers(topVolunteersResponse.data.volunteers || [])
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {
@@ -46,6 +61,32 @@ export default function Dashboard() {
 
     fetchDashboardData()
   }, [])
+
+  const getRankIcon = (index: number) => {
+    switch (index) {
+      case 0:
+        return <Crown className="h-5 w-5 text-yellow-500" />
+      case 1:
+        return <Medal className="h-5 w-5 text-gray-400" />
+      case 2:
+        return <Star className="h-5 w-5 text-amber-600" />
+      default:
+        return <span className="text-sm font-bold text-gray-600">#{index + 1}</span>
+    }
+  }
+
+  const getRankBadgeVariant = (index: number) => {
+    switch (index) {
+      case 0:
+        return "default"
+      case 1:
+        return "secondary"
+      case 2:
+        return "outline"
+      default:
+        return "outline"
+    }
+  }
 
   if (isLoading) {
     return (
@@ -211,6 +252,87 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Top Volunteers */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Top Volunteers
+          </CardTitle>
+          <CardDescription>
+            Community leaders ranked by volunteer hours
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {topVolunteers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rank
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Volunteer
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Hours
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Events
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Badges
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {topVolunteers.map((volunteer, index) => (
+                    <tr key={volunteer.volunteer_id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          {getRankIcon(index)}
+                          <span className="text-gray-600">#{index + 1}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{volunteer.name}</div>
+                          <div className="text-sm text-gray-500">{volunteer.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {volunteer.total_hours} hrs
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {volunteer.events_attended}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Award className="h-4 w-4" />
+                          {volunteer.badges_earned}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No top volunteers data available.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <div className="mt-8">

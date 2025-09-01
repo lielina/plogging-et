@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
@@ -20,11 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { Volunteer } from '../lib/api';
 
 const AdminVolunteers: React.FC = () => {
+  const navigate = useNavigate();
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -336,7 +338,7 @@ const AdminVolunteers: React.FC = () => {
               <TableHead className="w-[250px]">Email</TableHead>
               <TableHead className="w-[150px]">Phone</TableHead>
               <TableHead className="w-[120px]">Total Hours</TableHead>
-              <TableHead className="w-[200px]">QR Code</TableHead>
+            
                               <TableHead className="text-right w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -351,77 +353,19 @@ const AdminVolunteers: React.FC = () => {
                 </TableCell>
                 <TableCell>{volunteer.phone_number}</TableCell>
                 <TableCell className="text-center">{volunteer.total_hours_contributed}</TableCell>
-                <TableCell className="max-w-[200px]">
-                  {volunteer.qr_code_path ? (
-                    <div className="flex items-center space-x-2">
-                      <img 
-                        src={`https://ploggingapi.pixeladdis.com/files/${volunteer.qr_code_path}`}
-                        alt={`QR Code for ${volunteer.first_name} ${volunteer.last_name}`}
-                        className="w-12 h-12 object-contain border rounded cursor-pointer hover:scale-110 transition-transform"
-                        title="Click to view larger QR code"
-                        onClick={() => {
-                          const newWindow = window.open();
-                          if (newWindow) {
-                            newWindow.document.write(`
-                              <html>
-                                <head>
-                                  <title>QR Code - ${volunteer.first_name} ${volunteer.last_name}</title>
-                                  <style>
-                                    body { 
-                                      margin: 0; 
-                                      padding: 20px; 
-                                      display: flex; 
-                                      justify-content: center; 
-                                      align-items: center; 
-                                      min-height: 100vh;
-                                      background: #f5f5f5;
-                                    }
-                                    img { 
-                                      max-width: 300px; 
-                                      max-height: 300px; 
-                                      border: 2px solid #ddd;
-                                      border-radius: 8px;
-                                      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                                    }
-                                    .title {
-                                      position: absolute;
-                                      top: 10px;
-                                      left: 50%;
-                                      transform: translateX(-50%);
-                                      font-family: Arial, sans-serif;
-                                      font-size: 18px;
-                                      color: #333;
-                                      background: white;
-                                      padding: 8px 16px;
-                                      border-radius: 4px;
-                                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                                    }
-                                  </style>
-                                </head>
-                                <body>
-                                  <div class="title">QR Code for ${volunteer.first_name} ${volunteer.last_name}</div>
-                                  <img src="https://ploggingapi.pixeladdis.com/storage/${volunteer.qr_code_path}" alt="QR Code" />
-                                </body>
-                              </html>
-                            `);
-                          }
-                        }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                      <span className="text-xs text-muted-foreground hidden">
-                        QR Code not available
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No QR Code</span>
-                  )}
-                </TableCell>
+                
+                
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/admin/volunteers/${volunteer.volunteer_id}`)}
+                      title="View volunteer details"
+                      className="hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Dialog open={isEditDialogOpen && selectedVolunteer?.volunteer_id === volunteer.volunteer_id} 
                             onOpenChange={setIsEditDialogOpen}>
                       <DialogTrigger asChild>
@@ -516,7 +460,7 @@ const AdminVolunteers: React.FC = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Total Hours</TableHead>
-                <TableHead>QR Code</TableHead>
+               
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

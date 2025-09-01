@@ -12,6 +12,8 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminEvents from './pages/AdminEvents'
 import AdminVolunteers from './pages/AdminVolunteers'
 import AdminCertificates from './pages/AdminCertificates'
+import EventDetail from './pages/EventDetail'
+import AdminVolunteerDetail from './pages/AdminVolunteerDetail'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -70,7 +72,9 @@ function AppRoutes() {
         }>
           <Route index element={<AdminDashboard />} />
           <Route path="events" element={<AdminEvents />} />
+          <Route path="events/:eventId" element={<EventDetail />} />
           <Route path="volunteers" element={<AdminVolunteers />} />
+          <Route path="volunteers/:volunteerId" element={<AdminVolunteerDetail />} />
           <Route path="certificates" element={<AdminCertificates />} />
         </Route>
       </Routes>

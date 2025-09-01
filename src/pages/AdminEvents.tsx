@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { apiClient, Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,12 +26,12 @@ interface EventFormData {
 }
 
 export default function AdminEvents() {
+  const navigate = useNavigate()
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<any>(null)
@@ -112,17 +113,16 @@ export default function AdminEvents() {
       start_time: event.start_time,
       end_time: event.end_time,
       location_name: event.location_name,
-      latitude: event.latitude,
-      longitude: event.longitude,
-      estimated_duration_hours: event.estimated_duration_hours,
+      latitude: typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude,
+      longitude: typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude,
+      estimated_duration_hours: typeof event.estimated_duration_hours === 'string' ? parseFloat(event.estimated_duration_hours) : event.estimated_duration_hours,
       max_volunteers: event.max_volunteers,
     })
     setIsEditDialogOpen(true)
   }
 
   const openViewDialog = (event: Event) => {
-    setSelectedEvent(event)
-    setIsViewDialogOpen(true)
+    navigate(`/admin/events/${event.event_id}`)
   }
 
   const resetForm = () => {
@@ -388,9 +388,9 @@ export default function AdminEvents() {
                   <div className="rounded-md overflow-hidden border h-24">
                     <Map
                       height="100%"
-                      center={[event.latitude, event.longitude]}
+                      center={[typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude, typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude]}
                       zoom={13}
-                      selectedLocation={[event.latitude, event.longitude]}
+                      selectedLocation={[typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude, typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude]}
                       isLocationPicker={false}
                     />
                   </div>
@@ -634,130 +634,7 @@ export default function AdminEvents() {
         </DialogContent>
       </Dialog>
 
-      {/* View Event Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Event Details</DialogTitle>
-            <DialogDescription>
-              View detailed information about the event.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedEvent && (
-            <div className="space-y-6">
-              {/* Event Header */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selectedEvent.event_name}</h3>
-                  <Badge 
-                    variant={selectedEvent.status === 'Active' ? 'default' : 'secondary'}
-                    className="mt-2"
-                  >
-                    {selectedEvent.status}
-                  </Badge>
-                </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-                <p className="text-gray-600 whitespace-pre-wrap">{selectedEvent.description}</p>
-              </div>
-
-              {/* Date and Time */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Date & Time</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(selectedEvent.event_date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{formatTime(selectedEvent.start_time)} - {formatTime(selectedEvent.end_time)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Duration & Capacity</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{selectedEvent.estimated_duration_hours} hours</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>Max {selectedEvent.max_volunteers} volunteers</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Location */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Location</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{selectedEvent.location_name}</span>
-                  </div>
-                  
-                  {/* Map showing event location */}
-                  <div className="rounded-lg overflow-hidden border">
-                    <Map
-                      height="250px"
-                      center={[selectedEvent.latitude, selectedEvent.longitude]}
-                      zoom={15}
-                      selectedLocation={[selectedEvent.latitude, selectedEvent.longitude]}
-                      isLocationPicker={false}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <span className="font-medium">Latitude:</span> {selectedEvent.latitude}
-                    </div>
-                    <div>
-                      <span className="font-medium">Longitude:</span> {selectedEvent.longitude}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Event ID */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Event Information</h4>
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Event ID:</span> {selectedEvent.event_id}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsViewDialogOpen(false)}
-            >
-              Close
-            </Button>
-            {selectedEvent && (
-              <Button 
-                onClick={() => {
-                  setIsViewDialogOpen(false)
-                  openEditDialog(selectedEvent)
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Event
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 } 
