@@ -14,6 +14,7 @@ import AdminVolunteers from './pages/AdminVolunteers'
 import AdminCertificates from './pages/AdminCertificates'
 import EventDetail from './pages/EventDetail'
 import AdminVolunteerDetail from './pages/AdminVolunteerDetail'
+import Layout from './pages/Layout'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -38,7 +39,15 @@ function AppRoutes() {
   return (
     <div className="min-h-screen bg-background">
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/about" element={<div>About Page</div>} />
+          <Route path="/membership" element={<div>Membership Page</div>} />
+          <Route path="/gallery" element={<div>Gallery Page</div>} />
+          <Route path="/blog" element={<div>Blog Page</div>} />
+          <Route path="/contact" element={<div>Contact Page</div>} />
+        </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/welcome" element={<Welcome />} />
         
@@ -46,11 +55,6 @@ function AppRoutes() {
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/events" element={
-          <ProtectedRoute>
-            <Events />
           </ProtectedRoute>
         } />
         <Route path="/leaderboard" element={
