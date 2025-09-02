@@ -1,21 +1,19 @@
 import { Outlet, useLocation } from "react-router-dom";
-import {
-    Menu,
-  } from "lucide-react";
-  import { Link, NavLink } from "react-router-dom";
-  import { useState, useEffect, useRef } from "react";
-  
+import { Menu } from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import useHashScroll from "@/hooks/useHashScroll";
 
 const Layout = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const location = useLocation();
-    const { isAuthenticated, logout } = useAuth();
-    useHashScroll();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const { isAuthenticated, logout } = useAuth();
+  useHashScroll();
   return (
     <div>
-         <header className="bg-white">
+      <header className="bg-white">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -40,12 +38,13 @@ const Layout = () => {
                 { name: "Event", to: "/events" },
                 { name: "Contact", to: "/contact" },
               ].map((link) => {
-                const isHomeActive = location.pathname === '/' && location.hash === '';
-                const isAboutActive = location.hash === '#aboutus';
+                const isHomeActive =
+                  location.pathname === "/" && location.hash === "";
+                const isAboutActive = location.hash === "#aboutus";
                 let isActive = false;
-                if (link.to === '/') {
+                if (link.to === "/") {
                   isActive = isHomeActive;
-                } else if (link.to === '/#aboutus') {
+                } else if (link.to === "/#aboutus") {
                   isActive = isAboutActive;
                 } else {
                   isActive = location.pathname === link.to;
@@ -63,16 +62,54 @@ const Layout = () => {
                   >
                     {link.name}
                   </NavLink>
-                )
+                );
               })}
-               {isAuthenticated ? (
+              {isAuthenticated ? (
                 <>
-                  <NavLink to="/dashboard" className={({ isActive }) => `relative pb-1 font-normal text-xl transition-colors ${isActive ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full" : "text-black hover:text-green-600"}`}>Dashboard</NavLink>
-                  <NavLink to="/profile" className={({ isActive }) => `relative pb-1 font-normal text-xl transition-colors ${isActive ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full" : "text-black hover:text-green-600"}`}>Profile</NavLink>
-                  <button onClick={logout} className="relative pb-1 font-normal text-xl transition-colors text-black hover:text-green-600">Logout</button>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      `relative pb-1 font-normal text-xl transition-colors ${
+                        isActive
+                          ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
+                          : "text-black hover:text-green-600"
+                      }`
+                    }
+                  >
+                    Dashboard
+                  </NavLink>
+                  <NavLink
+                    to="/profile"
+                    className={({ isActive }) =>
+                      `relative pb-1 font-normal text-xl transition-colors ${
+                        isActive
+                          ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
+                          : "text-black hover:text-green-600"
+                      }`
+                    }
+                  >
+                    Profile
+                  </NavLink>
+                  <button
+                    onClick={logout}
+                    className="relative pb-1 font-normal text-xl transition-colors text-black hover:text-green-600"
+                  >
+                    Logout
+                  </button>
                 </>
               ) : (
-                <NavLink to="/login" className={({ isActive }) => `relative pb-1 font-normal text-xl transition-colors ${isActive ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full" : "text-black hover:text-green-600"}`}>Login</NavLink>
+                <NavLink
+                  to="/login"
+                  className={({ isActive }) =>
+                    `relative pb-1 font-normal text-xl transition-colors ${
+                      isActive
+                        ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
+                        : "text-black hover:text-green-600"
+                    }`
+                  }
+                >
+                  Login
+                </NavLink>
               )}
             </nav>
 
@@ -98,12 +135,13 @@ const Layout = () => {
                   { name: "Event", to: "/events" },
                   { name: "Contact", to: "/contact" },
                 ].map((link) => {
-                  const isHomeActive = location.pathname === '/' && location.hash === '';
-                  const isAboutActive = location.hash === '#aboutus';
+                  const isHomeActive =
+                    location.pathname === "/" && location.hash === "";
+                  const isAboutActive = location.hash === "#aboutus";
                   let isActive = false;
-                  if (link.to === '/') {
+                  if (link.to === "/") {
                     isActive = isHomeActive;
-                  } else if (link.to === '/#aboutus') {
+                  } else if (link.to === "/#aboutus") {
                     isActive = isAboutActive;
                   } else {
                     isActive = location.pathname === link.to;
@@ -112,22 +150,56 @@ const Layout = () => {
                     <NavLink
                       key={link.to}
                       to={link.to}
-                      className={isActive
+                      className={
+                        isActive
                           ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"}
+                          : "text-gray-700 hover:text-green-600"
+                      }
                     >
                       {link.name}
                     </NavLink>
-                  )
+                  );
                 })}
                 {isAuthenticated ? (
                   <>
-                    <NavLink to="/dashboard" className={({ isActive }) => isActive ? "text-green-600 font-medium" : "text-gray-700 hover:text-green-600"}>Dashboard</NavLink>
-                    <NavLink to="/profile" className={({ isActive }) => isActive ? "text-green-600 font-medium" : "text-gray-700 hover:text-green-600"}>Profile</NavLink>
-                    <button onClick={logout} className="text-gray-700 hover:text-green-600 text-left">Logout</button>
+                    <NavLink
+                      to="/dashboard"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-green-600 font-medium"
+                          : "text-gray-700 hover:text-green-600"
+                      }
+                    >
+                      Dashboard
+                    </NavLink>
+                    <NavLink
+                      to="/profile"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "text-green-600 font-medium"
+                          : "text-gray-700 hover:text-green-600"
+                      }
+                    >
+                      Profile
+                    </NavLink>
+                    <button
+                      onClick={logout}
+                      className="text-gray-700 hover:text-green-600 text-left"
+                    >
+                      Logout
+                    </button>
                   </>
                 ) : (
-                  <NavLink to="/login" className={({ isActive }) => isActive ? "text-green-600 font-medium" : "text-gray-700 hover:text-green-600"}>Login</NavLink>
+                  <NavLink
+                    to="/login"
+                    className={({ isActive }) =>
+                      isActive
+                        ? "text-green-600 font-medium"
+                        : "text-gray-700 hover:text-green-600"
+                    }
+                  >
+                    Login
+                  </NavLink>
                 )}
               </div>
             </nav>
@@ -182,11 +254,21 @@ const Layout = () => {
           <div className="flex flex-col items-start gap-3">
             <h1 className="text-green-600 font-semibold">Social Media</h1>
             <div className="flex gap-6 items-center">
-              <a href="https://www.facebook.com/profile.php?id=100078976189435&mibextid=ZbWKwL"><img src="/facebook.png" alt="icon" /></a>
-              <a href="https://www.instagram.com/ploggingethiopia?igsh=MXRua2kzcXdsZnZraA=="><img src="/instagram.png" alt="icon" /></a>
-              <a href="https://wa.me/251911647424"><img src="/whatsapp.png" alt="icon" /></a>
-              <a href="https://t.me/plogging_ethiopia"><img src="/telegram.png" alt="icon" /></a>
-              <a href="https://www.youtube.com/@plogging-ethiopia6643"><img src="/youtube.png" alt="icon" /></a>
+              <a href="https://www.facebook.com/profile.php?id=100078976189435&mibextid=ZbWKwL">
+                <img src="/facebook.png" alt="icon" />
+              </a>
+              <a href="https://www.instagram.com/ploggingethiopia?igsh=MXRua2kzcXdsZnZraA==">
+                <img src="/instagram.png" alt="icon" />
+              </a>
+              <a href="https://wa.me/251911647424">
+                <img src="/whatsapp.png" alt="icon" />
+              </a>
+              <a href="https://t.me/plogging_ethiopia">
+                <img src="/telegram.png" alt="icon" />
+              </a>
+              <a href="https://www.youtube.com/@plogging-ethiopia6643">
+                <img src="/youtube.png" alt="icon" />
+              </a>
             </div>
           </div>
         </section>
@@ -200,7 +282,7 @@ const Layout = () => {
               href="https://kasmasolution.com"
               className="hover:text-white/70 cursor-pointer"
             >
-              Kasma Tech Solution
+              Pixel Addis Solutions
             </a>
           </p>
         </div>
