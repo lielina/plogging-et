@@ -15,6 +15,7 @@ import AdminCertificates from './pages/AdminCertificates'
 import EventDetail from './pages/EventDetail'
 import AdminVolunteerDetail from './pages/AdminVolunteerDetail'
 import Layout from './pages/Layout'
+import Membership from './pages/Membership'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -43,7 +44,7 @@ function AppRoutes() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/events" element={<Events />} />
           <Route path="/about" element={<div>About Page</div>} />
-          <Route path="/membership" element={<div>Membership Page</div>} />
+          <Route path="/membership" element={<Membership />} />
           <Route path="/gallery" element={<div>Gallery Page</div>} />
           <Route path="/blog" element={<div>Blog Page</div>} />
           <Route path="/contact" element={<div>Contact Page</div>} />
