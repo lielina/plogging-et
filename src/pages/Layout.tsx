@@ -1,5 +1,4 @@
-
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import {
     Menu,
     Facebook,
@@ -12,8 +11,12 @@ import {
   import { useState, useEffect, useRef } from "react";
   
 
+import useHashScroll from "@/hooks/useHashScroll";
+
 const Layout = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const location = useLocation();
+    useHashScroll();
   return (
     <div>
          <header className="bg-white">
@@ -34,27 +37,38 @@ const Layout = () => {
             <nav className="hidden lg:flex items-center space-x-12 mr-10">
               {[
                 { name: "Home", to: "/" },
-                { name: "About", to: "/about" },
+                { name: "About", to: "/#aboutus" },
                 { name: "Membership", to: "/membership" },
                 { name: "Gallery", to: "/gallery" },
                 { name: "Blog", to: "/blog" },
                 { name: "Event", to: "/events" },
                 { name: "Contact", to: "/contact" },
-              ].map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className={({ isActive }) =>
-                    `relative pb-1 font-normal text-xl transition-colors ${
+              ].map((link) => {
+                const isHomeActive = location.pathname === '/' && location.hash === '';
+                const isAboutActive = location.hash === '#aboutus';
+                let isActive = false;
+                if (link.to === '/') {
+                  isActive = isHomeActive;
+                } else if (link.to === '/#aboutus') {
+                  isActive = isAboutActive;
+                } else {
+                  isActive = location.pathname === link.to;
+                }
+
+                return (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    className={`relative pb-1 font-normal text-xl transition-colors ${
                       isActive
                         ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
                         : "text-black hover:text-green-600"
-                    }`
-                  }
-                >
-                  {link.name}
-                </NavLink>
-              ))}
+                    }`}
+                  >
+                    {link.name}
+                  </NavLink>
+                )
+              })}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -72,25 +86,35 @@ const Layout = () => {
               <div className="flex flex-col space-y-3">
                 {[
                   { name: "Home", to: "/" },
-                  { name: "About", to: "/about" },
+                  { name: "About", to: "/#aboutus" },
                   { name: "Membership", to: "/membership" },
                   { name: "Gallery", to: "/gallery" },
                   { name: "Blog", to: "/blog" },
                   { name: "Event", to: "/events" },
                   { name: "Contact", to: "/contact" },
-                ].map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    className={({ isActive }) =>
-                      isActive
-                        ? "text-green-600 font-medium"
-                        : "text-gray-700 hover:text-green-600"
-                    }
-                  >
-                    {link.name}
-                  </NavLink>
-                ))}
+                ].map((link) => {
+                  const isHomeActive = location.pathname === '/' && location.hash === '';
+                  const isAboutActive = location.hash === '#aboutus';
+                  let isActive = false;
+                  if (link.to === '/') {
+                    isActive = isHomeActive;
+                  } else if (link.to === '/#aboutus') {
+                    isActive = isAboutActive;
+                  } else {
+                    isActive = location.pathname === link.to;
+                  }
+                  return (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      className={isActive
+                          ? "text-green-600 font-medium"
+                          : "text-gray-700 hover:text-green-600"}
+                    >
+                      {link.name}
+                    </NavLink>
+                  )
+                })}
               </div>
             </nav>
           )}
