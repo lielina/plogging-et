@@ -1,11 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import {
     Menu,
-    Facebook,
-    Instagram,
-    Twitter,
-    Youtube,
-    Linkedin,
   } from "lucide-react";
   import { Link, NavLink } from "react-router-dom";
   import { useState, useEffect, useRef } from "react";
@@ -168,11 +163,11 @@ const Layout = () => {
           <div className="flex flex-col items-start gap-3">
             <h1 className="text-green-600 font-semibold">Social Media</h1>
             <div className="flex gap-6 items-center">
-              <Facebook className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
-              <Instagram className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
-              <Twitter className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
-              <Youtube className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
-              <Linkedin className="w-6 h-6 text-green-600 hover:text-green-800 cursor-pointer" />
+              <a href="https://www.facebook.com/profile.php?id=100078976189435&mibextid=ZbWKwL"><img src="/facebook.png" alt="icon" /></a>
+              <a href="https://www.instagram.com/ploggingethiopia?igsh=MXRua2kzcXdsZnZraA=="><img src="/instagram.png" alt="icon" /></a>
+              <a href="https://wa.me/251911647424"><img src="/whatsapp.png" alt="icon" /></a>
+              <a href="https://t.me/plogging_ethiopia"><img src="/telegram.png" alt="icon" /></a>
+              <a href="https://www.youtube.com/@plogging-ethiopia6643"><img src="/youtube.png" alt="icon" /></a>
             </div>
           </div>
         </section>
