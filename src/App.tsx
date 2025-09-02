@@ -16,6 +16,7 @@ import EventDetail from './pages/EventDetail'
 import AdminVolunteerDetail from './pages/AdminVolunteerDetail'
 import Layout from './pages/Layout'
 import Membership from './pages/Membership'
+import Contact from './pages/Contact'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -47,7 +48,7 @@ function AppRoutes() {
           <Route path="/membership" element={<Membership />} />
           <Route path="/gallery" element={<div>Gallery Page</div>} />
           <Route path="/blog" element={<div>Blog Page</div>} />
-          <Route path="/contact" element={<div>Contact Page</div>} />
+          <Route path="/contact" element={<Contact />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/welcome" element={<Welcome />} />
