@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,13 +12,10 @@ export default function Login() {
   const [isVolunteerLogin, setIsVolunteerLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const { login, register } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -36,27 +33,6 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.message || 'Login failed')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
-
-    try {
-      await register({
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        phone_number: phoneNumber,
-        password,
-      })
-      navigate('/dashboard')
-    } catch (err: any) {
-      setError(err.message || 'Registration failed')
     } finally {
       setIsLoading(false)
     }
@@ -123,16 +99,15 @@ export default function Login() {
                 </Button>
               </form>
 
-              <div className="text-center">
+              <div className="text-center mt-4">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setIsVolunteerLogin(false)}
+                  <Link
+                    to="/register"
                     className="text-green-600 hover:underline"
                   >
                     Register here
-                  </button>
+                  </Link>
                 </p>
               </div>
             </TabsContent>
@@ -170,75 +145,6 @@ export default function Login() {
               </form>
             </TabsContent>
           </Tabs>
-
-          {/* Registration Form */}
-          {isVolunteerLogin && (
-            <div className="mt-6 pt-6 border-t">
-              <h3 className="text-lg font-semibold mb-4">Register as Volunteer</h3>
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      placeholder="First name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      placeholder="Last name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    placeholder="+251912345678"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
-                  <Input
-                    id="reg-password"
-                    type="password"
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Create Account'}
-                </Button>
-              </form>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

@@ -5,12 +5,13 @@ import {
   import { Link, NavLink } from "react-router-dom";
   import { useState, useEffect, useRef } from "react";
   
-
+import { useAuth } from "@/contexts/AuthContext";
 import useHashScroll from "@/hooks/useHashScroll";
 
 const Layout = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const location = useLocation();
+    const { isAuthenticated, logout } = useAuth();
     useHashScroll();
   return (
     <div>
@@ -64,6 +65,15 @@ const Layout = () => {
                   </NavLink>
                 )
               })}
+               {isAuthenticated ? (
+                <>
+                  <NavLink to="/dashboard" className={({ isActive }) => `relative pb-1 font-normal text-xl transition-colors ${isActive ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full" : "text-black hover:text-green-600"}`}>Dashboard</NavLink>
+                  <NavLink to="/profile" className={({ isActive }) => `relative pb-1 font-normal text-xl transition-colors ${isActive ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full" : "text-black hover:text-green-600"}`}>Profile</NavLink>
+                  <button onClick={logout} className="relative pb-1 font-normal text-xl transition-colors text-black hover:text-green-600">Logout</button>
+                </>
+              ) : (
+                <NavLink to="/login" className={({ isActive }) => `relative pb-1 font-normal text-xl transition-colors ${isActive ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full" : "text-black hover:text-green-600"}`}>Login</NavLink>
+              )}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -110,6 +120,15 @@ const Layout = () => {
                     </NavLink>
                   )
                 })}
+                {isAuthenticated ? (
+                  <>
+                    <NavLink to="/dashboard" className={({ isActive }) => isActive ? "text-green-600 font-medium" : "text-gray-700 hover:text-green-600"}>Dashboard</NavLink>
+                    <NavLink to="/profile" className={({ isActive }) => isActive ? "text-green-600 font-medium" : "text-gray-700 hover:text-green-600"}>Profile</NavLink>
+                    <button onClick={logout} className="text-gray-700 hover:text-green-600 text-left">Logout</button>
+                  </>
+                ) : (
+                  <NavLink to="/login" className={({ isActive }) => isActive ? "text-green-600 font-medium" : "text-gray-700 hover:text-green-600"}>Login</NavLink>
+                )}
               </div>
             </nav>
           )}

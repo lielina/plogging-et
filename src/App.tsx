@@ -6,6 +6,7 @@ import Events from './pages/Events'
 import Leaderboard from './pages/Leaderboard'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
+import Register from './pages/Register' // Added import for Register
 import Welcome from './pages/Welcome'
 import AdminLayout from './pages/AdminLayout'
 import AdminDashboard from './pages/AdminDashboard'
@@ -17,6 +18,7 @@ import AdminVolunteerDetail from './pages/AdminVolunteerDetail'
 import Layout from './pages/Layout'
 import Membership from './pages/Membership'
 import Contact from './pages/Contact'
+import VolunteerCertificates from './pages/VolunteerCertificates'
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -51,6 +53,7 @@ function AppRoutes() {
           <Route path="/contact" element={<Contact />} />
         </Route>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} /> {/* Added route for Register */}
         <Route path="/welcome" element={<Welcome />} />
         
         {/* Protected Volunteer Routes */}
@@ -67,6 +70,11 @@ function AppRoutes() {
         <Route path="/profile" element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        } />
+        <Route path="/certificates" element={
+          <ProtectedRoute>
+            <VolunteerCertificates />
           </ProtectedRoute>
         } />
         
