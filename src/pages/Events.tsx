@@ -19,7 +19,8 @@ export default function Events() {
         const response = await apiClient.getAvailableEvents()
         setEvents(response.data)
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch events')
+        console.error('Error fetching events:', err)
+        setError('Events are temporarily unavailable. Please try again later.')
       } finally {
         setIsLoading(false)
       }
@@ -34,8 +35,10 @@ export default function Events() {
       // Refresh events to update enrollment status
       const response = await apiClient.getAvailableEvents()
       setEvents(response.data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error enrolling in event:', error)
+      // Show user-friendly error message
+      setError('Unable to enroll in event. Please try again later.')
     }
   }
 
@@ -71,11 +74,36 @@ export default function Events() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Try Again
-          </Button>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-8 h-8 text-orange-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Events Temporarily Unavailable</h2>
+            <p className="text-gray-600 mb-4 max-w-md">{error}</p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">You can try:</p>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button 
+                  onClick={() => {
+                    setError('')
+                    setIsLoading(true)
+                    window.location.reload()
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Try Again
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.history.back()}
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  Go Back
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -169,7 +197,15 @@ export default function Events() {
           <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6 max-w-md mx-auto">
             There are currently no upcoming plogging events. Check back later for new opportunities!
           </p>
-          <Button variant="outline" className="text-sm sm:text-base">
+          <Button 
+            variant="outline" 
+            className="text-sm sm:text-base"
+            onClick={() => {
+              setIsLoading(true)
+              setError('')
+              window.location.reload()
+            }}
+          >
             Refresh Events
           </Button>
         </div>
