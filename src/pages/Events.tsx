@@ -3,12 +3,15 @@ import { apiClient, Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Users, ArrowRight } from 'lucide-react'
+import { useToast } from "@/hooks/use-toast"
+import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle } from 'lucide-react'
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [enrollingEvents, setEnrollingEvents] = useState<Set<number>>(new Set())
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -30,15 +33,56 @@ export default function Events() {
   }, [])
 
   const handleEnroll = async (eventId: number) => {
+    // Prevent multiple enrollment attempts for the same event
+    if (enrollingEvents.has(eventId)) {
+      return
+    }
+
+    setEnrollingEvents(prev => new Set(prev).add(eventId))
+
     try {
       await apiClient.enrollInEvent(eventId)
+      
+      // Show success message
+      toast({
+        title: "Enrollment Successful!",
+        description: "You have been successfully enrolled in the event.",
+        variant: "default",
+      })
+      
       // Refresh events to update enrollment status
       const response = await apiClient.getAvailableEvents()
       setEvents(response.data)
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
-      // Show user-friendly error message
-      setError('Unable to enroll in event. Please try again later.')
+      
+      // Handle specific error cases
+      let errorMessage = 'Unable to enroll in event. Please try again later.'
+      let errorTitle = 'Enrollment Failed'
+      
+      if (error.message?.includes('non-upcoming events')) {
+        errorTitle = 'Event Not Available'
+        errorMessage = 'You can only enroll in upcoming events. This event may have already started or ended.'
+      } else if (error.message?.includes('Already enrolled')) {
+        errorTitle = 'Already Enrolled'
+        errorMessage = 'You are already enrolled in this event. Check your dashboard for enrollment details.'
+      } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
+        errorTitle = 'Event Full'
+        errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
+      }
+      
+      // Show error toast
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setEnrollingEvents(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(eventId)
+        return newSet
+      })
     }
   }
 
@@ -56,6 +100,49 @@ export default function Events() {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  // Helper function to determine button state and text
+  const getButtonState = (event: Event) => {
+    const isEnrolling = enrollingEvents.has(event.event_id)
+    const isUpcoming = event.status === 'Active' || event.status === 'upcoming'
+    const eventDate = new Date(event.event_date)
+    const now = new Date()
+    const isPastEvent = eventDate < now
+    
+    if (isEnrolling) {
+      return {
+        disabled: true,
+        text: 'Enrolling...',
+        variant: 'default' as const,
+        icon: null
+      }
+    }
+    
+    if (isPastEvent) {
+      return {
+        disabled: true,
+        text: 'Event Ended',
+        variant: 'secondary' as const,
+        icon: null
+      }
+    }
+    
+    if (!isUpcoming) {
+      return {
+        disabled: true,
+        text: 'Not Available',
+        variant: 'secondary' as const,
+        icon: null
+      }
+    }
+    
+    return {
+      disabled: false,
+      text: 'Enroll Now',
+      variant: 'default' as const,
+      icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />
+    }
   }
 
   if (isLoading) {
@@ -176,13 +263,20 @@ export default function Events() {
                   </div>
 
                   {/* Action Button */}
-                  <Button 
-                    className="w-full mt-4 text-sm sm:text-base" 
-                    onClick={() => handleEnroll(event.event_id)}
-                  >
-                    <span>Enroll Now</span>
-                    <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />
-                  </Button>
+                  {(() => {
+                    const buttonState = getButtonState(event)
+                    return (
+                      <Button 
+                        className="w-full mt-4 text-sm sm:text-base" 
+                        variant={buttonState.variant}
+                        disabled={buttonState.disabled}
+                        onClick={() => !buttonState.disabled && handleEnroll(event.event_id)}
+                      >
+                        <span>{buttonState.text}</span>
+                        {buttonState.icon}
+                      </Button>
+                    )
+                  })()}
                 </div>
               </CardContent>
             </Card>
