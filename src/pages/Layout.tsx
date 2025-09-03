@@ -13,8 +13,8 @@ const Layout = () => {
   useHashScroll();
   return (
     <div>
-      <header className="bg-white">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-2 sm:py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
@@ -22,13 +22,13 @@ const Layout = () => {
                 <img
                   src="/logo.png"
                   alt="Plogging Ethiopia Logo"
-                  className="h-28 w-auto ml-5"
+                  className="h-20 sm:h-24 lg:h-28 w-auto ml-2 sm:ml-5"
                 />
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-12 mr-10">
+            <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12 mr-6 lg:mr-10">
               {[
                 { name: "Home", to: "/" },
                 { name: "About", to: "/#aboutus" },
@@ -54,7 +54,7 @@ const Layout = () => {
                   <NavLink
                     key={link.to}
                     to={link.to}
-                    className={`relative pb-1 font-normal text-xl transition-colors ${
+                    className={`relative pb-1 font-normal text-lg xl:text-xl transition-colors ${
                       isActive
                         ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
                         : "text-black hover:text-green-600"
@@ -69,7 +69,7 @@ const Layout = () => {
                   <NavLink
                     to="/dashboard"
                     className={({ isActive }) =>
-                      `relative pb-1 font-normal text-xl transition-colors ${
+                      `relative pb-1 font-normal text-lg xl:text-xl transition-colors ${
                         isActive
                           ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
                           : "text-black hover:text-green-600"
@@ -81,7 +81,7 @@ const Layout = () => {
                   <NavLink
                     to="/profile"
                     className={({ isActive }) =>
-                      `relative pb-1 font-normal text-xl transition-colors ${
+                      `relative pb-1 font-normal text-lg xl:text-xl transition-colors ${
                         isActive
                           ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
                           : "text-black hover:text-green-600"
@@ -92,7 +92,7 @@ const Layout = () => {
                   </NavLink>
                   <button
                     onClick={logout}
-                    className="relative pb-1 font-normal text-xl transition-colors text-black hover:text-green-600"
+                    className="relative pb-1 font-normal text-lg xl:text-xl transition-colors text-black hover:text-green-600"
                   >
                     Logout
                   </button>
@@ -101,7 +101,7 @@ const Layout = () => {
                 <NavLink
                   to="/login"
                   className={({ isActive }) =>
-                    `relative pb-1 font-normal text-xl transition-colors ${
+                    `relative pb-1 font-normal text-lg xl:text-xl transition-colors ${
                       isActive
                         ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
                         : "text-black hover:text-green-600"
@@ -115,10 +115,11 @@ const Layout = () => {
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden p-2"
+              className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
             >
-              <Menu className="w-6 h-6 text-gray-600" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             </button>
           </div>
 
@@ -150,10 +151,11 @@ const Layout = () => {
                     <NavLink
                       key={link.to}
                       to={link.to}
+                      onClick={() => setIsMenuOpen(false)}
                       className={
                         isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
+                          ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md"
+                          : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors"
                       }
                     >
                       {link.name}
@@ -164,27 +166,32 @@ const Layout = () => {
                   <>
                     <NavLink
                       to="/dashboard"
+                      onClick={() => setIsMenuOpen(false)}
                       className={({ isActive }) =>
                         isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
+                          ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md"
+                          : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors"
                       }
                     >
                       Dashboard
                     </NavLink>
                     <NavLink
                       to="/profile"
+                      onClick={() => setIsMenuOpen(false)}
                       className={({ isActive }) =>
                         isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
+                          ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md"
+                          : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors"
                       }
                     >
                       Profile
                     </NavLink>
                     <button
-                      onClick={logout}
-                      className="text-gray-700 hover:text-green-600 text-left"
+                      onClick={() => {
+                        logout();
+                        setIsMenuOpen(false);
+                      }}
+                      className="text-gray-700 hover:text-red-600 text-left py-2 px-3 rounded-md hover:bg-red-50 transition-colors"
                     >
                       Logout
                     </button>
@@ -192,10 +199,11 @@ const Layout = () => {
                 ) : (
                   <NavLink
                     to="/login"
+                    onClick={() => setIsMenuOpen(false)}
                     className={({ isActive }) =>
                       isActive
-                        ? "text-green-600 font-medium"
-                        : "text-gray-700 hover:text-green-600"
+                        ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md"
+                        : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors"
                     }
                   >
                     Login

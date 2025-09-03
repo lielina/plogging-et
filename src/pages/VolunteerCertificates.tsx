@@ -128,50 +128,50 @@ export default function VolunteerCertificates() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+    <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">My Certificates</h1>
-        <p className="text-gray-600">View and download your earned certificates and achievements</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Certificates</h1>
+        <p className="text-sm sm:text-base text-gray-600">View and download your earned certificates and achievements</p>
       </div>
 
       {/* Certificates Stats */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <FileText className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{certificates.length}</p>
-                <p className="text-sm text-gray-600">Total Certificates</p>
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mr-3 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{certificates.length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total Certificates</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <Award className="h-8 w-8 text-green-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
+              <Award className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mr-3 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">
                   {certificates.filter(cert => cert.certificate_type.toLowerCase() === 'event').length}
                 </p>
-                <p className="text-sm text-gray-600">Event Certificates</p>
+                <p className="text-xs sm:text-sm text-gray-600">Event Certificates</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-6">
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-purple-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
+              <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mr-3 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">
                   {certificates.filter(cert => cert.certificate_type.toLowerCase() === 'milestone').length}
                 </p>
-                <p className="text-sm text-gray-600">Milestone Certificates</p>
+                <p className="text-xs sm:text-sm text-gray-600">Milestone Certificates</p>
               </div>
             </div>
           </CardContent>
@@ -184,61 +184,61 @@ export default function VolunteerCertificates() {
           {certificates.map((certificate) => (
             <Card key={certificate.certificate_id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <FileText className="h-5 w-5 text-green-600" />
-                      {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate
+                <div className="flex items-start justify-between flex-wrap gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+                      <span className="truncate">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate</span>
                     </CardTitle>
-                    <CardDescription className="mt-1">
+                    <CardDescription className="mt-1 text-sm">
                       Certificate ID: {certificate.certificate_id}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getCertificateTypeColor(certificate.certificate_type)}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={`${getCertificateTypeColor(certificate.certificate_type)} text-xs sm:text-sm`}>
                       {certificate.certificate_type}
                     </Badge>
-                    <Badge className={getStatusColor(certificate.status)}>
+                    <Badge className={`${getStatusColor(certificate.status)} text-xs sm:text-sm`}>
                       {certificate.status}
                     </Badge>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Generated Date</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">Generated Date</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <p className="text-sm">{formatDate(certificate.generation_date)}</p>
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                      <p className="text-xs sm:text-sm">{formatDate(certificate.generation_date)}</p>
                     </div>
                   </div>
                   
                   {certificate.hours_on_certificate && (
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Hours Contributed</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-500">Hours Contributed</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Award className="h-4 w-4 text-gray-400" />
-                        <p className="text-sm font-semibold">{certificate.hours_on_certificate} hours</p>
+                        <Award className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                        <p className="text-xs sm:text-sm font-semibold">{certificate.hours_on_certificate} hours</p>
                       </div>
                     </div>
                   )}
                   
                   {certificate.event_id && (
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Event ID</p>
-                      <p className="text-sm mt-1">#{certificate.event_id}</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-500">Event ID</p>
+                      <p className="text-xs sm:text-sm mt-1">#{certificate.event_id}</p>
                     </div>
                   )}
                   
-                  <div className="flex items-end">
+                  <div className="flex items-end sm:col-span-1 lg:col-span-1">
                     <Button 
                       onClick={() => handleDownload(certificate)}
                       size="sm"
-                      className="w-full"
+                      className="w-full text-xs sm:text-sm"
                       disabled={certificate.status.toLowerCase() !== 'active' && certificate.status.toLowerCase() !== 'issued'}
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
                       Download
                     </Button>
                   </div>

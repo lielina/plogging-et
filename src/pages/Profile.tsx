@@ -167,36 +167,36 @@ export default function Profile() {
   if (!profile) return null
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">My Profile</h1>
-        <p className="text-gray-600">Manage your personal information and account settings</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Profile</h1>
+        <p className="text-sm sm:text-base text-gray-600">Manage your personal information and account settings</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Profile Overview */}
         <div className="lg:col-span-1">
           <Card>
             <CardHeader className="text-center">
-              <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-2xl font-bold">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-lg sm:text-2xl font-bold">
                   {profile.first_name[0]}{profile.last_name[0]}
                 </span>
               </div>
-              <CardTitle className="text-xl">
+              <CardTitle className="text-lg sm:text-xl">
                 {profile.first_name} {profile.last_name}
               </CardTitle>
-              <CardDescription>{profile.email}</CardDescription>
+              <CardDescription className="text-sm sm:text-base">{profile.email}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Volunteer ID</span>
-                  <Badge variant="outline">{profile.volunteer_id}</Badge>
+                  <span className="text-xs sm:text-sm text-gray-600">Volunteer ID</span>
+                  <Badge variant="outline" className="text-xs sm:text-sm">{profile.volunteer_id}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Hours</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Total Hours</span>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 text-green-600" />
                     <span className="font-semibold">{profile.total_hours_contributed}h</span>
@@ -232,61 +232,64 @@ export default function Profile() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName" className="text-sm sm:text-base">First Name</Label>
                   {isEditing ? (
                     <Input
                       id="firstName"
                       value={profileForm.first_name}
                       onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   ) : (
-                    <p className="py-2 px-3 bg-gray-50 rounded-md">{profile.first_name}</p>
+                    <p className="py-2 px-3 bg-gray-50 rounded-md text-sm sm:text-base">{profile.first_name}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName" className="text-sm sm:text-base">Last Name</Label>
                   {isEditing ? (
                     <Input
                       id="lastName"
                       value={profileForm.last_name}
                       onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+                      className="text-sm sm:text-base"
                     />
                   ) : (
-                    <p className="py-2 px-3 bg-gray-50 rounded-md">{profile.last_name}</p>
+                    <p className="py-2 px-3 bg-gray-50 rounded-md text-sm sm:text-base">{profile.last_name}</p>
                   )}
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{profile.email}</span>
-                  <Badge variant="secondary" className="ml-auto">Verified</Badge>
+                <Label htmlFor="email" className="text-sm sm:text-base">Email Address</Label>
+                <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md flex-wrap">
+                  <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-sm sm:text-base flex-1 min-w-0 break-all">{profile.email}</span>
+                  <Badge variant="secondary" className="text-xs sm:text-sm flex-shrink-0">Verified</Badge>
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-sm sm:text-base">Phone Number</Label>
                 {isEditing ? (
                   <Input
                     id="phone"
                     value={profileForm.phone_number}
                     onChange={(e) => setProfileForm({ ...profileForm, phone_number: e.target.value })}
+                    className="text-sm sm:text-base"
                   />
                 ) : (
                   <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{profile.phone_number}</span>
+                    <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <span className="text-sm sm:text-base">{profile.phone_number}</span>
                   </div>
                 )}
               </div>
               
               {isEditing && (
-                <div className="flex justify-end">
-                  <Button onClick={handleProfileUpdate} disabled={isSaving}>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleProfileUpdate} disabled={isSaving} className="text-sm sm:text-base">
                     {isSaving ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

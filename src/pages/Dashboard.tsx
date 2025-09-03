@@ -159,15 +159,15 @@ export default function Dashboard() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={false}>
       <Sidebar className="border-r-2 border-green-100">
         <SidebarHeader className="border-b border-green-100 bg-gradient-to-r from-green-50 to-emerald-50">
-          <div className="flex items-center space-x-3 p-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+          <div className="flex items-center space-x-3 p-2 sm:p-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
               <img
                 src="/logo.png"
                 alt="PE"
-                className="h-6 w-6 text-white font-bold"
+                className="h-4 w-4 sm:h-6 sm:w-6 text-white font-bold"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
@@ -176,24 +176,24 @@ export default function Dashboard() {
                   }
                 }}
               />
-              <span className="text-white font-bold text-sm hidden">PE</span>
+              <span className="text-white font-bold text-xs sm:text-sm hidden">PE</span>
             </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-green-800">Plogging Ethiopia</h2>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm sm:text-lg font-bold text-green-800 truncate">Plogging Ethiopia</h2>
               <p className="text-xs text-green-600">Volunteer Portal</p>
             </div>
           </div>
           
           {/* User Profile Section */}
-          <div className="px-4 pb-4">
-            <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-green-200">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">
+          <div className="px-2 sm:px-4 pb-2 sm:pb-4">
+            <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-green-200">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs sm:text-sm font-semibold">
                   {user?.first_name?.[0]}{user?.last_name?.[0]}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                   {user?.first_name} {user?.last_name}
                 </p>
                 <p className="text-xs text-green-600">Volunteer</p>

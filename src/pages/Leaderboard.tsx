@@ -76,47 +76,47 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-6 sm:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-          <Trophy className="h-8 w-8 text-green-600" />
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+          <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
           Community Leaderboard
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           Top volunteers ranked by {criteria === 'hours' ? 'volunteer hours' : criteria}
         </p>
       </div>
 
       {/* Top 3 Podium */}
       {topVolunteers.length >= 3 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Top 3 Champions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Top 3 Champions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* 2nd Place */}
             {topVolunteers[1] && (
-              <Card className="relative order-2 md:order-1">
+              <Card className="relative order-2 sm:order-2 lg:order-1">
                 <CardHeader className="text-center pb-2">
                   <div className="flex justify-center mb-2">
-                    <Medal className="h-8 w-8 text-gray-400" />
+                    <Medal className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                   </div>
-                  <CardTitle className="text-lg">2nd Place</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">2nd Place</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="text-2xl font-bold text-gray-700 mb-2">{topVolunteers[1].name}</div>
-                  <div className="text-sm text-gray-600 mb-3">{topVolunteers[1].email}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-gray-700 mb-2 truncate">{topVolunteers[1].name}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mb-3 truncate">{topVolunteers[1].email}</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-semibold">{topVolunteers[1].total_hours} hrs</span>
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">{topVolunteers[1].total_hours} hrs</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{topVolunteers[1].events_attended} events</span>
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[1].events_attended} events</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Award className="h-4 w-4" />
-                      <span>{topVolunteers[1].badges_earned} badges</span>
+                      <Award className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[1].badges_earned} badges</span>
                     </div>
                   </div>
                 </CardContent>
@@ -125,28 +125,28 @@ export default function Leaderboard() {
 
             {/* 1st Place */}
             {topVolunteers[0] && (
-              <Card className="relative order-1 md:order-2 border-2 border-yellow-400 bg-gradient-to-b from-yellow-50 to-white">
+              <Card className="relative order-1 sm:order-1 lg:order-2 border-2 border-yellow-400 bg-gradient-to-b from-yellow-50 to-white">
                 <CardHeader className="text-center pb-2">
                   <div className="flex justify-center mb-2">
-                    <Crown className="h-10 w-10 text-yellow-500" />
+                    <Crown className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-500" />
                   </div>
-                  <CardTitle className="text-xl">🏆 1st Place</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">🏆 1st Place</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="text-3xl font-bold text-gray-800 mb-2">{topVolunteers[0].name}</div>
-                  <div className="text-sm text-gray-600 mb-3">{topVolunteers[0].email}</div>
+                  <div className="text-xl sm:text-3xl font-bold text-gray-800 mb-2 truncate">{topVolunteers[0].name}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mb-3 truncate">{topVolunteers[0].email}</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-semibold text-lg">{topVolunteers[0].total_hours} hrs</span>
+                      <Clock className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-semibold text-base sm:text-lg">{topVolunteers[0].total_hours} hrs</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{topVolunteers[0].events_attended} events</span>
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[0].events_attended} events</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Award className="h-4 w-4" />
-                      <span>{topVolunteers[0].badges_earned} badges</span>
+                      <Award className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[0].badges_earned} badges</span>
                     </div>
                   </div>
                 </CardContent>
@@ -155,28 +155,28 @@ export default function Leaderboard() {
 
             {/* 3rd Place */}
             {topVolunteers[2] && (
-              <Card className="relative order-3">
+              <Card className="relative order-3 sm:col-span-2 lg:col-span-1 lg:order-3">
                 <CardHeader className="text-center pb-2">
                   <div className="flex justify-center mb-2">
-                    <Star className="h-8 w-8 text-amber-600" />
+                    <Star className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600" />
                   </div>
-                  <CardTitle className="text-lg">3rd Place</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">3rd Place</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="text-2xl font-bold text-gray-700 mb-2">{topVolunteers[2].name}</div>
-                  <div className="text-sm text-gray-600 mb-3">{topVolunteers[2].email}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-gray-700 mb-2 truncate">{topVolunteers[2].name}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 mb-3 truncate">{topVolunteers[2].email}</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-semibold">{topVolunteers[2].total_hours} hrs</span>
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">{topVolunteers[2].total_hours} hrs</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{topVolunteers[2].events_attended} events</span>
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[2].events_attended} events</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Award className="h-4 w-4" />
-                      <span>{topVolunteers[2].badges_earned} badges</span>
+                      <Award className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[2].badges_earned} badges</span>
                     </div>
                   </div>
                 </CardContent>

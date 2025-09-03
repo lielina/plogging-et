@@ -82,78 +82,78 @@ export default function Events() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-6 sm:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
           Plogging Events
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           Join upcoming plogging events and make a difference in your community.
         </p>
       </div>
 
       {/* Events Grid */}
       {events.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {events.map((event) => (
             <Card key={event.event_id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-2">{event.event_name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between flex-wrap gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg mb-2 leading-tight">{event.event_name}</CardTitle>
+                    <CardDescription className="line-clamp-2 text-sm">
                       {event.description}
                     </CardDescription>
                   </div>
                   <Badge 
                     variant={event.status === 'Active' ? 'default' : 'secondary'}
-                    className="ml-2"
+                    className="ml-2 flex-shrink-0"
                   >
                     {event.status}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className="space-y-3">
                   {/* Date and Time */}
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>{formatDate(event.event_date)}</span>
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{formatDate(event.event_date)}</span>
                   </div>
                   
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    <span>
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">
                       {formatTime(event.start_time)} - {formatTime(event.end_time)}
                     </span>
                   </div>
 
                   {/* Location */}
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
                     <span className="line-clamp-1">{event.location_name}</span>
                   </div>
 
                   {/* Duration and Capacity */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      <span>{event.estimated_duration_hours} hours</span>
+                  <div className="flex items-center justify-between text-sm gap-4">
+                    <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                      <Clock className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{event.estimated_duration_hours} hours</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Users className="h-4 w-4" />
-                      <span>Max {event.max_volunteers}</span>
+                    <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                      <Users className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">Max {event.max_volunteers}</span>
                     </div>
                   </div>
 
                   {/* Action Button */}
                   <Button 
-                    className="w-full mt-4" 
+                    className="w-full mt-4 text-sm sm:text-base" 
                     onClick={() => handleEnroll(event.event_id)}
                   >
                     <span>Enroll Now</span>
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                    <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />
                   </Button>
                 </div>
               </CardContent>
@@ -161,28 +161,28 @@ export default function Events() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">
+        <div className="text-center py-8 sm:py-12">
+          <Calendar className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-base sm:text-lg font-semibold text-gray-600 mb-2">
             No Events Available
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6 max-w-md mx-auto">
             There are currently no upcoming plogging events. Check back later for new opportunities!
           </p>
-          <Button variant="outline">
+          <Button variant="outline" className="text-sm sm:text-base">
             Refresh Events
           </Button>
         </div>
       )}
 
       {/* Event Information */}
-      <div className="mt-12 bg-green-50 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-green-800 mb-4">
+      <div className="mt-8 sm:mt-12 bg-green-50 rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-green-800 mb-4">
           About Plogging Events
         </h2>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
           <div>
-            <h3 className="font-medium text-green-700 mb-2">What to Bring</h3>
+            <h3 className="font-medium text-green-700 mb-2 text-sm sm:text-base">What to Bring</h3>
             <ul className="text-sm text-green-600 space-y-1">
               <li>• Comfortable walking/running shoes</li>
               <li>• Water bottle</li>
@@ -191,7 +191,7 @@ export default function Events() {
             </ul>
           </div>
           <div>
-            <h3 className="font-medium text-green-700 mb-2">What We Provide</h3>
+            <h3 className="font-medium text-green-700 mb-2 text-sm sm:text-base">What We Provide</h3>
             <ul className="text-sm text-green-600 space-y-1">
               <li>• Gloves and safety equipment</li>
               <li>• Collection bags and tools</li>
