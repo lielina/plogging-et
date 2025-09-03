@@ -4,7 +4,7 @@ import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, Crown, Medal, Star, LogOut, LayoutDashboard, User, List, BarChart3, Home, Settings } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, Crown, Medal, Star, LogOut, LayoutDashboard, User, List, BarChart3, Home, Settings, RefreshCw } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import {
@@ -49,12 +49,14 @@ export default function Dashboard() {
   const [badges, setBadges] = useState<any[]>([])
   const [topVolunteers, setTopVolunteers] = useState<TopVolunteer[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const location = useLocation()
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true)
+        setError(null)
         
         // Fetch volunteer statistics
         const statsResponse = await apiClient.getVolunteerStatistics()
@@ -71,8 +73,9 @@ export default function Dashboard() {
         // Fetch top volunteers
         const topVolunteersResponse = await apiClient.getTopVolunteersReport()
         setTopVolunteers(topVolunteersResponse.data.volunteers || [])
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching dashboard data:', error)
+        setError(error.message || 'Failed to load dashboard data')
       } finally {
         setIsLoading(false)
       }
@@ -80,6 +83,31 @@ export default function Dashboard() {
 
     fetchDashboardData()
   }, [])
+
+  const refreshDashboard = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // Fetch all dashboard data again
+      const [statsResponse, eventsResponse, badgesResponse, topVolunteersResponse] = await Promise.all([
+        apiClient.getVolunteerStatistics(),
+        apiClient.getAvailableEvents(),
+        apiClient.getVolunteerBadges(),
+        apiClient.getTopVolunteersReport()
+      ])
+      
+      setStats(statsResponse.data)
+      setRecentEvents(eventsResponse.data.slice(0, 3))
+      setBadges(badgesResponse.data)
+      setTopVolunteers(topVolunteersResponse.data.volunteers || [])
+    } catch (error: any) {
+      console.error('Error refreshing dashboard data:', error)
+      setError(error.message || 'Failed to refresh dashboard data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -92,6 +120,29 @@ export default function Dashboard() {
       default:
         return <span className="text-sm font-bold text-gray-600">#{index + 1}</span>
     }
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trophy className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Failed to Load Dashboard</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="border-green-500 text-green-700 hover:bg-green-50"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (isLoading) {
@@ -119,7 +170,10 @@ export default function Dashboard() {
                 className="h-6 w-6 text-white font-bold"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling.style.display = 'block';
+                  const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (nextSibling) {
+                    nextSibling.style.display = 'block';
+                  }
                 }}
               />
               <span className="text-white font-bold text-sm hidden">PE</span>
@@ -281,6 +335,17 @@ export default function Dashboard() {
               <span className="text-sm text-green-700 font-medium">Active</span>
             </div>
             
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshDashboard}
+              disabled={isLoading}
+              className="hidden sm:flex border-green-200 hover:bg-green-50"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            
             <Button variant="outline" size="sm" className="hidden sm:flex">
               <Settings className="w-4 h-4 mr-2" />
               Settings
@@ -299,14 +364,14 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
             <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out transform hover:-translate-y-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Events Attended</CardTitle>
                 <Calendar className="h-5 w-5 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-gray-900">{stats?.total_events_attended || 0}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.total_events_attended || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   Total plogging events
                 </p>
@@ -319,7 +384,7 @@ export default function Dashboard() {
                 <Clock className="h-5 w-5 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-gray-900">{stats?.total_hours_contributed || 0}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.total_hours_contributed || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   Volunteer hours
                 </p>
@@ -332,7 +397,7 @@ export default function Dashboard() {
                 <Trophy className="h-5 w-5 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-gray-900">{stats?.total_waste_collected || 0} kg</div>
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.total_waste_collected || 0} kg</div>
                 <p className="text-xs text-muted-foreground">
                   Total waste collected
                 </p>
@@ -345,7 +410,7 @@ export default function Dashboard() {
                 <Award className="h-5 w-5 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-gray-900">{stats?.badges_earned || 0}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.badges_earned || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   Achievement badges
                 </p>
@@ -391,8 +456,8 @@ export default function Dashboard() {
                   <div className="text-center py-8">
                     <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 text-lg">No recent events</p>
-                    <Button className="mt-6 px-6 py-3 text-base" variant="outline">
-                      Browse Events
+                    <Button className="mt-6 px-6 py-3 text-base" variant="outline" asChild>
+                      <Link to="/events">Browse Events</Link>
                     </Button>
                   </div>
                 )}
@@ -523,17 +588,23 @@ export default function Dashboard() {
           <div className="mt-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
             <div className="grid gap-4 md:grid-cols-3">
-              <Button className="h-20 flex flex-col items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md">
-                <Calendar className="h-7 w-7" />
-                <span className="text-base">Browse Events</span>
+              <Button className="h-20 flex flex-col items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" asChild>
+                <Link to="/events">
+                  <Calendar className="h-7 w-7" />
+                  <span className="text-base">Browse Events</span>
+                </Link>
               </Button>
-              <Button className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" variant="outline">
-                <FileText className="h-7 w-7" />
-                <span className="text-base">View Certificates</span>
+              <Button className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" variant="outline" asChild>
+                <Link to="/certificates">
+                  <FileText className="h-7 w-7" />
+                  <span className="text-base">View Certificates</span>
+                </Link>
               </Button>
-              <Button className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" variant="outline">
-                <Users className="h-7 w-7" />
-                <span className="text-base">Leaderboard</span>
+              <Button className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" variant="outline" asChild>
+                <Link to="/leaderboard">
+                  <Users className="h-7 w-7" />
+                  <span className="text-base">Leaderboard</span>
+                </Link>
               </Button>
             </div>
           </div>

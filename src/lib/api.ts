@@ -1,5 +1,36 @@
 const BASE_URL = 'https://ploggingapi.pixeladdis.com/api/v1';
 
+// Additional Types from Postman Collection
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface EnrollmentRequest {
+  event_id: number;
+}
+
+export interface AttendanceRequest {
+  event_id: number;
+  qr_code: string;
+}
+
+export interface SurveyRequest {
+  event_id: number;
+  plogging_location: string;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  education_level: string;
+  residence_area: string;
+  employment_status: string;
+  main_reason: string;
+  main_reason_other?: string | null;
+  future_participation_likelihood: number;
+  participation_factors: string[];
+  barriers_to_participation: string[];
+  overall_satisfaction: string;
+}
+
 // Types
 export interface Volunteer {
   volunteer_id: number;
@@ -149,12 +180,12 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      
+
       // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors
       if (response.status === 401 || response.status === 403) {
         this.clearToken();
       }
-      
+
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -182,11 +213,11 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
+
     if (response.data.token) {
       this.setToken(response.data.token);
     }
-    
+
     return response;
   }
 
@@ -201,11 +232,11 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    
+
     if (response.data.token) {
       this.setToken(response.data.token);
     }
-    
+
     return response;
   }
 
@@ -214,11 +245,11 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    
+
     if (response.data.token) {
       this.setToken(response.data.token);
     }
-    
+
     return response;
   }
 
@@ -230,6 +261,28 @@ class ApiClient {
     } finally {
       this.clearToken();
     }
+  }
+
+  // New Methods from Postman Collection
+  async changePassword(data: ChangePasswordRequest): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/volunteer/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async submitSurvey(data: SurveyRequest): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/volunteer/surveys', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async checkOut(eventId: number, qrCode: string): Promise<{ data: any }> {
+    return this.request<{ data: any }>('/volunteer/attendance/check-out', {
+      method: 'POST',
+      body: JSON.stringify({ event_id: eventId, qr_code: qrCode }),
+    });
   }
 
   // Volunteer Endpoints
@@ -261,7 +314,7 @@ class ApiClient {
   }
 
   async enrollInEvent(eventId: number): Promise<{ data: any }> {
-    return this.request<{ data: any }>('/enrollments', {
+    return this.request<{ data: any }>('/volunteer/enrollments', {
       method: 'POST',
       body: JSON.stringify({ event_id: eventId }),
     });
@@ -275,20 +328,13 @@ class ApiClient {
   }
 
   async cancelEnrollment(enrollmentId: number): Promise<{ data: any }> {
-    return this.request<{ data: any }>(`/enrollments/${enrollmentId}`, {
+    return this.request<{ data: any }>(`/volunteer/enrollments/${enrollmentId}`, {
       method: 'DELETE',
     });
   }
 
   async checkIn(eventId: number, qrCode: string): Promise<{ data: any }> {
-    return this.request<{ data: any }>('/attendance/check-in', {
-      method: 'POST',
-      body: JSON.stringify({ event_id: eventId, qr_code: qrCode }),
-    });
-  }
-
-  async checkOut(eventId: number, qrCode: string): Promise<{ data: any }> {
-    return this.request<{ data: any }>('/attendance/check-out', {
+    return this.request<{ data: any }>('/volunteer/attendance/check-in', {
       method: 'POST',
       body: JSON.stringify({ event_id: eventId, qr_code: qrCode }),
     });
@@ -298,8 +344,8 @@ class ApiClient {
     return this.request<{ data: Badge[] }>('/volunteer/badges');
   }
 
-  async getVolunteerCertificates(): Promise<{ data: Certificate[] }> {
-    return this.request<{ data: Certificate[] }>('/volunteer/certificates');
+  async getVolunteerCertificates(): Promise<{ data: VolunteerCertificate[] }> {
+    return this.request<{ data: VolunteerCertificate[] }>('/volunteer/certificates');
   }
 
   // Admin Endpoints
@@ -324,11 +370,11 @@ class ApiClient {
       page: page.toString(),
       per_page: perPage.toString()
     });
-    
+
     if (search && search.trim()) {
       params.append('search', search.trim());
     }
-    
+
     return this.request<{ data: Volunteer[], pagination: any }>(`/admin/volunteers?${params.toString()}`);
   }
 
