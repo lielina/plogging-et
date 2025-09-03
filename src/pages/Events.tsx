@@ -58,16 +58,31 @@ export default function Events() {
     try {
       await apiClient.enrollInEvent(eventId)
       
+      // Store successful enrollment in localStorage
+      const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+      if (!storedEnrollments.includes(eventId)) {
+        storedEnrollments.push(eventId)
+        localStorage.setItem('userEnrollments', JSON.stringify(storedEnrollments))
+      }
+      
       // Show success message
       toast({
         title: "Enrollment Successful!",
-        description: "You have been successfully enrolled in the event.",
+        description: "You have been successfully enrolled in the event. Check your dashboard to view your enrolled events.",
         variant: "default",
       })
       
-      // Refresh events to update enrollment status
-      const response = await apiClient.getAvailableEvents()
-      setEvents(response.data)
+      // Update local event status immediately
+      setEvents(prev => prev.map(e => 
+        e.event_id === eventId 
+          ? { 
+              ...e, 
+              is_enrolled: true, 
+              can_enroll: false,
+              enrollment_status: 'Enrolled'
+            }
+          : e
+      ))
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
       
@@ -81,10 +96,23 @@ export default function Events() {
       } else if (error.message?.includes('Already enrolled')) {
         errorTitle = 'Already Enrolled'
         errorMessage = 'You are already enrolled in this event. Check your dashboard for enrollment details.'
+        
+        // Store the enrollment since backend confirms it exists
+        const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+        if (!storedEnrollments.includes(eventId)) {
+          storedEnrollments.push(eventId)
+          localStorage.setItem('userEnrollments', JSON.stringify(storedEnrollments))
+        }
+        
         // Update the event to reflect enrollment status
         setEvents(prev => prev.map(e => 
           e.event_id === eventId 
-            ? { ...e, is_enrolled: true, can_enroll: false }
+            ? { 
+                ...e, 
+                is_enrolled: true, 
+                can_enroll: false,
+                enrollment_status: 'Already Enrolled'
+              }
             : e
         ))
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
@@ -146,7 +174,8 @@ export default function Events() {
         disabled: true,
         text: 'Enrolling...',
         variant: 'default' as const,
-        icon: null
+        icon: null,
+        showDetails: false
       }
     }
     
@@ -154,9 +183,11 @@ export default function Events() {
     if (event.is_enrolled === true) {
       return {
         disabled: true,
-        text: 'Already Enrolled',
+        text: 'Enrolled ✓',
         variant: 'secondary' as const,
-        icon: <CheckCircle className="h-4 w-4 ml-2 flex-shrink-0" />
+        icon: <CheckCircle className="h-4 w-4 ml-2 flex-shrink-0 text-green-600" />,
+        showDetails: true,
+        status: event.enrollment_status || 'Enrolled'
       }
     }
     
@@ -166,7 +197,8 @@ export default function Events() {
         disabled: true,
         text: event.status === 'completed' ? 'Event Ended' : 'Not Available',
         variant: 'secondary' as const,
-        icon: null
+        icon: null,
+        showDetails: false
       }
     }
     
@@ -176,7 +208,8 @@ export default function Events() {
         disabled: true,
         text: 'Event Ended',
         variant: 'secondary' as const,
-        icon: null
+        icon: null,
+        showDetails: false
       }
     }
     
@@ -185,7 +218,8 @@ export default function Events() {
       disabled: false,
       text: 'Enroll Now',
       variant: 'default' as const,
-      icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />
+      icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+      showDetails: false
     }
   }
 
@@ -305,6 +339,26 @@ export default function Events() {
                       <span className="truncate">Max {event.max_volunteers}</span>
                     </div>
                   </div>
+
+                  {/* Enrollment Status (if enrolled) */}
+                  {(() => {
+                    const buttonState = getButtonState(event)
+                    if (buttonState.showDetails && buttonState.status) {
+                      return (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <span className="text-sm font-medium text-green-800">Enrollment Status</span>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">{buttonState.status}</p>
+                          <p className="text-xs text-green-600 mt-1">
+                            Check your dashboard for more details and event updates.
+                          </p>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
 
                   {/* Action Button */}
                   {(() => {

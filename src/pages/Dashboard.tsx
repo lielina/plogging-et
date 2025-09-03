@@ -137,11 +137,21 @@ export default function Dashboard() {
         apiClient.getAvailableEvents()
           .then(response => {
             console.log('Refreshing - All events:', response.data)
-            // Filter events where the user is enrolled
+            
+            // Get locally stored enrollments from localStorage
+            const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+            console.log('Refreshing - Stored enrollments:', storedEnrollments)
+            
+            // Filter events based on stored enrollments or backend enrollment fields
             const enrolledEvents = response.data.filter(event => {
-              console.log(`Refresh - Event ${event.event_name}: is_enrolled=${event.is_enrolled}, can_enroll=${event.can_enroll}`)
-              return event.is_enrolled === true
+              const isStoredEnrolled = storedEnrollments.includes(event.event_id)
+              const isBackendEnrolled = event.is_enrolled === true
+              
+              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}, is_enrolled=${event.is_enrolled}, can_enroll=${event.can_enroll}`)
+              
+              return isStoredEnrolled || isBackendEnrolled
             });
+            
             console.log('Refreshing - Enrolled events:', enrolledEvents)
             setRecentEvents(enrolledEvents.slice(0, 3));
           })
