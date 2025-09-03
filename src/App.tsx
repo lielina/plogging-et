@@ -8,6 +8,8 @@ import Leaderboard from './pages/Leaderboard'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register' // Added import for Register
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Welcome from './pages/Welcome'
 import AdminLayout from './pages/AdminLayout'
 import AdminDashboard from './pages/AdminDashboard'
@@ -55,6 +57,8 @@ function AppRoutes() {
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> {/* Added route for Register */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/welcome" element={<Welcome />} />
         
         {/* Protected Volunteer Routes */}

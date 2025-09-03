@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import ImageUpload from "@/components/ui/image-upload"
 import { useToast } from "@/hooks/use-toast"
 import { User, Phone, Mail, Calendar, Award, Trophy, Clock, Eye, EyeOff, Save, RefreshCw } from 'lucide-react'
 
@@ -17,6 +18,7 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setSaving] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -127,6 +129,58 @@ export default function Profile() {
     }
   }
 
+  const handleImageUpload = async (file: File) => {
+    try {
+      setIsUploadingImage(true)
+      const response = await apiClient.uploadProfileImage(file)
+      
+      // Update the profile with the new image URL
+      if (profile) {
+        setProfile({ ...profile, image_url: response.data.image_url })
+      }
+      
+      toast({
+        title: "Profile Picture Updated",
+        description: "Your profile picture has been successfully updated.",
+      })
+    } catch (error: any) {
+      console.error('Error uploading image:', error)
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleImageDelete = async () => {
+    try {
+      setIsUploadingImage(true)
+      await apiClient.deleteProfileImage()
+      
+      // Update the profile to remove the image URL
+      if (profile) {
+        setProfile({ ...profile, image_url: undefined })
+      }
+      
+      toast({
+        title: "Profile Picture Removed",
+        description: "Your profile picture has been removed.",
+      })
+    } catch (error: any) {
+      console.error('Error deleting image:', error)
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete image. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -179,10 +233,14 @@ export default function Profile() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader className="text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white text-lg sm:text-2xl font-bold">
-                  {profile.first_name[0]}{profile.last_name[0]}
-                </span>
+              <div className="flex justify-center mb-4">
+                <ImageUpload
+                  currentImageUrl={profile.image_url}
+                  onImageUpload={handleImageUpload}
+                  onImageDelete={profile.image_url ? handleImageDelete : undefined}
+                  isUploading={isUploadingImage}
+                  className=""
+                />
               </div>
               <CardTitle className="text-lg sm:text-xl">
                 {profile.first_name} {profile.last_name}

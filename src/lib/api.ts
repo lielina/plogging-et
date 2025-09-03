@@ -40,6 +40,7 @@ export interface Volunteer {
   phone_number: string;
   qr_code_path: string;
   total_hours_contributed: number;
+  image_url?: string; // Profile image URL
 }
 
 export interface DetailedVolunteer extends Volunteer {
@@ -103,6 +104,7 @@ export interface Admin {
   role: string;
   first_name: string;
   last_name: string;
+  image_url?: string; // Profile image URL
 }
 
 export interface Event {
@@ -170,9 +172,13 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
+
+    // Only add Content-Type for non-FormData requests
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
@@ -278,6 +284,21 @@ class ApiClient {
     });
   }
 
+  // Password Reset Functionality
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password: newPassword }),
+    });
+  }
+
   async submitSurvey(data: SurveyRequest): Promise<{ message: string }> {
     return this.request<{ message: string }>('/volunteer/surveys', {
       method: 'POST',
@@ -301,6 +322,24 @@ class ApiClient {
     return this.request<{ data: Volunteer }>('/volunteer/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Profile Image Upload
+  async uploadProfileImage(file: File): Promise<{ data: { image_url: string } }> {
+    const formData = new FormData();
+    formData.append('profile_image', file);
+
+    return this.request<{ data: { image_url: string } }>('/volunteer/profile/image', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let the browser set Content-Type for FormData
+    });
+  }
+
+  async deleteProfileImage(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/volunteer/profile/image', {
+      method: 'DELETE',
     });
   }
 
