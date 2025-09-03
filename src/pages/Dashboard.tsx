@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, Crown, Medal, Star, LogOut, LayoutDashboard, User, List, BarChart3, Home, Settings, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, LogOut, LayoutDashboard, User, List, BarChart3, Home, Settings, RefreshCw } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import {
@@ -32,22 +32,11 @@ interface DashboardStats {
   certificates_earned: number;
 }
 
-interface TopVolunteer {
-  volunteer_id: number;
-  name: string;
-  email: string;
-  total_hours: string;
-  events_attended: number;
-  badges_earned: number;
-  rank_value: string;
-}
-
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<any[]>([])
   const [badges, setBadges] = useState<any[]>([])
-  const [topVolunteers, setTopVolunteers] = useState<TopVolunteer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
@@ -58,21 +47,41 @@ export default function Dashboard() {
         setIsLoading(true)
         setError(null)
         
-        // Fetch volunteer statistics
-        const statsResponse = await apiClient.getVolunteerStatistics()
-        setStats(statsResponse.data)
+        // Fetch data individually with error handling for each endpoint
+        const promises = [
+          // Fetch volunteer statistics
+          apiClient.getVolunteerStatistics()
+            .then(response => setStats(response.data))
+            .catch(error => {
+              console.error('Error fetching volunteer statistics:', error)
+              setStats({
+                total_events_attended: 0,
+                total_hours_contributed: 0,
+                total_waste_collected: 0,
+                badges_earned: 0,
+                certificates_earned: 0
+              })
+            }),
+          
+          // Fetch recent events
+          apiClient.getAvailableEvents()
+            .then(response => setRecentEvents(response.data.slice(0, 3)))
+            .catch(error => {
+              console.error('Error fetching events:', error)
+              setRecentEvents([])
+            }),
+          
+          // Fetch badges with fallback
+          apiClient.getVolunteerBadges()
+            .then(response => setBadges(response.data))
+            .catch(error => {
+              console.error('Error fetching badges (endpoint may be unavailable):', error)
+              setBadges([]) // Set empty array as fallback
+            })
+        ]
         
-        // Fetch recent events
-        const eventsResponse = await apiClient.getAvailableEvents()
-        setRecentEvents(eventsResponse.data.slice(0, 3)) // Show only 3 recent events
-        
-        // Fetch badges
-        const badgesResponse = await apiClient.getVolunteerBadges()
-        setBadges(badgesResponse.data)
-        
-        // Fetch top volunteers
-        const topVolunteersResponse = await apiClient.getTopVolunteersReport()
-        setTopVolunteers(topVolunteersResponse.data.volunteers || [])
+        // Wait for all promises to complete (either resolve or reject)
+        await Promise.allSettled(promises)
       } catch (error: any) {
         console.error('Error fetching dashboard data:', error)
         setError(error.message || 'Failed to load dashboard data')
@@ -89,36 +98,46 @@ export default function Dashboard() {
       setIsLoading(true)
       setError(null)
       
-      // Fetch all dashboard data again
-      const [statsResponse, eventsResponse, badgesResponse, topVolunteersResponse] = await Promise.all([
-        apiClient.getVolunteerStatistics(),
-        apiClient.getAvailableEvents(),
-        apiClient.getVolunteerBadges(),
-        apiClient.getTopVolunteersReport()
-      ])
+      // Refresh data individually with error handling for each endpoint
+      const promises = [
+        // Refresh volunteer statistics
+        apiClient.getVolunteerStatistics()
+          .then(response => setStats(response.data))
+          .catch(error => {
+            console.error('Error refreshing volunteer statistics:', error)
+            setStats({
+              total_events_attended: 0,
+              total_hours_contributed: 0,
+              total_waste_collected: 0,
+              badges_earned: 0,
+              certificates_earned: 0
+            })
+          }),
+        
+        // Refresh recent events
+        apiClient.getAvailableEvents()
+          .then(response => setRecentEvents(response.data.slice(0, 3)))
+          .catch(error => {
+            console.error('Error refreshing events:', error)
+            setRecentEvents([])
+          }),
+        
+        // Refresh badges with fallback
+        apiClient.getVolunteerBadges()
+          .then(response => setBadges(response.data))
+          .catch(error => {
+            console.error('Error refreshing badges (endpoint may be unavailable):', error)
+            setBadges([]) // Set empty array as fallback
+          })
+      ]
       
-      setStats(statsResponse.data)
-      setRecentEvents(eventsResponse.data.slice(0, 3))
-      setBadges(badgesResponse.data)
-      setTopVolunteers(topVolunteersResponse.data.volunteers || [])
+      // Wait for all promises to complete (either resolve or reject)
+      await Promise.allSettled(promises)
     } catch (error: any) {
       console.error('Error refreshing dashboard data:', error)
       setError(error.message || 'Failed to refresh dashboard data')
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const getRankIcon = (index: number) => {
-    switch (index) {
-      case 0:
-        return <Crown className="h-5 w-5 text-yellow-500" />
-      case 1:
-        return <Medal className="h-5 w-5 text-gray-400" />
-      case 2:
-        return <Star className="h-5 w-5 text-amber-600" />
-      default:
-        return <span className="text-sm font-bold text-gray-600">#{index + 1}</span>
     }
   }
 
@@ -493,96 +512,23 @@ export default function Dashboard() {
                 ) : (
                   <div className="text-center py-8">
                     <Award className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 text-lg">No badges earned yet</p>
+                    <p className="text-gray-600 text-lg">Badges temporarily unavailable</p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Participate in events to earn badges!
+                      The badges service is currently being updated. Check back later!
                     </p>
+                    <Button 
+                      onClick={refreshDashboard} 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
+                    >
+                      Retry
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
-
-          {/* Top Volunteers */}
-          <Card className="mt-8 hover:shadow-lg transition-shadow duration-300 ease-in-out">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Trophy className="h-6 w-6 text-green-700" />
-                Top Volunteers
-              </CardTitle>
-              <CardDescription>
-                Community leaders ranked by volunteer hours
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {topVolunteers.length > 0 ? (
-                <div className="overflow-x-auto rounded-lg shadow-sm border">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-green-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-green-800 uppercase tracking-wider">
-                          Rank
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-green-800 uppercase tracking-wider">
-                          Volunteer
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-green-800 uppercase tracking-wider">
-                          Hours
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-green-800 uppercase tracking-wider">
-                          Events
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-green-800 uppercase tracking-wider">
-                          Badges
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {topVolunteers.map((volunteer, index) => (
-                        <tr key={volunteer.volunteer_id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center gap-2">
-                              {getRankIcon(index)}
-                              <span className="text-gray-700">#{index + 1}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{volunteer.name}</div>
-                              <div className="text-xs text-gray-500">{volunteer.email}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-green-500" />
-                              {volunteer.total_hours} hrs
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4 text-green-500" />
-                              {volunteer.events_attended}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <div className="flex items-center gap-1">
-                              <Award className="h-4 w-4 text-green-500" />
-                              {volunteer.badges_earned}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Trophy className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 text-lg">No top volunteers data available.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           {/* Quick Actions */}
           <div className="mt-8">
