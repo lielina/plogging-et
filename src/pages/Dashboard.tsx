@@ -63,9 +63,28 @@ export default function Dashboard() {
               })
             }),
           
-          // Fetch recent events
+          // Fetch events and check for local enrollment tracking
           apiClient.getAvailableEvents()
-            .then(response => setRecentEvents(response.data.slice(0, 3)))
+            .then(response => {
+              console.log('All events:', response.data)
+              
+              // Get locally stored enrollments from localStorage
+              const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+              console.log('Stored enrollments:', storedEnrollments)
+              
+              // Filter events based on stored enrollments or backend enrollment fields
+              const enrolledEvents = response.data.filter(event => {
+                const isStoredEnrolled = storedEnrollments.includes(event.event_id)
+                const isBackendEnrolled = event.is_enrolled === true
+                
+                console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}, is_enrolled=${event.is_enrolled}, can_enroll=${event.can_enroll}`)
+                
+                return isStoredEnrolled || isBackendEnrolled
+              });
+              
+              console.log('Enrolled events:', enrolledEvents)
+              setRecentEvents(enrolledEvents.slice(0, 3));
+            })
             .catch(error => {
               console.error('Error fetching events:', error)
               setRecentEvents([])
@@ -91,7 +110,7 @@ export default function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [location.pathname]) // Re-fetch when navigating to dashboard
 
   const refreshDashboard = async () => {
     try {
@@ -114,9 +133,18 @@ export default function Dashboard() {
             })
           }),
         
-        // Refresh recent events
+        // Refresh events and filter for enrolled events
         apiClient.getAvailableEvents()
-          .then(response => setRecentEvents(response.data.slice(0, 3)))
+          .then(response => {
+            console.log('Refreshing - All events:', response.data)
+            // Filter events where the user is enrolled
+            const enrolledEvents = response.data.filter(event => {
+              console.log(`Refresh - Event ${event.event_name}: is_enrolled=${event.is_enrolled}, can_enroll=${event.can_enroll}`)
+              return event.is_enrolled === true
+            });
+            console.log('Refreshing - Enrolled events:', enrolledEvents)
+            setRecentEvents(enrolledEvents.slice(0, 3));
+          })
           .catch(error => {
             console.error('Error refreshing events:', error)
             setRecentEvents([])
@@ -444,37 +472,47 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Calendar className="h-6 w-6 text-green-700" />
-                  Recent Events
+                  My Enrolled Events
                 </CardTitle>
                 <CardDescription>
-                  Your upcoming and recent plogging events
+                  Events you've enrolled in
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {recentEvents.length > 0 ? (
                   <div className="space-y-4">
-                    {recentEvents.map((event) => (
-                      <div key={event.event_id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                        <div>
-                          <h4 className="font-semibold text-lg text-gray-800">{event.event_name}</h4>
-                          <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                            <MapPin className="h-4 w-4 text-green-500" />
-                            {event.location_name}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(event.event_date).toLocaleDateString()}
-                          </p>
+                    {recentEvents.map((event) => {
+                      return (
+                        <div key={event.event_id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                          <div>
+                            <h4 className="font-semibold text-lg text-gray-800">{event.event_name}</h4>
+                            <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                              <MapPin className="h-4 w-4 text-green-500" />
+                              {event.location_name}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(event.event_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <Badge variant="secondary" className="px-3 py-1 text-sm">
+                              {event.status}
+                            </Badge>
+                            <Badge variant="outline" className="px-3 py-1 text-xs text-green-700 border-green-300">
+                              {event.enrollment_status || 'Enrolled'}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="px-3 py-1 text-sm">
-                          {event.status}
-                        </Badge>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 text-lg">No recent events</p>
+                    <p className="text-gray-600 text-lg">No enrolled events</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Browse available events and enroll to get started!
+                    </p>
                     <Button className="mt-6 px-6 py-3 text-base" variant="outline" asChild>
                       <Link to="/events">Browse Events</Link>
                     </Button>

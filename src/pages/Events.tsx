@@ -20,7 +20,22 @@ export default function Events() {
         setError('')
         
         const response = await apiClient.getAvailableEvents()
-        setEvents(response.data)
+        const eventsData = response.data
+        
+        // Get stored enrollments from localStorage
+        const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+        
+        // Update events with local enrollment status
+        const updatedEvents = eventsData.map(event => {
+          const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
+          return {
+            ...event,
+            is_enrolled: event.is_enrolled || isLocallyEnrolled,
+            can_enroll: event.can_enroll !== false && !isLocallyEnrolled && event.is_enrolled !== true
+          }
+        })
+        
+        setEvents(updatedEvents)
       } catch (err: any) {
         console.error('Error fetching events:', err)
         setError('Events are temporarily unavailable. Please try again later.')
@@ -56,7 +71,7 @@ export default function Events() {
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
       
-      // Handle specific error cases
+      // Handle specific error cases with more context
       let errorMessage = 'Unable to enroll in event. Please try again later.'
       let errorTitle = 'Enrollment Failed'
       
@@ -66,9 +81,29 @@ export default function Events() {
       } else if (error.message?.includes('Already enrolled')) {
         errorTitle = 'Already Enrolled'
         errorMessage = 'You are already enrolled in this event. Check your dashboard for enrollment details.'
+        // Update the event to reflect enrollment status
+        setEvents(prev => prev.map(e => 
+          e.event_id === eventId 
+            ? { ...e, is_enrolled: true, can_enroll: false }
+            : e
+        ))
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
         errorTitle = 'Event Full'
         errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
+        // Update the event to reflect unavailability
+        setEvents(prev => prev.map(e => 
+          e.event_id === eventId 
+            ? { ...e, can_enroll: false }
+            : e
+        ))
+      } else if (error.message?.includes('not available') || error.message?.includes('not open')) {
+        errorTitle = 'Enrollment Closed'
+        errorMessage = 'Enrollment for this event is currently closed.'
+        setEvents(prev => prev.map(e => 
+          e.event_id === eventId 
+            ? { ...e, can_enroll: false }
+            : e
+        ))
       }
       
       // Show error toast
@@ -102,13 +137,9 @@ export default function Events() {
     })
   }
 
-  // Helper function to determine button state and text
+  // Helper function to determine button state and text based on backend data
   const getButtonState = (event: Event) => {
     const isEnrolling = enrollingEvents.has(event.event_id)
-    const isUpcoming = event.status === 'Active' || event.status === 'upcoming'
-    const eventDate = new Date(event.event_date)
-    const now = new Date()
-    const isPastEvent = eventDate < now
     
     if (isEnrolling) {
       return {
@@ -119,7 +150,28 @@ export default function Events() {
       }
     }
     
-    if (isPastEvent) {
+    // Use backend enrollment status if available
+    if (event.is_enrolled === true) {
+      return {
+        disabled: true,
+        text: 'Already Enrolled',
+        variant: 'secondary' as const,
+        icon: <CheckCircle className="h-4 w-4 ml-2 flex-shrink-0" />
+      }
+    }
+    
+    // Use backend availability status if available
+    if (event.can_enroll === false) {
+      return {
+        disabled: true,
+        text: event.status === 'completed' ? 'Event Ended' : 'Not Available',
+        variant: 'secondary' as const,
+        icon: null
+      }
+    }
+    
+    // Fallback to basic status check
+    if (event.status && (event.status.toLowerCase() === 'completed' || event.status.toLowerCase() === 'cancelled')) {
       return {
         disabled: true,
         text: 'Event Ended',
@@ -128,15 +180,7 @@ export default function Events() {
       }
     }
     
-    if (!isUpcoming) {
-      return {
-        disabled: true,
-        text: 'Not Available',
-        variant: 'secondary' as const,
-        icon: null
-      }
-    }
-    
+    // Default enrollable state
     return {
       disabled: false,
       text: 'Enroll Now',

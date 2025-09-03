@@ -119,6 +119,11 @@ export interface Event {
   max_volunteers: number;
   status: string;
   qr_code_path?: string;
+  // Enrollment information that may be returned for volunteers
+  is_enrolled?: boolean;
+  enrollment_status?: string;
+  can_enroll?: boolean;
+  enrollment_id?: number;
 }
 
 export interface Badge {
@@ -200,6 +205,8 @@ class ApiClient {
   clearToken() {
     this.token = null;
     localStorage.removeItem('token');
+    // Clear user-specific data on logout
+    localStorage.removeItem('userEnrollments');
   }
 
   // Health Check
