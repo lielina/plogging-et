@@ -720,26 +720,32 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     {recentEvents.map((event) => {
                       return (
-                        <div key={event.event_id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                          <div>
-                            <h4 className="font-semibold text-lg text-gray-800">{event.event_name}</h4>
-                            <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                              <MapPin className="h-4 w-4 text-green-500" />
-                              {event.location_name}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(event.event_date).toLocaleDateString()}
-                            </p>
+                        <Link 
+                          to={`/events/${event.event_id}`} 
+                          key={event.event_id} 
+                          className="block"
+                        >
+                          <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer">
+                            <div>
+                              <h4 className="font-semibold text-lg text-gray-800">{event.event_name}</h4>
+                              <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                <MapPin className="h-4 w-4 text-green-500" />
+                                {event.location_name}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(event.event_date).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <Badge variant="secondary" className="px-3 py-1 text-sm">
+                                {event.status}
+                              </Badge>
+                              <Badge variant="outline" className="px-3 py-1 text-xs text-green-700 border-green-300">
+                                {event.enrollment_status || 'Enrolled'}
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <Badge variant="secondary" className="px-3 py-1 text-sm">
-                              {event.status}
-                            </Badge>
-                            <Badge variant="outline" className="px-3 py-1 text-xs text-green-700 border-green-300">
-                              {event.enrollment_status || 'Enrolled'}
-                            </Badge>
-                          </div>
-                        </div>
+                        </Link>
                       );
                     })}
                   </div>

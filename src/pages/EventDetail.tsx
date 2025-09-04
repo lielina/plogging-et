@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { apiClient, Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -72,6 +73,7 @@ interface EventDetailData extends Event {
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
+  const { user, isAdmin } = useAuth()
   const [event, setEvent] = useState<EventDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -79,6 +81,8 @@ export default function EventDetail() {
   const [isAdminScannerOpen, setIsAdminScannerOpen] = useState(false)
   const [isManualEnrollmentOpen, setIsManualEnrollmentOpen] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
+  const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
+  const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false)
   const [scanResult, setScanResult] = useState('')
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
   const [copied, setCopied] = useState(false)
@@ -279,6 +283,188 @@ ${description}
     }
   }
 
+  // User Check-in Function
+  const handleUserCheckIn = async (qrData: string) => {
+    try {
+      // Parse QR data (format: event:eventId)
+      const parts = qrData.split(':')
+      if (parts.length === 2 && parts[0] === 'event') {
+        const scannedEventId = parseInt(parts[1])
+        
+        if (scannedEventId === parseInt(eventId!)) {
+          // Get user ID based on user type
+          let userId = ''
+          if (user && 'volunteer_id' in user) {
+            userId = `volunteer:${user.volunteer_id}`
+          } else if (user && 'admin_id' in user) {
+            userId = `admin:${user.admin_id}`
+          }
+          
+          if (!userId) {
+            throw new Error('User not authenticated')
+          }
+          
+          // Perform check-in for the current user
+          await apiClient.checkIn(scannedEventId, userId)
+          setScanResult('Check-in successful!')
+          
+          // Refresh event data to show updated attendance
+          const response = await apiClient.getEventDetails(parseInt(eventId!))
+          setEvent(response.data as EventDetailData)
+          
+          toast({
+            title: "Check-in Successful",
+            description: "You have been successfully checked in to this event.",
+          })
+        } else {
+          setScanResult('Invalid event QR code')
+        }
+      } else {
+        setScanResult('Invalid QR code format')
+      }
+    } catch (err: any) {
+      setScanResult(err.message || 'Check-in failed')
+      toast({
+        title: "Check-in Failed",
+        description: err.message || "Failed to check in to the event.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // User Check-out Function
+  const handleUserCheckOut = async (qrData: string) => {
+    try {
+      // Parse QR data (format: event:eventId)
+      const parts = qrData.split(':')
+      if (parts.length === 2 && parts[0] === 'event') {
+        const scannedEventId = parseInt(parts[1])
+        
+        if (scannedEventId === parseInt(eventId!)) {
+          // Get user ID based on user type
+          let userId = ''
+          if (user && 'volunteer_id' in user) {
+            userId = `volunteer:${user.volunteer_id}`
+          } else if (user && 'admin_id' in user) {
+            userId = `admin:${user.admin_id}`
+          }
+          
+          if (!userId) {
+            throw new Error('User not authenticated')
+          }
+          
+          // Perform check-out for the current user
+          await apiClient.checkOut(scannedEventId, userId)
+          setScanResult('Check-out successful!')
+          
+          // Refresh event data to show updated attendance
+          const response = await apiClient.getEventDetails(parseInt(eventId!))
+          setEvent(response.data as EventDetailData)
+          
+          toast({
+            title: "Check-out Successful",
+            description: "You have been successfully checked out from this event.",
+          })
+        } else {
+          setScanResult('Invalid event QR code')
+        }
+      } else {
+        setScanResult('Invalid QR code format')
+      }
+    } catch (err: any) {
+      setScanResult(err.message || 'Check-out failed')
+      toast({
+        title: "Check-out Failed",
+        description: err.message || "Failed to check out from the event.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Admin Check-in Function
+  const handleAdminCheckIn = async (qrData: string) => {
+    try {
+      // Parse QR data (format: volunteer:volunteerId)
+      const parts = qrData.split(':')
+      if (parts.length === 2 && parts[0] === 'volunteer') {
+        const volunteerId = parseInt(parts[1])
+        
+        // Check if volunteer is enrolled in the event
+        const isEnrolled = event?.enrollments.some(enrollment => 
+          enrollment.volunteer.volunteer_id === volunteerId
+        )
+        
+        if (isEnrolled) {
+          // Perform check-in for the volunteer
+          await apiClient.checkIn(parseInt(eventId!), qrData)
+          setScanResult(`Volunteer ${volunteerId} checked in successfully!`)
+          
+          // Refresh event data to show updated attendance
+          const response = await apiClient.getEventDetails(parseInt(eventId!))
+          setEvent(response.data as EventDetailData)
+          
+          toast({
+            title: "Check-in Successful",
+            description: `Volunteer has been successfully checked in to this event.`,
+          })
+        } else {
+          setScanResult(`Volunteer ${volunteerId} is not enrolled in this event`)
+        }
+      } else {
+        setScanResult('Invalid volunteer badge QR code')
+      }
+    } catch (err: any) {
+      setScanResult(err.message || 'Check-in failed')
+      toast({
+        title: "Check-in Failed",
+        description: err.message || "Failed to check in the volunteer.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Admin Check-out Function
+  const handleAdminCheckOut = async (qrData: string) => {
+    try {
+      // Parse QR data (format: volunteer:volunteerId)
+      const parts = qrData.split(':')
+      if (parts.length === 2 && parts[0] === 'volunteer') {
+        const volunteerId = parseInt(parts[1])
+        
+        // Check if volunteer is enrolled in the event
+        const isEnrolled = event?.enrollments.some(enrollment => 
+          enrollment.volunteer.volunteer_id === volunteerId
+        )
+        
+        if (isEnrolled) {
+          // Perform check-out for the volunteer
+          await apiClient.checkOut(parseInt(eventId!), qrData)
+          setScanResult(`Volunteer ${volunteerId} checked out successfully!`)
+          
+          // Refresh event data to show updated attendance
+          const response = await apiClient.getEventDetails(parseInt(eventId!))
+          setEvent(response.data as EventDetailData)
+          
+          toast({
+            title: "Check-out Successful",
+            description: `Volunteer has been successfully checked out from this event.`,
+          })
+        } else {
+          setScanResult(`Volunteer ${volunteerId} is not enrolled in this event`)
+        }
+      } else {
+        setScanResult('Invalid volunteer badge QR code')
+      }
+    } catch (err: any) {
+      setScanResult(err.message || 'Check-out failed')
+      toast({
+        title: "Check-out Failed",
+        description: err.message || "Failed to check out the volunteer.",
+        variant: "destructive",
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -350,23 +536,45 @@ ${description}
                 <p className="text-gray-600 text-lg">{event.location_name}</p>
               </div>
               <div className="flex gap-3">
-                
-                <Button 
-                  variant="outline"
-                  onClick={() => setIsAdminScannerOpen(true)}
-                  className="bg-white hover:bg-gray-50"
-                >
-                  <Scan className="h-4 w-4 mr-2" />
-                  Scan Badge
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setIsManualEnrollmentOpen(true)}
-                  className="bg-white hover:bg-gray-50"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Manual Enroll
-                </Button>
+                {!isAdmin ? (
+                  <>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsCheckInScannerOpen(true)}
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      Check In
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsCheckOutScannerOpen(true)}
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      Check Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsAdminScannerOpen(true)}
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      Scan Badge
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsManualEnrollmentOpen(true)}
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Manual Enroll
+                    </Button>
+                  </>
+                )}
                 <Button 
                   variant="outline"
                   onClick={() => setIsShareDialogOpen(true)}
@@ -375,13 +583,15 @@ ${description}
                   <Share2 className="h-4 w-4 mr-2" />
                   Share
                 </Button>
-                <Button 
-                  onClick={() => navigate(`/admin/events/${eventId}/edit`)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Event
-                </Button>
+                {isAdmin && (
+                  <Button 
+                    onClick={() => navigate(`/admin/events/${eventId}/edit`)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Event
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -668,6 +878,24 @@ ${description}
           </div>
         </div>
       )}
+
+      {/* User Check-in QR Scanner */}
+      <QRScanner
+        isOpen={isCheckInScannerOpen}
+        onClose={() => setIsCheckInScannerOpen(false)}
+        onScan={handleUserCheckIn}
+        title="Event Check-in"
+        description="Scan the event QR code to check in"
+      />
+
+      {/* User Check-out QR Scanner */}
+      <QRScanner
+        isOpen={isCheckOutScannerOpen}
+        onClose={() => setIsCheckOutScannerOpen(false)}
+        onScan={handleUserCheckOut}
+        title="Event Check-out"
+        description="Scan the event QR code to check out"
+      />
 
       {/* Volunteer QR Scanner */}
       <QRScanner

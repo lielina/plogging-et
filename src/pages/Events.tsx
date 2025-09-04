@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { apiClient, Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -290,94 +291,99 @@ export default function Events() {
       {events.length > 0 ? (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {events.map((event) => (
-            <Card key={event.event_id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between flex-wrap gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base sm:text-lg mb-2 leading-tight">{event.event_name}</CardTitle>
-                    <CardDescription className="line-clamp-2 text-sm">
-                      {event.description}
-                    </CardDescription>
+            <Link to={`/events/${event.event_id}`} key={event.event_id} className="block">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between flex-wrap gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base sm:text-lg mb-2 leading-tight">{event.event_name}</CardTitle>
+                      <CardDescription className="line-clamp-2 text-sm">
+                        {event.description}
+                      </CardDescription>
+                    </div>
+                    <Badge 
+                      variant={event.status === 'Active' ? 'default' : 'secondary'}
+                      className="ml-2 flex-shrink-0"
+                    >
+                      {event.status}
+                    </Badge>
                   </div>
-                  <Badge 
-                    variant={event.status === 'Active' ? 'default' : 'secondary'}
-                    className="ml-2 flex-shrink-0"
-                  >
-                    {event.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  {/* Date and Time */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{formatDate(event.event_date)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">
-                      {formatTime(event.start_time)} - {formatTime(event.end_time)}
-                    </span>
-                  </div>
-
-                  {/* Location */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 flex-shrink-0" />
-                    <span className="line-clamp-1">{event.location_name}</span>
-                  </div>
-
-                  {/* Duration and Capacity */}
-                  <div className="flex items-center justify-between text-sm gap-4">
-                    <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    {/* Date and Time */}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{formatDate(event.event_date)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{event.estimated_duration_hours} hours</span>
+                      <span className="truncate">
+                        {formatTime(event.start_time)} - {formatTime(event.end_time)}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 min-w-0">
-                      <Users className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">Max {event.max_volunteers}</span>
-                    </div>
-                  </div>
 
-                  {/* Enrollment Status (if enrolled) */}
-                  {(() => {
-                    const buttonState = getButtonState(event)
-                    if (buttonState.showDetails && buttonState.status) {
-                      return (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                            <span className="text-sm font-medium text-green-800">Enrollment Status</span>
+                    {/* Location */}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <span className="line-clamp-1">{event.location_name}</span>
+                    </div>
+
+                    {/* Duration and Capacity */}
+                    <div className="flex items-center justify-between text-sm gap-4">
+                      <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                        <Clock className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{event.estimated_duration_hours} hours</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                        <Users className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">Max {event.max_volunteers}</span>
+                      </div>
+                    </div>
+
+                    {/* Enrollment Status (if enrolled) */}
+                    {(() => {
+                      const buttonState = getButtonState(event)
+                      if (buttonState.showDetails && buttonState.status) {
+                        return (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                              <span className="text-sm font-medium text-green-800">Enrollment Status</span>
+                            </div>
+                            <p className="text-sm text-green-700 mt-1">{buttonState.status}</p>
+                            <p className="text-xs text-green-600 mt-1">
+                              Check your dashboard for more details and event updates.
+                            </p>
                           </div>
-                          <p className="text-sm text-green-700 mt-1">{buttonState.status}</p>
-                          <p className="text-xs text-green-600 mt-1">
-                            Check your dashboard for more details and event updates.
-                          </p>
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
+                        )
+                      }
+                      return null
+                    })()}
 
-                  {/* Action Button */}
-                  {(() => {
-                    const buttonState = getButtonState(event)
-                    return (
-                      <Button 
-                        className="w-full mt-4 text-sm sm:text-base" 
-                        variant={buttonState.variant}
-                        disabled={buttonState.disabled}
-                        onClick={() => !buttonState.disabled && handleEnroll(event.event_id)}
-                      >
-                        <span>{buttonState.text}</span>
-                        {buttonState.icon}
-                      </Button>
-                    )
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
+                    {/* Action Button */}
+                    {(() => {
+                      const buttonState = getButtonState(event)
+                      return (
+                        <Button 
+                          className="w-full mt-4 text-sm sm:text-base" 
+                          variant={buttonState.variant}
+                          disabled={buttonState.disabled}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            !buttonState.disabled && handleEnroll(event.event_id)
+                          }}
+                        >
+                          <span>{buttonState.text}</span>
+                          {buttonState.icon}
+                        </Button>
+                      )
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       ) : (

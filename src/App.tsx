@@ -49,6 +49,7 @@ function AppRoutes() {
         <Route element={<Layout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/about" element={<div>About Page</div>} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/gallery" element={<div>Gallery Page</div>} />
