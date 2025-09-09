@@ -70,10 +70,39 @@ export default function AdminEvents() {
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // Validate required fields
+      if (!formData.event_name.trim()) {
+        throw new Error('Event name is required')
+      }
+      if (!formData.event_date) {
+        throw new Error('Event date is required')
+      }
+      if (!formData.start_time) {
+        throw new Error('Start time is required')
+      }
+      if (!formData.end_time) {
+        throw new Error('End time is required')
+      }
+      if (!formData.location_name.trim()) {
+        throw new Error('Location name is required')
+      }
+      if (formData.latitude === 0 && formData.longitude === 0) {
+        throw new Error('Please select a location on the map')
+      }
+      if (formData.max_volunteers <= 0) {
+        throw new Error('Maximum volunteers must be greater than 0')
+      }
+      if (formData.estimated_duration_hours <= 0) {
+        throw new Error('Estimated duration must be greater than 0')
+      }
+
       await apiClient.createEvent(formData)
       setIsCreateDialogOpen(false)
       resetForm()
       fetchEvents()
+      
+      // Show success message
+      setError('') // Clear any previous errors
     } catch (error: any) {
       setError(error.message || 'Failed to create event')
     }
@@ -139,6 +168,11 @@ export default function AdminEvents() {
       max_volunteers: 0,
     })
     setSelectedEvent(null)
+  }
+
+  // Add a function to check if location is selected
+  const isLocationSelected = () => {
+    return formData.latitude !== 0 || formData.longitude !== 0;
   }
 
   const formatDate = (dateString: string) => {
@@ -261,11 +295,13 @@ export default function AdminEvents() {
               <div className="space-y-2">
                 <Label>Pick Location on Map</Label>
                 <div className="text-sm text-gray-600 mb-2">
-                  Click on the map to select the event location
+                  Click on the map or search for an address to select the event location
                 </div>
                 <Map
                   height="300px"
                   isLocationPicker={true}
+                  showSearch={true}
+                  searchCountry="Ethiopia"
                   onLocationSelect={(lat, lng) => {
                     setFormData({
                       ...formData,
@@ -275,6 +311,11 @@ export default function AdminEvents() {
                   }}
                   selectedLocation={formData.latitude && formData.longitude ? [formData.latitude, formData.longitude] : null}
                 />
+                {!isLocationSelected() && (
+                  <div className="text-sm text-red-600 mt-1">
+                    Please click on the map or search for an address to select a location
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div className="space-y-1">
                     <Label htmlFor="latitude" className="text-sm">Latitude</Label>
@@ -283,7 +324,7 @@ export default function AdminEvents() {
                       type="number"
                       step="any"
                       value={formData.latitude}
-                      onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value) || 0})}
                       placeholder="Latitude"
                     />
                   </div>
@@ -294,7 +335,7 @@ export default function AdminEvents() {
                       type="number"
                       step="any"
                       value={formData.longitude}
-                      onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value) || 0})}
                       placeholder="Longitude"
                     />
                   </div>

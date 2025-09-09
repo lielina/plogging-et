@@ -18,6 +18,7 @@ export default function Login() {
   const [isVolunteerLogin, setIsVolunteerLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(""); // For admin login
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,21 +28,31 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleVolunteerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      await login(email, password, !isVolunteerLogin);
-      // Redirect based on user type
-      if (!isVolunteerLogin) {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
+      await login(email, password, false); // false for volunteer
+      navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Volunteer login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await login(username, password, true); // true for admin
+      navigate("/admin");
+    } catch (err: any) {
+      setError(err.message || "Admin login failed");
     } finally {
       setIsLoading(false);
     }
@@ -282,7 +293,7 @@ export default function Login() {
               </TabsList>
 
               <TabsContent value="volunteer" className="space-y-4">
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleVolunteerLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -348,15 +359,15 @@ export default function Login() {
               </TabsContent>
 
               <TabsContent value="admin" className="space-y-4">
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleAdminLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="admin-email">Username</Label>
+                    <Label htmlFor="admin-username">Username</Label>
                     <Input
-                      id="admin-email"
+                      id="admin-username"
                       type="text"
                       placeholder="Enter your username"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       required
                     />
                   </div>

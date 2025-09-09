@@ -129,7 +129,7 @@ export default function ManualEnrollmentDialog({
             <Label htmlFor="search-volunteer">Search Volunteers</Label>
             <Input
               id="search-volunteer"
-              placeholder="Search by name or email..."
+              placeholder="Search by name, email, or phone number..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value)
@@ -209,7 +209,7 @@ export default function ManualEnrollmentDialog({
           )}
 
           <div className="text-xs text-gray-500">
-            <p>• Search for volunteers by name or email</p>
+            <p>• Search for volunteers by name, email, or phone number</p>
             <p>• Click on a search result to select the volunteer</p>
             <p>• The volunteer will be enrolled in this event</p>
           </div>

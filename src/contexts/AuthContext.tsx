@@ -4,7 +4,7 @@ import { apiClient, Volunteer, Admin } from '@/lib/api';
 interface AuthContextType {
   user: Volunteer | Admin | null;
   isLoading: boolean;
-  login: (email: string, password: string, isAdmin?: boolean) => Promise<void>;
+  login: (identifier: string, password: string, isAdmin?: boolean) => Promise<void>;
   register: (data: {
     first_name: string;
     last_name: string;
@@ -92,16 +92,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const login = async (email: string, password: string, isAdmin = false) => {
+  const login = async (identifier: string, password: string, isAdmin = false) => {
     try {
       setIsLoading(true);
       let response;
       
       if (isAdmin) {
-        response = await apiClient.adminLogin(email, password);
+        response = await apiClient.adminLogin(identifier, password);
         localStorage.setItem('userType', 'admin');
       } else {
-        response = await apiClient.volunteerLogin(email, password);
+        response = await apiClient.volunteerLogin(identifier, password);
         localStorage.setItem('userType', 'volunteer');
       }
 
@@ -167,4 +167,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};

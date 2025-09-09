@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Camera, X, CheckCircle, AlertCircle } from 'lucide-react'
+import jsQR from 'jsqr'
 
 interface QRScannerProps {
   onScan: (result: string) => void
@@ -18,11 +19,17 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
   const [success, setSuccess] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (isOpen) {
       startScanning()
     } else {
+      stopScanning()
+    }
+    
+    return () => {
       stopScanning()
     }
   }, [isOpen])
@@ -45,6 +52,9 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
         videoRef.current.srcObject = stream
         streamRef.current = stream
       }
+      
+      // Start scanning for QR codes
+      scanQRCode()
     } catch (err: any) {
       console.error('Camera access error:', err)
       if (err.name === 'NotAllowedError') {
@@ -61,11 +71,52 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
   }
 
   const stopScanning = () => {
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current)
+      scanTimeoutRef.current = null
+    }
+    
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
     }
     setIsScanning(false)
+  }
+
+  const scanQRCode = () => {
+    if (!isScanning || !videoRef.current || videoRef.current.readyState !== 4) {
+      if (isScanning) {
+        scanTimeoutRef.current = setTimeout(scanQRCode, 100)
+      }
+      return
+    }
+
+    const video = videoRef.current
+    const canvas = canvasRef.current || document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    
+    if (!context) {
+      if (isScanning) {
+        scanTimeoutRef.current = setTimeout(scanQRCode, 100)
+      }
+      return
+    }
+
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height)
+    
+    if (code) {
+      handleScan(code.data)
+    } else {
+      // Continue scanning
+      if (isScanning) {
+        scanTimeoutRef.current = setTimeout(scanQRCode, 100)
+      }
+    }
   }
 
   const handleScan = (result: string) => {
@@ -79,8 +130,6 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
     }, 1500)
   }
 
-  // Simulate QR code scanning for demo purposes
-  // In a real implementation, you would use a library like jsQR or zxing
   const simulateScan = () => {
     // Generate demo QR data based on the title
     let demoQRData = 'volunteer:123'
@@ -94,6 +143,9 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {/* Hidden canvas for QR code processing */}
+      <canvas ref={canvasRef} className="hidden" />
+      
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -113,6 +165,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
                 autoPlay
                 playsInline
                 className="w-full h-full object-cover"
+                onLoadedMetadata={scanQRCode}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -192,4 +245,4 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
       </Card>
     </div>
   )
-} 
+}

@@ -670,46 +670,6 @@ ${description}
             </CardContent>
           </Card>
 
-          {/* Location */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Location</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{event.location_name}</p>
-                  <p className="text-sm text-gray-500">Event Location</p>
-                </div>
-              </div>
-              
-              {/* Map showing event location */}
-              <div className="rounded-xl overflow-hidden border shadow-sm">
-                <Map
-                  height="300px"
-                  center={[latitude, longitude]}
-                  zoom={15}
-                  selectedLocation={[latitude, longitude]}
-                  isLocationPicker={false}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <p className="text-sm font-medium text-gray-600">Latitude</p>
-                  <p className="text-lg font-mono text-gray-900">{latitude}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-gray-600">Longitude</p>
-                  <p className="text-lg font-mono text-gray-900">{longitude}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Event QR Code */}
           <Card className="shadow-sm border-0 bg-white">
             <CardHeader className="pb-4">
@@ -752,6 +712,47 @@ ${description}
               </div>
             </CardContent>
           </Card>
+
+          {/* Location */}
+          <Card className="shadow-sm border-0 bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900">Location</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{event.location_name}</p>
+                  <p className="text-sm text-gray-500">Event Location</p>
+                </div>
+              </div>
+              
+              {/* Map showing event location */}
+              <div className="rounded-xl overflow-hidden border shadow-sm">
+                <Map
+                  height="300px"
+                  center={[latitude, longitude]}
+                  zoom={15}
+                  selectedLocation={[latitude, longitude]}
+                  isLocationPicker={false}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-600">Latitude</p>
+                  <p className="text-lg font-mono text-gray-900">{latitude}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-600">Longitude</p>
+                  <p className="text-lg font-mono text-gray-900">{longitude}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Sidebar */}
