@@ -15,7 +15,7 @@ export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(8).fill(null));  // Initialize with nulls for 8 sections
 
   const faqItems = [
     {
@@ -103,7 +103,7 @@ export default function LandingPage() {
       
 
       {/* Hero Section */}
-      <section className="relative h-screen w-full flex items-center text-white overflow-hidden">
+      <section className="relative h-[75vh] w-full flex items-center text-white overflow-hidden">
         {/* Background Image with Black Overlay */}
         <div className="absolute inset-0 z-0">
           <div
@@ -127,29 +127,31 @@ export default function LandingPage() {
         </div>
 
         {/* Content - positioned above backgrounds */}
-        <main className="relative z-20 w-full flex flex-col items-center gap-20 pb-0">
-          <div className="grid md:grid-cols-2 w-full text-white font-[serf] py-10 pl-5">
-            <div className="flex flex-col items-center justify-around w-full gap-10">
-              <h1 className="md:text-7xl text-4xl font-normal text-left text-wrap">
-                Welcome to <span className="flex flex-col">Plogging Ethiopia</span>
+        <main className="relative z-20 w-full flex flex-col items-center gap-12 pb-0">
+          <div className="grid md:grid-cols-2 w-full text-white py-10 pl-5">
+            <div className="flex flex-col items-start justify-center w-full h-full gap-8">
+              <h1 className="md:text-6xl text-3xl font-bold text-left">
+                Welcome to Plogging Ethiopia
               </h1>
-              <p className="italic text-3xl">
-                Stride with purpose, and cleanse with passion!
+              <p className="italic text-2xl mb-6">
+                Stride with purpose, cleanse with passion
               </p>
-              <div className="flex items-center justify-between">
-                <button className="bg-green-500 hover:bg-green-700 text-white h-fit font-light py-2 px-4 rounded self-start">
-                  <a href="/#aboutus">Read More +</a>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button className="bg-green-500 hover:bg-green-700 text-white font-light py-2 px-6 rounded self-start">
+                  <a href="/#aboutus">Get Started</a>
                 </button>
-                <img
-                  className="w-1/2 rounded-full pl-2 pt-1 bg-green-500"
-                  alt="Plogging Ethiopia"
-                  src="/logo.png"
-                />
+                <div className="w-1/2 sm:w-1/3 rounded-full overflow-hidden">
+                  <img
+                    className="w-full"
+                    alt="Plogging Ethiopia"
+                    src="/logo.png"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="relative z-20">
-              <img src="/header-left.png" alt="Plogging illustration" />
+            <div className="relative z-20 flex items-center justify-center">
+              <img src="/header-left.png" alt="Plogging illustration" className="max-h-[70vh] object-contain" />
             </div>
           </div>
         </main>
@@ -157,7 +159,7 @@ export default function LandingPage() {
 
       {/* Our Story Section with transition */}
       <section
-        ref={el => sectionRefs.current[0] = el}
+        ref={el => sectionRefs.current[0] = el as HTMLDivElement | null}
         className={`py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 transform ${
           visibleSections.has(0) 
             ? 'translate-y-0 opacity-100' 
@@ -206,7 +208,7 @@ export default function LandingPage() {
 
       {/* What is Plogging Section with transition */}
       <section
-        ref={el => sectionRefs.current[1] = el}
+        ref={el => sectionRefs.current[1] = el as HTMLDivElement | null}
         className={`py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-100 transform ${
           visibleSections.has(1)
             ? 'translate-y-0 opacity-100'
@@ -250,7 +252,7 @@ export default function LandingPage() {
 
       {/* Mission Section with transition */}
       <section
-        ref={el => sectionRefs.current[2] = el}
+        ref={el => sectionRefs.current[2] = el as HTMLDivElement | null}
         className={`py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 delay-200 transform ${
           visibleSections.has(2)
             ? 'translate-y-0 opacity-100'
@@ -297,7 +299,7 @@ export default function LandingPage() {
 
       {/* Our Impact Section with transition */}
       <section
-        ref={el => sectionRefs.current[3] = el}
+        ref={el => sectionRefs.current[3] = el as HTMLDivElement | null}
         className={`py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-300 transform ${
           visibleSections.has(3)
             ? 'translate-y-0 opacity-100'
@@ -342,7 +344,7 @@ export default function LandingPage() {
 
       {/* About Us Section with transition */}
       <section
-        ref={el => sectionRefs.current[4] = el}
+        ref={el => sectionRefs.current[4] = el as HTMLDivElement | null}
         id="aboutus"
         className={`relative grid md:grid-cols-2 w-[90%] mx-auto md:h-[85vh] shadow-lg transition-all duration-700 delay-400 transform ${
           visibleSections.has(4)
@@ -387,7 +389,7 @@ export default function LandingPage() {
 
       {/* Landing Form Section with transition */}
       <section
-        ref={el => sectionRefs.current[5] = el}
+        ref={el => sectionRefs.current[5] = el as HTMLDivElement | null}
         className={`w-full grid place-items-center mt-20 landing-form transition-all duration-700 delay-500 transform ${
           visibleSections.has(5)
             ? 'translate-y-0 opacity-100'
@@ -399,7 +401,7 @@ export default function LandingPage() {
 
       {/* Message From The Founder Section with transition */}
       <section
-        ref={el => sectionRefs.current[6] = el}
+        ref={el => sectionRefs.current[6] = el as HTMLDivElement | null}
         className={`founder-message grid md:grid-cols-2 place-items-center w-[90%] mx-auto gap-6 shadow-lg transition-all duration-700 delay-600 transform ${
           visibleSections.has(6)
             ? 'translate-y-0 opacity-100'
@@ -454,7 +456,7 @@ export default function LandingPage() {
 
       {/* FAQ Section with transition */}
       <section
-        ref={el => sectionRefs.current[7] = el}
+        ref={el => sectionRefs.current[7] = el as HTMLDivElement | null}
         className={`w-full flex flex-col items-center mt-20 transition-all duration-700 delay-700 transform ${
           visibleSections.has(7)
             ? 'translate-y-0 opacity-100'
@@ -468,7 +470,7 @@ export default function LandingPage() {
             <div key={index} className="w-full text-left">
               <button
                 onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                className="cursor-pointer bg-green-500/20 w-full px-5 py-4 flex justify-between items-center"
+                className="cursor-pointer bg-green-500/20 w-full px-5 py-4 flex justify-between items-center mb-4"
               >
                 <span className="font-none text-lg text-gray-800">
                   {item.question}
