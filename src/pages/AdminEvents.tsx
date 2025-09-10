@@ -531,7 +531,7 @@ export default function AdminEvents() {
                   </div>
                   
                   {/* Small map showing event location */}
-                  <div className="rounded-md overflow-hidden border h-24">
+                  <div className="rounded-md overflow-hidden border h-24 flex items-center justify-center bg-gray-100">
                     <Map
                       height="100%"
                       center={[typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude, typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude]}
@@ -539,6 +539,10 @@ export default function AdminEvents() {
                       selectedLocation={[typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude, typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude]}
                       isLocationPicker={false}
                     />
+                    {/* Fallback content in case map doesn't load */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <MapPin className="h-6 w-6 text-gray-400" />
+                    </div>
                   </div>
                 </div>
 
