@@ -47,6 +47,9 @@ export default function AdminEvents() {
     estimated_duration_hours: 0,
     max_volunteers: 0,
   })
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [createSearchResults, setCreateSearchResults] = useState<any[]>([]);
+  const [editSearchResults, setEditSearchResults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEvents()
@@ -191,6 +194,82 @@ export default function AdminEvents() {
     })
   }
 
+  // Function to search for locations by name (for create event)
+  const searchCreateLocationByName = async (query: string) => {
+    if (!query.trim()) {
+      setCreateSearchResults([]);
+      return;
+    }
+
+    try {
+      // Add country restriction to the query
+      const searchQuery = ` ${query}, Ethiopia`;
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
+      
+      const results = await response.json();
+      setCreateSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setCreateSearchResults([]);
+    }
+  };
+
+  // Function to search for locations by name (for edit event)
+  const searchEditLocationByName = async (query: string) => {
+    if (!query.trim()) {
+      setEditSearchResults([]);
+      return;
+    }
+
+    try {
+      // Add country restriction to the query
+      const searchQuery = ` ${query}, Ethiopia`;
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
+      
+      const results = await response.json();
+      setEditSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setEditSearchResults([]);
+    }
+  };
+
+  // Function to select a location from search results (for create event)
+  const selectCreateLocationResult = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    
+    setFormData({
+      ...formData,
+      location_name: result.display_name,
+      latitude: lat,
+      longitude: lng
+    });
+    
+    setCreateSearchResults([]);
+  };
+
+  // Function to select a location from search results (for edit event)
+  const selectEditLocationResult = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    
+    setFormData({
+      ...formData,
+      location_name: result.display_name,
+      latitude: lat,
+      longitude: lng
+    });
+    
+    setEditSearchResults([]);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -225,7 +304,7 @@ export default function AdminEvents() {
                 Fill in the details for the new plogging event.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateEvent} className="space-y-4 flex-grow overflow-y-auto pr-2">
+            <form onSubmit={handleCreateEvent} className="space-y-4 flex-grow overflow-y-auto pr-2 pl-4 pr-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="event_name">Event Name</Label>
@@ -281,15 +360,40 @@ export default function AdminEvents() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="location_name">Location Name</Label>
                 <Input
                   id="location_name"
                   value={formData.location_name}
-                  onChange={(e) => setFormData({...formData, location_name: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, location_name: e.target.value});
+                    // Trigger search when typing in location name
+                    if (e.target.value.trim()) {
+                      searchCreateLocationByName(e.target.value);
+                    } else {
+                      setCreateSearchResults([]);
+                    }
+                  }}
                   placeholder="Enter location name"
                   required
                 />
+                {/* Search Results Dropdown */}
+                {createSearchResults.length > 0 && (
+                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto w-full">
+                    {createSearchResults.map((result, index) => (
+                      <div
+                        key={index}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        onClick={() => selectCreateLocationResult(result)}
+                      >
+                        <div className="font-medium text-sm">{result.display_name}</div>
+                        <div className="text-xs text-gray-500">
+                          {result.lat}, {result.lon}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -303,6 +407,7 @@ export default function AdminEvents() {
                   showSearch={true}
                   searchCountry="Ethiopia"
                   onLocationSelect={(lat, lng) => {
+                    // Also update the location name based on the selected coordinates
                     setFormData({
                       ...formData,
                       latitude: lat,
@@ -532,7 +637,7 @@ export default function AdminEvents() {
               Update the event details.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditEvent} className="space-y-4 flex-grow overflow-y-auto pr-2">
+          <form onSubmit={handleEditEvent} className="space-y-4 flex-grow overflow-y-auto pr-2 pl-4 pr-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_event_name">Event Name</Label>
@@ -588,26 +693,54 @@ export default function AdminEvents() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="edit_location_name">Location Name</Label>
               <Input
                 id="edit_location_name"
                 value={formData.location_name}
-                onChange={(e) => setFormData({...formData, location_name: e.target.value})}
+                onChange={(e) => {
+                  setFormData({...formData, location_name: e.target.value});
+                  // Trigger search when typing in location name
+                  if (e.target.value.trim()) {
+                    searchEditLocationByName(e.target.value);
+                  } else {
+                    setEditSearchResults([]);
+                  }
+                }}
                 placeholder="Enter location name"
                 required
               />
+              {/* Search Results Dropdown */}
+              {editSearchResults.length > 0 && (
+                <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto w-full">
+                  {editSearchResults.map((result, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      onClick={() => selectEditLocationResult(result)}
+                    >
+                      <div className="font-medium text-sm">{result.display_name}</div>
+                      <div className="text-xs text-gray-500">
+                        {result.lat}, {result.lon}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Pick Location on Map</Label>
               <div className="text-sm text-gray-600 mb-2">
-                Click on the map to select the event location
+                Click on the map or search for an address to select the event location
               </div>
               <Map
                 height="300px"
                 isLocationPicker={true}
+                showSearch={true}
+                searchCountry="Ethiopia"
                 onLocationSelect={(lat, lng) => {
+                  // Also update the location name based on the selected coordinates
                   setFormData({
                     ...formData,
                     latitude: lat,
