@@ -611,6 +611,49 @@ ${description}
             </CardContent>
           </Card>
 
+          {/* Event QR Code */}
+          <Card className="shadow-sm border-0 bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <QrCode className="h-6 w-6 text-green-600" />
+                Event QR Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center space-y-4">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 inline-block">
+                  {qrCodeDataUrl ? (
+                    <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center p-4 shadow-sm">
+                      <img 
+                        src={qrCodeDataUrl}
+                        alt="Event QR Code"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center shadow-sm">
+                      <div className="text-center">
+                        <QrCode className="h-16 w-16 text-green-400 mx-auto mb-2" />
+                        <p className="text-sm font-mono text-gray-600">Event ID: {event.event_id}</p>
+                        <p className="text-xs text-gray-500 mt-1">Generating QR code...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 font-medium">
+                    Volunteers can scan this QR code to check in to the event
+                  </p>
+                  <div className="inline-block px-3 py-1 bg-gray-100 rounded-full">
+                    <p className="text-xs text-gray-600 font-mono">
+                      QR Data: event:{event.event_id}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Date and Time */}
           <Card className="shadow-sm border-0 bg-white">
             <CardHeader className="pb-4">
@@ -665,49 +708,6 @@ ${description}
                   </div>
                   <p className="text-2xl font-bold text-purple-700">#{event.event_id}</p>
                   <p className="text-sm text-purple-600">Event ID</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Event QR Code */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <QrCode className="h-6 w-6 text-green-600" />
-                Event QR Code
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center space-y-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 inline-block">
-                  {qrCodeDataUrl ? (
-                    <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center p-4 shadow-sm">
-                      <img 
-                        src={qrCodeDataUrl}
-                        alt="Event QR Code"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center shadow-sm">
-                      <div className="text-center">
-                        <QrCode className="h-16 w-16 text-green-400 mx-auto mb-2" />
-                        <p className="text-sm font-mono text-gray-600">Event ID: {event.event_id}</p>
-                        <p className="text-xs text-gray-500 mt-1">Generating QR code...</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 font-medium">
-                    Volunteers can scan this QR code to check in to the event
-                  </p>
-                  <div className="inline-block px-3 py-1 bg-gray-100 rounded-full">
-                    <p className="text-xs text-gray-600 font-mono">
-                      QR Data: event:{event.event_id}
-                    </p>
-                  </div>
                 </div>
               </div>
             </CardContent>
