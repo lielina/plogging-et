@@ -522,37 +522,37 @@ ${description}
           </Button>
           
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-3xl font-bold text-gray-900">{event.event_name}</h1>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{event.event_name}</h1>
                   <Badge 
                     variant={event.status === 'Active' ? 'default' : 'secondary'}
-                    className="text-sm px-3 py-1"
+                    className="text-sm px-3 py-1 w-fit"
                   >
                     {event.status}
                   </Badge>
                 </div>
-                <p className="text-gray-600 text-lg">{event.location_name}</p>
+                <p className="text-gray-600 text-base sm:text-lg">{event.location_name}</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 {!isAdmin ? (
                   <>
                     <Button 
                       variant="outline"
                       onClick={() => setIsCheckInScannerOpen(true)}
-                      className="bg-white hover:bg-gray-50"
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
                     >
                       <Scan className="h-4 w-4 mr-2" />
-                      Check In
+                      <span className="whitespace-nowrap">Check In</span>
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => setIsCheckOutScannerOpen(true)}
-                      className="bg-white hover:bg-gray-50"
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
                     >
                       <Scan className="h-4 w-4 mr-2" />
-                      Check Out
+                      <span className="whitespace-nowrap">Check Out</span>
                     </Button>
                   </>
                 ) : (
@@ -560,36 +560,36 @@ ${description}
                     <Button 
                       variant="outline"
                       onClick={() => setIsAdminScannerOpen(true)}
-                      className="bg-white hover:bg-gray-50"
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
                     >
                       <Scan className="h-4 w-4 mr-2" />
-                      Scan Badge
+                      <span className="whitespace-nowrap">Scan Badge</span>
                     </Button>
                     <Button 
                       variant="outline"
                       onClick={() => setIsManualEnrollmentOpen(true)}
-                      className="bg-white hover:bg-gray-50"
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Manual Enroll
+                      <span className="whitespace-nowrap">Manual Enroll</span>
                     </Button>
                   </>
                 )}
                 <Button 
                   variant="outline"
                   onClick={() => setIsShareDialogOpen(true)}
-                  className="bg-white hover:bg-gray-50"
+                  className="bg-white hover:bg-gray-50 w-full sm:w-auto"
                 >
                   <Share2 className="h-4 w-4 mr-2" />
-                  Share
+                  <span className="whitespace-nowrap">Share</span>
                 </Button>
                 {isAdmin && (
                   <Button 
                     onClick={() => navigate(`/admin/events/${eventId}/edit`)}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit Event
+                    <span className="whitespace-nowrap">Edit Event</span>
                   </Button>
                 )}
               </div>
@@ -598,136 +598,137 @@ ${description}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Event Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Description */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{event.description}</p>
-            </CardContent>
-          </Card>
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Event Details */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Description */}
+            <Card className="shadow-sm border-0 bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Description</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{event.description}</p>
+              </CardContent>
+            </Card>
 
-          {/* Date and Time */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Date & Time</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{formatDate(event.event_date)}</p>
-                  <p className="text-sm text-gray-500">Event Date</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{formatTime(event.start_time)} - {formatTime(event.end_time)}</p>
-                  <p className="text-sm text-gray-500">Event Time</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Duration & Capacity */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Event Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Clock className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-green-700">{event.estimated_duration_hours}</p>
-                  <p className="text-sm text-green-600">Hours</p>
-                </div>
-                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-blue-700">{event.max_volunteers}</p>
-                  <p className="text-sm text-blue-600">Max Volunteers</p>
-                </div>
-                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <User className="h-6 w-6 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold text-purple-700">#{event.event_id}</p>
-                  <p className="text-sm text-purple-600">Event ID</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Event QR Code */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <QrCode className="h-6 w-6 text-green-600" />
-                Event QR Code
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center space-y-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 inline-block">
-                  {qrCodeDataUrl ? (
-                    <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center p-4 shadow-sm">
-                      <img 
-                        src={qrCodeDataUrl}
-                        alt="Event QR Code"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center shadow-sm">
-                      <div className="text-center">
-                        <QrCode className="h-16 w-16 text-green-400 mx-auto mb-2" />
-                        <p className="text-sm font-mono text-gray-600">Event ID: {event.event_id}</p>
-                        <p className="text-xs text-gray-500 mt-1">Generating QR code...</p>
+            {/* Event QR Code */}
+            <Card className="shadow-sm border-0 bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <QrCode className="h-6 w-6 text-green-600" />
+                  Event QR Code
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-4">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6 inline-block">
+                    {qrCodeDataUrl ? (
+                      <div className="w-32 h-32 sm:w-48 sm:h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center p-2 sm:p-4 shadow-sm mx-auto">
+                        <img 
+                          src={qrCodeDataUrl}
+                          alt="Event QR Code"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 font-medium">
-                    Volunteers can scan this QR code to check in to the event
-                  </p>
-                  <div className="inline-block px-3 py-1 bg-gray-100 rounded-full">
-                    <p className="text-xs text-gray-600 font-mono">
-                      QR Data: event:{event.event_id}
+                    ) : (
+                      <div className="w-32 h-32 sm:w-48 sm:h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center shadow-sm mx-auto">
+                        <div className="text-center">
+                          <QrCode className="h-8 w-8 sm:h-16 sm:w-16 text-green-400 mx-auto mb-2" />
+                          <p className="text-xs sm:text-sm font-mono text-gray-600">Event ID: {event.event_id}</p>
+                          <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Generating QR code...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600 font-medium">
+                      Volunteers can scan this QR code to check in to the event
                     </p>
+                    <div className="inline-block px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 rounded-full">
+                      <p className="text-[10px] sm:text-xs text-gray-600 font-mono">
+                        QR Data: event:{event.event_id}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Location */}
-          <Card className="shadow-sm border-0 bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Location</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-red-600" />
+            {/* Date and Time */}
+            <Card className="shadow-sm border-0 bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Date & Time</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{formatDate(event.event_date)}</p>
+                    <p className="text-sm text-gray-500">Event Date</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">{event.location_name}</p>
-                  <p className="text-sm text-gray-500">Event Location</p>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{formatTime(event.start_time)} - {formatTime(event.end_time)}</p>
+                    <p className="text-sm text-gray-500">Event Time</p>
+                  </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+
+            {/* Duration & Capacity */}
+            <Card className="shadow-sm border-0 bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Event Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-green-700">{event.estimated_duration_hours}</p>
+                    <p className="text-xs sm:text-sm text-green-600">Hours</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-blue-700">{event.max_volunteers}</p>
+                    <p className="text-xs sm:text-sm text-blue-600">Max Volunteers</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <User className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-purple-700">#{event.event_id}</p>
+                    <p className="text-xs sm:text-sm text-purple-600">Event ID</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location */}
+            <Card className="shadow-sm border-0 bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-900">Location</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{event.location_name}</p>
+                    <p className="text-sm text-gray-500">Event Location</p>
+                  </div>
+                </div>
               
               {/* Map showing event location */}
               <div className="rounded-xl overflow-hidden border shadow-sm">
@@ -740,14 +741,14 @@ ${description}
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-                <div className="text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="text-center p-3 bg-white rounded-lg">
                   <p className="text-sm font-medium text-gray-600">Latitude</p>
-                  <p className="text-lg font-mono text-gray-900">{latitude}</p>
+                  <p className="text-lg font-mono text-gray-900 break-all">{latitude}</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center p-3 bg-white rounded-lg">
                   <p className="text-sm font-medium text-gray-600">Longitude</p>
-                  <p className="text-lg font-mono text-gray-900">{longitude}</p>
+                  <p className="text-lg font-mono text-gray-900 break-all">{longitude}</p>
                 </div>
               </div>
             </CardContent>
@@ -784,14 +785,14 @@ ${description}
                       {enrollment.status}
                     </Badge>
                     <div className="flex items-center gap-3 pr-16">
-                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-white" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div>
                         <p className="font-semibold text-sm text-gray-900">
                           {enrollment.volunteer.first_name} {enrollment.volunteer.last_name}
                         </p>
-                        <p className="text-xs text-gray-600">{enrollment.volunteer.email}</p>
+                        <p className="text-xs text-gray-600 truncate">{enrollment.volunteer.email}</p>
                       </div>
                     </div>
                   </div>
@@ -831,18 +832,18 @@ ${description}
                       )}
                     </div>
                     <div className="flex items-center gap-3 pr-16">
-                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                        <ClockIcon className="h-5 w-5 text-white" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div>
                         <p className="font-semibold text-sm text-gray-900">
                           {record.volunteer.first_name} {record.volunteer.last_name}
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 truncate">
                           Check-in: {formatDateTime(record.check_in_time)}
                         </p>
                         {record.check_out_time && (
-                          <p className="text-xs text-gray-600">
+                          <p className="text-xs text-gray-600 truncate">
                             Check-out: {formatDateTime(record.check_out_time)}
                           </p>
                         )}
@@ -1021,5 +1022,6 @@ ${description}
         </DialogContent>
       </Dialog>
     </div>
-  )
+  </div>
+)
 } 

@@ -28,13 +28,16 @@ interface EventFormData {
 export default function AdminEvents() {
   const navigate = useNavigate()
   const [events, setEvents] = useState<Event[]>([])
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState<EventFormData>({
     event_name: '',
     description: '',
@@ -47,6 +50,9 @@ export default function AdminEvents() {
     estimated_duration_hours: 0,
     max_volunteers: 0,
   })
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [createSearchResults, setCreateSearchResults] = useState<any[]>([]);
+  const [editSearchResults, setEditSearchResults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEvents()
@@ -59,12 +65,28 @@ export default function AdminEvents() {
       
       const response = await apiClient.getAllEvents(currentPage, 10)
       setEvents(response.data)
+      setFilteredEvents(response.data)
       setPagination(response.pagination)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch events')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Filter events based on search term (only by name)
+  const filterEvents = (term: string) => {
+    setSearchTerm(term)
+    if (!term) {
+      setFilteredEvents(events)
+      return
+    }
+    
+    const filtered = events.filter(event => 
+      event.event_name.toLowerCase().includes(term.toLowerCase())
+    )
+    
+    setFilteredEvents(filtered)
   }
 
   const handleCreateEvent = async (e: React.FormEvent) => {
@@ -123,14 +145,26 @@ export default function AdminEvents() {
   }
 
   const handleDeleteEvent = async (eventId: number) => {
-    if (!confirm('Are you sure you want to delete this event?')) return
-
     try {
       await apiClient.deleteEvent(eventId)
       fetchEvents()
+      setIsDeleteDialogOpen(false)
+      setSelectedEvent(null)
     } catch (error: any) {
       setError(error.message || 'Failed to delete event')
+      setIsDeleteDialogOpen(false)
+      setSelectedEvent(null)
     }
+  }
+
+  const openDeleteDialog = (event: Event) => {
+    setSelectedEvent(event)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const closeDeleteDialog = () => {
+    setIsDeleteDialogOpen(false)
+    setSelectedEvent(null)
   }
 
   const openEditDialog = (event: Event) => {
@@ -191,6 +225,82 @@ export default function AdminEvents() {
     })
   }
 
+  // Function to search for locations by name (for create event)
+  const searchCreateLocationByName = async (query: string) => {
+    if (!query.trim()) {
+      setCreateSearchResults([]);
+      return;
+    }
+
+    try {
+      // Add country restriction to the query
+      const searchQuery = ` ${query}, Ethiopia`;
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
+      
+      const results = await response.json();
+      setCreateSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setCreateSearchResults([]);
+    }
+  };
+
+  // Function to search for locations by name (for edit event)
+  const searchEditLocationByName = async (query: string) => {
+    if (!query.trim()) {
+      setEditSearchResults([]);
+      return;
+    }
+
+    try {
+      // Add country restriction to the query
+      const searchQuery = ` ${query}, Ethiopia`;
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
+      
+      const results = await response.json();
+      setEditSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setEditSearchResults([]);
+    }
+  };
+
+  // Function to select a location from search results (for create event)
+  const selectCreateLocationResult = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    
+    setFormData({
+      ...formData,
+      location_name: result.display_name,
+      latitude: lat,
+      longitude: lng
+    });
+    
+    setCreateSearchResults([]);
+  };
+
+  // Function to select a location from search results (for edit event)
+  const selectEditLocationResult = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    
+    setFormData({
+      ...formData,
+      location_name: result.display_name,
+      latitude: lat,
+      longitude: lng
+    });
+    
+    setEditSearchResults([]);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -205,10 +315,29 @@ export default function AdminEvents() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Manage Events</h2>
           <p className="text-gray-600">Create and manage plogging events</p>
+        </div>
+        
+        {/* Search Input */}
+        <div className="flex gap-2 w-full sm:w-80">
+          <Input
+            placeholder="Search events by name..."
+            value={searchTerm}
+            onChange={(e) => filterEvents(e.target.value)}
+            className="flex-1"
+          />
+          {searchTerm && (
+            <Button 
+              variant="outline" 
+              onClick={() => filterEvents('')}
+              className="px-3"
+            >
+              Clear
+            </Button>
+          )}
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -218,14 +347,14 @@ export default function AdminEvents() {
               Create Event
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Create New Event</DialogTitle>
               <DialogDescription>
                 Fill in the details for the new plogging event.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateEvent} className="space-y-4">
+            <form onSubmit={handleCreateEvent} className="space-y-4 flex-grow overflow-y-auto pr-2 pl-4 pr-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="event_name">Event Name</Label>
@@ -281,15 +410,40 @@ export default function AdminEvents() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="location_name">Location Name</Label>
                 <Input
                   id="location_name"
                   value={formData.location_name}
-                  onChange={(e) => setFormData({...formData, location_name: e.target.value})}
+                  onChange={(e) => {
+                    setFormData({...formData, location_name: e.target.value});
+                    // Trigger search when typing in location name
+                    if (e.target.value.trim()) {
+                      searchCreateLocationByName(e.target.value);
+                    } else {
+                      setCreateSearchResults([]);
+                    }
+                  }}
                   placeholder="Enter location name"
                   required
                 />
+                {/* Search Results Dropdown */}
+                {createSearchResults.length > 0 && (
+                  <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto w-full">
+                    {createSearchResults.map((result, index) => (
+                      <div
+                        key={index}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        onClick={() => selectCreateLocationResult(result)}
+                      >
+                        <div className="font-medium text-sm">{result.display_name}</div>
+                        <div className="text-xs text-gray-500">
+                          {result.lat}, {result.lon}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -303,6 +457,7 @@ export default function AdminEvents() {
                   showSearch={true}
                   searchCountry="Ethiopia"
                   onLocationSelect={(lat, lng) => {
+                    // Also update the location name based on the selected coordinates
                     setFormData({
                       ...formData,
                       latitude: lat,
@@ -385,7 +540,7 @@ export default function AdminEvents() {
 
       {/* Events Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
+        {filteredEvents.map((event) => (
           <Card key={event.event_id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -426,7 +581,7 @@ export default function AdminEvents() {
                   </div>
                   
                   {/* Small map showing event location */}
-                  <div className="rounded-md overflow-hidden border h-24">
+                  <div className="rounded-md overflow-hidden border h-24 flex items-center justify-center bg-gray-100">
                     <Map
                       height="100%"
                       center={[typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude, typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude]}
@@ -434,6 +589,10 @@ export default function AdminEvents() {
                       selectedLocation={[typeof event.latitude === 'string' ? parseFloat(event.latitude) : event.latitude, typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude]}
                       isLocationPicker={false}
                     />
+                    {/* Fallback content in case map doesn't load */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <MapPin className="h-6 w-6 text-gray-400" />
+                    </div>
                   </div>
                 </div>
 
@@ -470,7 +629,7 @@ export default function AdminEvents() {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => handleDeleteEvent(event.event_id)}
+                    onClick={() => openDeleteDialog(event)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                     Delete
@@ -481,6 +640,20 @@ export default function AdminEvents() {
           </Card>
         ))}
       </div>
+
+      {/* No Events Found Message */}
+      {filteredEvents.length === 0 && searchTerm && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No events found matching "{searchTerm}"</p>
+          <Button 
+            variant="outline" 
+            onClick={() => filterEvents('')}
+            className="mt-4"
+          >
+            Clear Search
+          </Button>
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination && (
@@ -525,14 +698,14 @@ export default function AdminEvents() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Event</DialogTitle>
             <DialogDescription>
               Update the event details.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditEvent} className="space-y-4">
+          <form onSubmit={handleEditEvent} className="space-y-4 flex-grow overflow-y-auto pr-2 pl-4 pr-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_event_name">Event Name</Label>
@@ -588,26 +761,54 @@ export default function AdminEvents() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="edit_location_name">Location Name</Label>
               <Input
                 id="edit_location_name"
                 value={formData.location_name}
-                onChange={(e) => setFormData({...formData, location_name: e.target.value})}
+                onChange={(e) => {
+                  setFormData({...formData, location_name: e.target.value});
+                  // Trigger search when typing in location name
+                  if (e.target.value.trim()) {
+                    searchEditLocationByName(e.target.value);
+                  } else {
+                    setEditSearchResults([]);
+                  }
+                }}
                 placeholder="Enter location name"
                 required
               />
+              {/* Search Results Dropdown */}
+              {editSearchResults.length > 0 && (
+                <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto w-full">
+                  {editSearchResults.map((result, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      onClick={() => selectEditLocationResult(result)}
+                    >
+                      <div className="font-medium text-sm">{result.display_name}</div>
+                      <div className="text-xs text-gray-500">
+                        {result.lat}, {result.lon}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Pick Location on Map</Label>
               <div className="text-sm text-gray-600 mb-2">
-                Click on the map to select the event location
+                Click on the map or search for an address to select the event location
               </div>
               <Map
                 height="300px"
                 isLocationPicker={true}
+                showSearch={true}
+                searchCountry="Ethiopia"
                 onLocationSelect={(lat, lng) => {
+                  // Also update the location name based on the selected coordinates
                   setFormData({
                     ...formData,
                     latitude: lat,
@@ -675,6 +876,37 @@ export default function AdminEvents() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md relative" style={{ zIndex: 9999, position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          <DialogHeader>
+            <DialogTitle>Delete Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this event? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="py-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">{selectedEvent.event_name}</span>
+              </div>
+              <p className="text-sm text-gray-600 line-clamp-2">{selectedEvent.description}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => selectedEvent && handleDeleteEvent(selectedEvent.event_id)}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

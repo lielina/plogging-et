@@ -36,63 +36,6 @@ const Map: React.FC<MapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const searchControlRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  // Function to search for locations using Nominatim API
-  const searchLocation = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      setIsSearching(true);
-      // Add country restriction to the query
-      const searchQuery = searchCountry ? `${query}, ${searchCountry}` : query;
-      
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=ET`
-      );
-      
-      const results = await response.json();
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Function to select a search result
-  const selectSearchResult = (result: any) => {
-    const lat = parseFloat(result.lat);
-    const lng = parseFloat(result.lon);
-    
-    // Update the map view
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([lat, lng], 15);
-      
-      // Remove existing marker
-      if (markerRef.current) {
-        mapInstanceRef.current.removeLayer(markerRef.current);
-      }
-
-      // Add new marker
-      const marker = L.marker([lat, lng]).addTo(mapInstanceRef.current);
-      markerRef.current = marker;
-
-      // Call callback
-      onLocationSelect?.(lat, lng);
-    }
-    
-    // Clear search
-    setSearchQuery('');
-    setSearchResults([]);
-  };
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -105,16 +48,6 @@ const Map: React.FC<MapProps> = ({
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
-
-    // Add search control if enabled
-    if (showSearch && searchControlRef.current) {
-      // Add search control to map
-      const searchContainer = L.control({ position: 'topright' });
-      searchContainer.onAdd = () => {
-        return searchControlRef.current as unknown as HTMLElement;
-      };
-      searchContainer.addTo(map);
-    }
 
     // Add click handler for location picking
     if (isLocationPicker) {
@@ -141,7 +74,7 @@ const Map: React.FC<MapProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [center, zoom, isLocationPicker, onLocationSelect, showSearch]);
+  }, [center, zoom, isLocationPicker, onLocationSelect]);
 
   // Update marker when selectedLocation changes
   useEffect(() => {
@@ -164,54 +97,23 @@ const Map: React.FC<MapProps> = ({
   }, [selectedLocation, zoom]);
 
   return (
-    <div className="relative">
-      {/* Search Control */}
-      {showSearch && (
-        <div ref={searchControlRef} className="leaflet-control leaflet-bar p-2 bg-white rounded shadow-lg">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                searchLocation(e.target.value);
-              }}
-              placeholder={`Search in ${searchCountry}...`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            {isSearching && (
-              <div className="absolute right-2 top-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-              </div>
-            )}
-          </div>
-          
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
-              {searchResults.map((result, index) => (
-                <div
-                  key={index}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                  onClick={() => selectSearchResult(result)}
-                >
-                  <div className="font-medium text-sm">{result.display_name}</div>
-                  <div className="text-xs text-gray-500">
-                    {result.lat}, {result.lon}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      
+    <div className="relative w-full h-full" style={{ zIndex: 1 }}>
       {/* Map Container */}
       <div 
         ref={mapRef} 
-        style={{ height }} 
-        className={`rounded-lg border ${className}`}
+        style={{ height: height || '100%', zIndex: 1 }} 
+        className={`rounded-lg border w-full ${className}`}
       />
+      <style>
+        {`
+          .leaflet-container {
+            z-index: 1 !important;
+          }
+          .leaflet-pane {
+            z-index: 1 !important;
+          }
+        `}
+      </style>
     </div>
   );
 };
