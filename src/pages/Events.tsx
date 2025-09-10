@@ -303,7 +303,7 @@ export default function Events() {
                     </div>
                     <Badge 
                       variant={event.status === 'Active' ? 'default' : 'secondary'}
-                      className="ml-2 flex-shrink-0"
+                      className="ml-2 flex-shrink-0 text-xs px-2 py-0.5"
                     >
                       {event.status}
                     </Badge>

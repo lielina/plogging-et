@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                         {new Date(event.event_date).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
                       {event.status}
                     </Badge>
                   </div>
@@ -335,7 +335,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
                         {volunteer.events_attended} events
                       </Badge>
                       <div className="text-xs text-gray-500 mt-1">

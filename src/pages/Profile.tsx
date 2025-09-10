@@ -105,7 +105,7 @@ export default function Profile() {
       await apiClient.changePassword({
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password
-      })
+      } as ChangePasswordRequest)
       
       setPasswordForm({
         current_password: '',
@@ -222,14 +222,14 @@ export default function Profile() {
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
-      {/* Header */}
+      {/* Header */ }
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Profile</h1>
         <p className="text-sm sm:text-base text-gray-600">Manage your personal information and account settings</p>
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-        {/* Profile Overview */}
+        {/* Profile Overview */ }
         <div className="lg:col-span-1">
           <Card>
             <CardHeader className="text-center">
@@ -265,9 +265,9 @@ export default function Profile() {
           </Card>
         </div>
 
-        {/* Profile Details */}
+        {/* Profile Details */ }
         <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
+          {/* Personal Information */ }
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -365,7 +365,7 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Change Password */}
+          {/* Change Password */ }
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -427,6 +427,7 @@ export default function Profile() {
                     )}
                   </Button>
                 </div>
+                <p className="text-xs text-gray-500">Password must be at least 6 characters long</p>
               </div>
               
               <div className="space-y-2">
@@ -460,4 +461,4 @@ export default function Profile() {
       </div>
     </div>
   )
-} 
+}

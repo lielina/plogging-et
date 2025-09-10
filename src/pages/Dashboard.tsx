@@ -438,7 +438,7 @@ export default function Dashboard() {
           </div>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="flex flex-col flex-1">
+      <SidebarInset className="flex flex-col flex-1 min-h-screen">
         {/* Enhanced Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100">
           <div className="flex items-center gap-4">
@@ -737,10 +737,10 @@ export default function Dashboard() {
                               </p>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                              <Badge variant="secondary" className="px-3 py-1 text-sm">
+                              <Badge variant="secondary" className="px-2 py-0.5 text-xs">
                                 {event.status}
                               </Badge>
-                              <Badge variant="outline" className="px-3 py-1 text-xs text-green-700 border-green-300">
+                              <Badge variant="outline" className="px-2 py-0.5 text-xs text-green-700 border-green-300">
                                 {event.enrollment_status || 'Enrolled'}
                               </Badge>
                             </div>

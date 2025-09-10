@@ -442,7 +442,7 @@ const CertificateGeneratorPage: React.FC = () => {
                       </div>
                     </div>
                     <h3 className="font-medium text-sm text-gray-800">{template.name}</h3>
-                    <Badge className="text-xs mt-1" style={{ backgroundColor: template.primaryColor, color: "white" }}>
+                    <Badge className="text-xs mt-1 px-2 py-0.5" style={{ backgroundColor: template.primaryColor, color: "white" }}>
                       {template.type}
                     </Badge>
                   </div>
@@ -576,7 +576,7 @@ const CertificateGeneratorPage: React.FC = () => {
                                 <Clock className="w-3 h-3" />
                                 {volunteer.total_hours_contributed} hours
                               </div>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs px-2 py-0.5">
                                 {volunteer.total_hours_contributed >= 100 ? 'Champion' :
                                  volunteer.total_hours_contributed >= 50 ? 'Warrior' :
                                  volunteer.total_hours_contributed >= 25 ? 'Hero' : 'Helper'}

@@ -563,7 +563,7 @@ const AdminVolunteerDetail: React.FC = () => {
         <div className="flex items-center space-x-3">
           <Badge 
             variant={volunteer.is_active ? "default" : "secondary"}
-            className={volunteer.is_active ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-slate-100 text-slate-800 border-slate-200"}
+            className={volunteer.is_active ? "bg-emerald-100 text-emerald-800 border-emerald-200 text-xs px-2 py-0.5" : "bg-slate-100 text-slate-800 border-slate-200 text-xs px-2 py-0.5"}
           >
             {volunteer.is_active ? 'Active' : 'Inactive'}
           </Badge>
@@ -859,7 +859,7 @@ const AdminVolunteerDetail: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${getStatusColor(enrollment.status)} border px-3 py-1`}>
+                          <Badge className={`${getStatusColor(enrollment.status)} border px-2 py-0.5 text-xs`}>
                             <div className="flex items-center space-x-2">
                               {getStatusIcon(enrollment.status)}
                               <span className="font-medium">{enrollment.status}</span>
@@ -1029,7 +1029,7 @@ const AdminVolunteerDetail: React.FC = () => {
                           <TableCell>{certificate.hours_on_certificate} hours</TableCell>
                           <TableCell>{formatDate(certificate.generation_date)}</TableCell>
                           <TableCell>
-                            <Badge variant={certificate.status === 'Downloaded' ? 'default' : 'secondary'}>
+                            <Badge variant={certificate.status === 'Downloaded' ? 'default' : 'secondary'} className="text-xs px-2 py-0.5">
                               {certificate.status}
                             </Badge>
                           </TableCell>

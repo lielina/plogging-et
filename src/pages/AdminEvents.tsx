@@ -397,7 +397,7 @@ export default function AdminEvents() {
                 </div>
                 <Badge 
                   variant={event.status === 'Active' ? 'default' : 'secondary'}
-                  className="ml-2"
+                  className="ml-2 text-xs px-2 py-0.5"
                 >
                   {event.status}
                 </Badge>

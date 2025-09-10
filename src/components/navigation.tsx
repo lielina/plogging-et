@@ -59,7 +59,7 @@ export function Navigation() {
               className="border-green-600 text-green-600 bg-transparent hover:bg-green-50"
             >
               <Bell className="w-4 h-4 mr-2" />
-              <Badge className="bg-red-500 text-white text-xs ml-1">3</Badge>
+              <Badge className="bg-red-500 text-white text-xs px-2 py-0.5 ml-1">3</Badge>
             </Button>
             <Button
               variant="outline"
@@ -121,7 +121,7 @@ export function Navigation() {
                   >
                     <Bell className="w-4 h-4 mr-3" />
                     Notifications
-                    <Badge className="bg-red-500 text-white text-xs ml-auto">3</Badge>
+                    <Badge className="bg-red-500 text-white text-xs px-2 py-0.5 ml-auto">3</Badge>
                   </Button>
                   <Button
                     variant="outline"
@@ -144,5 +144,3 @@ export function Navigation() {
         </div>
       </div>
     </header>
-  )
-}

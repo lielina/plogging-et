@@ -680,13 +680,13 @@ ${description}
             </CardHeader>
             <CardContent>
               <div className="text-center space-y-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-8 inline-block">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 inline-block">
                   {qrCodeDataUrl ? (
                     <div className="w-48 h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center p-4 shadow-sm">
                       <img 
                         src={qrCodeDataUrl}
                         alt="Event QR Code"
-                        className="w-full h-full"
+                        className="w-full h-full object-contain"
                       />
                     </div>
                   ) : (
@@ -763,7 +763,7 @@ ${description}
               <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                 <Users className="h-6 w-6 text-green-600" />
                 Enrollments
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="secondary" className="ml-auto text-xs px-2 py-0.5">
                   {event.enrollments.length}/{event.max_volunteers}
                 </Badge>
               </CardTitle>
@@ -774,7 +774,7 @@ ${description}
                   <div key={enrollment.enrollment_id} className="relative p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
                     <Badge 
                       variant="default" 
-                      className={`absolute top-2 right-2 text-xs whitespace-nowrap px-2 py-1 ${
+                      className={`absolute top-2 right-2 text-xs whitespace-nowrap px-2 py-0.5 ${
                         enrollment.status === 'Signed Up' ? 'bg-green-800 hover:bg-green-900' :
                         enrollment.status === 'Attended' ? 'bg-blue-800 hover:bg-blue-900' :
                         enrollment.status === 'Missed' ? 'bg-red-800 hover:bg-red-900' :
@@ -806,7 +806,7 @@ ${description}
               <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                 <CheckCircle className="h-6 w-6 text-blue-600" />
                 Attendance
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="secondary" className="ml-auto text-xs px-2 py-0.5">
                   {event.attendance_records.length}
                 </Badge>
               </CardTitle>
@@ -817,15 +817,15 @@ ${description}
                   <div key={record.attendance_id} className="relative p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
                     <div className="absolute top-2 right-2">
                       {record.hours_contributed ? (
-                        <Badge variant="default" className="text-xs bg-green-800 hover:bg-green-900 whitespace-nowrap px-2 py-1">
+                        <Badge variant="default" className="text-xs bg-green-800 hover:bg-green-900 whitespace-nowrap px-2 py-0.5">
                           Completed
                         </Badge>
                       ) : record.check_out_time ? (
-                        <Badge variant="default" className="text-xs bg-blue-800 hover:bg-blue-900 whitespace-nowrap px-2 py-1">
+                        <Badge variant="default" className="text-xs bg-blue-800 hover:bg-blue-900 whitespace-nowrap px-2 py-0.5">
                           Checked Out
                         </Badge>
                       ) : (
-                        <Badge variant="default" className="text-xs bg-yellow-800 hover:bg-yellow-900 whitespace-nowrap px-2 py-1">
+                        <Badge variant="default" className="text-xs bg-yellow-800 hover:bg-yellow-900 whitespace-nowrap px-2 py-0.5">
                           Checked In
                         </Badge>
                       )}

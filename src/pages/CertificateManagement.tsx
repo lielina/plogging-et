@@ -3,6 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '../components/ui/pagination';
 import { apiClient } from '../lib/api';
 import { Certificate, Volunteer, Event } from '../lib/api';
 import CertificateGeneratorPage from './CertificateGenerator';
@@ -29,22 +37,32 @@ const CertificateManagement: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('individual');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0,
+    from: 1,
+    to: 15
+  });
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentPage]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [certificatesRes, volunteersRes, eventsRes] = await Promise.all([
-        apiClient.getAllCertificates(),
+        apiClient.getAllCertificates(currentPage, 15),
         apiClient.getAllVolunteers(),
         apiClient.getAllEvents()
       ]);
       setCertificates(certificatesRes.data);
       setVolunteers(volunteersRes.data);
       setEvents(eventsRes.data);
+      setPagination(certificatesRes.pagination);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -226,7 +244,7 @@ const CertificateManagement: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Generated Certificates ({certificates.length})
+                Generated Certificates ({pagination.total})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -252,7 +270,7 @@ const CertificateManagement: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className={getStatusColor(certificate.certificate_type)}>
+                        <Badge className={getStatusColor(certificate.certificate_type) + " text-xs px-2 py-0.5"}>
                           {certificate.certificate_type}
                         </Badge>
                         <Button
@@ -294,6 +312,41 @@ const CertificateManagement: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Pagination */}
+          {pagination.last_page > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(Math.min(pagination.last_page, currentPage + 1))}
+                      className={currentPage === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+
           {/* Certificate Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
@@ -333,4 +386,46 @@ const CertificateManagement: React.FC = () => {
   );
 };
 
-export default CertificateManagement; 
+export default CertificateManagement;           </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default CertificateManagement;             </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {certificates.filter(c => c.certificate_type === 'milestone').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Milestone Certificates</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {certificates.filter(c => c.certificate_type === 'achievement').length}
+                  </div>
+                  <div className="text-sm text-gray-600">Achievement Certificates</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default CertificateManagement;           </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default CertificateManagement; export default CertificateManagement; 

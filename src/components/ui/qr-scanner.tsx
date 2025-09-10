@@ -143,10 +143,10 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      {/* Hidden canvas for QR code processing */}
+      {/* Hidden canvas for QR code processing */ }
       <canvas ref={canvasRef} className="hidden" />
       
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">{title}</CardTitle>
@@ -157,7 +157,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
           <p className="text-sm text-gray-600">{description}</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Camera View */}
+          {/* Camera View */ }
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             {isScanning ? (
               <video
@@ -173,7 +173,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
               </div>
             )}
             
-            {/* Scanning Overlay */}
+            {/* Scanning Overlay */ }
             {isScanning && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-48 h-48 border-2 border-green-500 rounded-lg relative">
@@ -186,7 +186,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
             )}
           </div>
 
-          {/* Status Messages */}
+          {/* Status Messages */ }
           {error && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -194,7 +194,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
                 <span className="text-sm text-red-600">{error}</span>
               </div>
               
-              {/* Camera Permission Instructions */}
+              {/* Camera Permission Instructions */ }
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">How to enable camera access:</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
@@ -208,7 +208,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
                 </div>
               </div>
               
-              {/* Retry Button */}
+              {/* Retry Button */ }
               <Button 
                 onClick={startScanning}
                 variant="outline"
@@ -227,7 +227,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
             </div>
           )}
 
-          {/* Demo Button for Testing */}
+          {/* Demo Button for Testing */ }
           <Button 
             onClick={simulateScan}
             className="w-full"
@@ -236,7 +236,7 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
             Simulate QR Scan (Demo)
           </Button>
 
-          {/* Instructions */}
+          {/* Instructions */ }
           <div className="text-xs text-gray-500 text-center">
             <p>Point your camera at a QR code to scan</p>
             <p>Make sure the QR code is clearly visible</p>

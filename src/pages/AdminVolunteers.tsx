@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye, Upload } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { Volunteer } from '../lib/api';
 
@@ -50,9 +50,10 @@ const AdminVolunteers: React.FC = () => {
     first_name: '',
     last_name: '',
     email: '',
-    phone_number: '',
-    password: ''
+    phone_number: ''
   });
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadVolunteers();
@@ -81,17 +82,46 @@ const AdminVolunteers: React.FC = () => {
     }
   };
 
+  const generateDefaultPassword = () => {
+    // Generate a random default password
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
   const handleCreateVolunteer = async () => {
     try {
-      await apiClient.createVolunteer(formData);
+      // Add default password to form data
+      const volunteerData = {
+        ...formData,
+        password: generateDefaultPassword()
+      };
+      
+      // First create the volunteer
+      const response = await apiClient.createVolunteer(volunteerData);
+      
+      // If profile image is provided, upload it
+      if (profileImage && response.data.volunteer_id) {
+        try {
+          await apiClient.uploadProfileImage(profileImage);
+          // Note: In a real implementation, you would associate the image with the volunteer
+        } catch (uploadError) {
+          console.error('Error uploading profile image:', uploadError);
+        }
+      }
+      
       setIsCreateDialogOpen(false);
       setFormData({
         first_name: '',
         last_name: '',
         email: '',
-        phone_number: '',
-        password: ''
+        phone_number: ''
       });
+      setProfileImage(null);
+      setProfileImagePreview(null);
       loadVolunteers();
     } catch (error) {
       console.error('Error creating volunteer:', error);
@@ -114,8 +144,7 @@ const AdminVolunteers: React.FC = () => {
         first_name: '',
         last_name: '',
         email: '',
-        phone_number: '',
-        password: ''
+        phone_number: ''
       });
       loadVolunteers();
     } catch (error) {
@@ -140,6 +169,18 @@ const AdminVolunteers: React.FC = () => {
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   if (loading) {
@@ -192,13 +233,22 @@ const AdminVolunteers: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="profile_image">Profile Image</Label>
                   <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    id="profile_image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
                   />
+                  {profileImagePreview && (
+                    <div className="mt-2">
+                      <img 
+                        src={profileImagePreview} 
+                        alt="Profile preview" 
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
                 <Button onClick={handleCreateVolunteer} className="w-full">
                   Create Volunteer
@@ -232,7 +282,6 @@ const AdminVolunteers: React.FC = () => {
                 <TableHead className="w-[250px]">Email</TableHead>
                 <TableHead className="w-[150px]">Phone</TableHead>
                 <TableHead className="w-[120px]">Total Hours</TableHead>
-                <TableHead className="w-[200px]">QR Code</TableHead>
                 <TableHead className="text-right w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -253,9 +302,25 @@ const AdminVolunteers: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Volunteer Management</h1>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) {
+            // Reset form when dialog is closed
+            setFormData({
+              first_name: '',
+              last_name: '',
+              email: '',
+              phone_number: ''
+            });
+            setProfileImage(null);
+            setProfileImagePreview(null);
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button>Add New Volunteer</Button>
+            <Button>
+              <Upload className="h-4 w-4 mr-2" />
+              Add New Volunteer
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -298,13 +363,27 @@ const AdminVolunteers: React.FC = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="profile_image">Profile Image</Label>
                 <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  id="profile_image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
                 />
+                {profileImagePreview && (
+                  <div className="mt-2">
+                    <img 
+                      src={profileImagePreview} 
+                      alt="Profile preview" 
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="bg-blue-50 p-3 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> A default password will be generated automatically for this volunteer.
+                </p>
               </div>
               <Button onClick={handleCreateVolunteer} className="w-full">
                 Create Volunteer
@@ -378,8 +457,7 @@ const AdminVolunteers: React.FC = () => {
                               first_name: volunteer.first_name,
                               last_name: volunteer.last_name,
                               email: volunteer.email,
-                              phone_number: volunteer.phone_number,
-                              password: ''
+                              phone_number: volunteer.phone_number
                             });
                           }}
                           title="Edit volunteer"
@@ -475,7 +553,7 @@ const AdminVolunteers: React.FC = () => {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination */ }
       {pagination.last_page > 1 && (
         <div className="mt-6">
           {loading && (
@@ -485,7 +563,7 @@ const AdminVolunteers: React.FC = () => {
           )}
           <Pagination>
             <PaginationContent>
-              {/* Previous button */}
+              {/* Previous button */ }
               <PaginationItem>
                 <PaginationPrevious 
                   href="#"
@@ -499,7 +577,7 @@ const AdminVolunteers: React.FC = () => {
                 />
               </PaginationItem>
 
-              {/* Page numbers */}
+              {/* Page numbers */ }
               {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => {
                 // Show first page, last page, current page, and pages around current page
                 if (
@@ -537,7 +615,7 @@ const AdminVolunteers: React.FC = () => {
                 return null;
               })}
 
-              {/* Next button */}
+              {/* Next button */ }
               <PaginationItem>
                 <PaginationNext 
                   href="#"
@@ -555,7 +633,7 @@ const AdminVolunteers: React.FC = () => {
         </div>
       )}
 
-      {/* Pagination info */}
+      {/* Pagination info */ }
       {pagination.total > 0 && (
         <div className="text-center text-sm text-muted-foreground mt-4">
           Showing {pagination.from} to {pagination.to} of {pagination.total} volunteers
@@ -565,4 +643,4 @@ const AdminVolunteers: React.FC = () => {
   );
 };
 
-export default AdminVolunteers; 
+export default AdminVolunteers;

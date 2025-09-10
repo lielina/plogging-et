@@ -7,6 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '../components/ui/pagination';
 import { apiClient } from '../lib/api';
 import { Certificate, Volunteer, Event } from '../lib/api';
 import { 
@@ -25,6 +33,15 @@ const AdminCertificates: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0,
+    from: 1,
+    to: 15
+  });
   const [selectedTemplate, setSelectedTemplate] = useState<CertificateTemplate>(defaultTemplates[0]);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -38,19 +55,20 @@ const AdminCertificates: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentPage]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [certificatesRes, volunteersRes, eventsRes] = await Promise.all([
-        apiClient.getAllCertificates(),
+        apiClient.getAllCertificates(currentPage, 15),
         apiClient.getAllVolunteers(),
         apiClient.getAllEvents()
       ]);
       setCertificates(certificatesRes.data);
       setVolunteers(volunteersRes.data);
       setEvents(eventsRes.data);
+      setPagination(certificatesRes.pagination);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -314,7 +332,7 @@ const AdminCertificates: React.FC = () => {
                         </div>
                       </div>
                       <h3 className="font-medium text-sm text-gray-800">{template.name}</h3>
-                      <Badge className="text-xs mt-1" style={{ backgroundColor: template.primaryColor, color: "white" }}>
+                      <Badge className="text-xs mt-1 px-2 py-0.5" style={{ backgroundColor: template.primaryColor, color: "white" }}>
                         {template.type}
                       </Badge>
                     </div>
@@ -467,7 +485,7 @@ const AdminCertificates: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
                     {certificate.certificate_type}
                   </Badge>
                   <Button
@@ -488,6 +506,89 @@ const AdminCertificates: React.FC = () => {
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No certificates found.</p>
               <p className="text-sm text-gray-400">Generate your first certificate to get started.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.last_page > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(Math.min(pagination.last_page, currentPage + 1))}
+                      className={currentPage === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AdminCertificates;           {certificates.length === 0 && (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No certificates found.</p>
+              <p className="text-sm text-gray-400">Generate your first certificate to get started.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.last_page > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(Math.min(pagination.last_page, currentPage + 1))}
+                      className={currentPage === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>

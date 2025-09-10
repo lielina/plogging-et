@@ -516,8 +516,8 @@ class ApiClient {
   }
 
   // Certificate Management (Admin)
-  async getAllCertificates(): Promise<{ data: Certificate[] }> {
-    return this.request<{ data: Certificate[] }>('/admin/certificates');
+  async getAllCertificates(page: number = 1, perPage: number = 15): Promise<{ data: Certificate[], pagination: any }> {
+    return this.request<{ data: Certificate[], pagination: any }>(`/admin/certificates?page=${page}&per_page=${perPage}`);
   }
 
   async generateEventCertificate(volunteerId: number, eventId: number): Promise<{ data: Certificate }> {
@@ -553,6 +553,44 @@ class ApiClient {
 
   async getBadgeDistributionReport(): Promise<{ data: any }> {
     return this.request<{ data: any }>('/admin/reports/badge-distribution');
+  }
+
+  // Admin Management (Admin)
+  async getAllAdmins(): Promise<{ data: Admin[] }> {
+    return this.request<{ data: Admin[] }>('/admin/admins');
+  }
+
+  async createAdmin(data: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    username: string;
+    password: string;
+  }): Promise<{ data: Admin }> {
+    return this.request<{ data: Admin }>('/admin/admins', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAdmin(adminId: number, data: Partial<Admin>): Promise<{ data: Admin }> {
+    return this.request<{ data: Admin }>(`/admin/admins/${adminId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAdmin(adminId: number): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/admin/admins/${adminId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async resetAdminPassword(adminId: number, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/admins/${adminId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ new_password: newPassword }),
+    });
   }
 }
 

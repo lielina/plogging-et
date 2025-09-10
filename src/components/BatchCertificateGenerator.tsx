@@ -358,7 +358,7 @@ const BatchCertificateGenerator: React.FC<BatchCertificateGeneratorProps> = ({
                   </div>
                 </div>
                 <h3 className="font-medium text-sm text-gray-800">{template.name}</h3>
-                <Badge className="text-xs mt-1" style={{ backgroundColor: template.primaryColor, color: "white" }}>
+                <Badge className="text-xs mt-1 px-2 py-0.5" style={{ backgroundColor: template.primaryColor, color: "white" }}>
                   {template.type}
                 </Badge>
               </div>
@@ -444,7 +444,7 @@ const BatchCertificateGenerator: React.FC<BatchCertificateGeneratorProps> = ({
                       </div>
                     </div>
                   </div>
-                  <Badge className={getStatusColor(job.status)}>
+                  <Badge className={getStatusColor(job.status) + " text-xs px-2 py-0.5"}>
                     {job.status}
                   </Badge>
                 </div>
