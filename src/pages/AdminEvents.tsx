@@ -32,6 +32,7 @@ export default function AdminEvents() {
   const [error, setError] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<any>(null)
@@ -126,14 +127,26 @@ export default function AdminEvents() {
   }
 
   const handleDeleteEvent = async (eventId: number) => {
-    if (!confirm('Are you sure you want to delete this event?')) return
-
     try {
       await apiClient.deleteEvent(eventId)
       fetchEvents()
+      setIsDeleteDialogOpen(false)
+      setSelectedEvent(null)
     } catch (error: any) {
       setError(error.message || 'Failed to delete event')
+      setIsDeleteDialogOpen(false)
+      setSelectedEvent(null)
     }
+  }
+
+  const openDeleteDialog = (event: Event) => {
+    setSelectedEvent(event)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const closeDeleteDialog = () => {
+    setIsDeleteDialogOpen(false)
+    setSelectedEvent(null)
   }
 
   const openEditDialog = (event: Event) => {
@@ -579,7 +592,7 @@ export default function AdminEvents() {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => handleDeleteEvent(event.event_id)}
+                    onClick={() => openDeleteDialog(event)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                     Delete
@@ -812,6 +825,37 @@ export default function AdminEvents() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md relative" style={{ zIndex: 9999, position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          <DialogHeader>
+            <DialogTitle>Delete Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this event? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="py-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">{selectedEvent.event_name}</span>
+              </div>
+              <p className="text-sm text-gray-600 line-clamp-2">{selectedEvent.description}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => selectedEvent && handleDeleteEvent(selectedEvent.event_id)}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

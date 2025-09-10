@@ -97,13 +97,23 @@ const Map: React.FC<MapProps> = ({
   }, [selectedLocation, zoom]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" style={{ zIndex: 1 }}>
       {/* Map Container */}
       <div 
         ref={mapRef} 
-        style={{ height: height || '100%' }} 
+        style={{ height: height || '100%', zIndex: 1 }} 
         className={`rounded-lg border w-full ${className}`}
       />
+      <style>
+        {`
+          .leaflet-container {
+            z-index: 1 !important;
+          }
+          .leaflet-pane {
+            z-index: 1 !important;
+          }
+        `}
+      </style>
     </div>
   );
 };
