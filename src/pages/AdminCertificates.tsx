@@ -25,7 +25,7 @@ import {
   generateCertificateId,
   formatDate 
 } from '../lib/certificate-generator';
-import { Download, Eye, Plus, FileText, Palette, Users, Calendar, Award } from 'lucide-react';
+import { Download, Eye, Plus, FileText, Users, Calendar, Award } from 'lucide-react';
 
 const AdminCertificates: React.FC = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -86,7 +86,7 @@ const AdminCertificates: React.FC = () => {
       volunteerName: `${selectedVolunteer.first_name} ${selectedVolunteer.last_name}`,
       eventName: selectedEvent?.event_name || 'Community Service',
       eventDate: selectedEvent?.event_date || formatDate(new Date()),
-      hoursContributed: selectedEvent?.estimated_duration_hours || 4,
+      hoursContributed: Number(selectedEvent?.estimated_duration_hours ?? 4),
       location: selectedEvent?.location_name || 'Addis Ababa, Ethiopia',
       organizerName: 'Plogging Ethiopia Team',
       certificateId: generateCertificateId(),
@@ -113,7 +113,7 @@ const AdminCertificates: React.FC = () => {
         volunteerName: `${selectedVolunteer.first_name} ${selectedVolunteer.last_name}`,
         eventName: selectedEvent?.event_name || 'Community Service',
         eventDate: selectedEvent?.event_date || formatDate(new Date()),
-        hoursContributed: selectedEvent?.estimated_duration_hours || 4,
+        hoursContributed: Number(selectedEvent?.estimated_duration_hours ?? 4),
         location: selectedEvent?.location_name || 'Addis Ababa, Ethiopia',
         organizerName: 'Plogging Ethiopia Team',
         certificateId: generateCertificateId(),
@@ -549,52 +549,4 @@ const AdminCertificates: React.FC = () => {
   );
 };
 
-export default AdminCertificates;           {certificates.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No certificates found.</p>
-              <p className="text-sm text-gray-400">Generate your first certificate to get started.</p>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {pagination.last_page > 1 && (
-            <div className="mt-6 flex justify-center">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                  
-                  {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(Math.min(pagination.last_page, currentPage + 1))}
-                      className={currentPage === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default AdminCertificates; 
+export default AdminCertificates;
