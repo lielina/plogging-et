@@ -28,6 +28,7 @@ interface EventFormData {
 export default function AdminEvents() {
   const navigate = useNavigate()
   const [events, setEvents] = useState<Event[]>([])
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -36,6 +37,7 @@ export default function AdminEvents() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [formData, setFormData] = useState<EventFormData>({
     event_name: '',
     description: '',
@@ -63,12 +65,28 @@ export default function AdminEvents() {
       
       const response = await apiClient.getAllEvents(currentPage, 10)
       setEvents(response.data)
+      setFilteredEvents(response.data)
       setPagination(response.pagination)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch events')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Filter events based on search term (only by name)
+  const filterEvents = (term: string) => {
+    setSearchTerm(term)
+    if (!term) {
+      setFilteredEvents(events)
+      return
+    }
+    
+    const filtered = events.filter(event => 
+      event.event_name.toLowerCase().includes(term.toLowerCase())
+    )
+    
+    setFilteredEvents(filtered)
   }
 
   const handleCreateEvent = async (e: React.FormEvent) => {
@@ -297,10 +315,29 @@ export default function AdminEvents() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Manage Events</h2>
           <p className="text-gray-600">Create and manage plogging events</p>
+        </div>
+        
+        {/* Search Input */}
+        <div className="flex gap-2 w-full sm:w-80">
+          <Input
+            placeholder="Search events by name..."
+            value={searchTerm}
+            onChange={(e) => filterEvents(e.target.value)}
+            className="flex-1"
+          />
+          {searchTerm && (
+            <Button 
+              variant="outline" 
+              onClick={() => filterEvents('')}
+              className="px-3"
+            >
+              Clear
+            </Button>
+          )}
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -503,7 +540,7 @@ export default function AdminEvents() {
 
       {/* Events Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
+        {filteredEvents.map((event) => (
           <Card key={event.event_id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -603,6 +640,20 @@ export default function AdminEvents() {
           </Card>
         ))}
       </div>
+
+      {/* No Events Found Message */}
+      {filteredEvents.length === 0 && searchTerm && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No events found matching "{searchTerm}"</p>
+          <Button 
+            variant="outline" 
+            onClick={() => filterEvents('')}
+            className="mt-4"
+          >
+            Clear Search
+          </Button>
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination && (
