@@ -218,14 +218,14 @@ export default function AdminEvents() {
               Create Event
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Create New Event</DialogTitle>
               <DialogDescription>
                 Fill in the details for the new plogging event.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateEvent} className="space-y-4">
+            <form onSubmit={handleCreateEvent} className="space-y-4 flex-grow overflow-y-auto pr-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="event_name">Event Name</Label>
@@ -525,14 +525,14 @@ export default function AdminEvents() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Event</DialogTitle>
             <DialogDescription>
               Update the event details.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditEvent} className="space-y-4">
+          <form onSubmit={handleEditEvent} className="space-y-4 flex-grow overflow-y-auto pr-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_event_name">Event Name</Label>

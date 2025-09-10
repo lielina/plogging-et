@@ -54,7 +54,7 @@ const Map: React.FC<MapProps> = ({
       const searchQuery = searchCountry ? `${query}, ${searchCountry}` : query;
       
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=ET`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
       );
       
       const results = await response.json();
