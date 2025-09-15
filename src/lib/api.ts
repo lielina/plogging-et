@@ -470,6 +470,7 @@ class ApiClient {
     longitude: number;
     estimated_duration_hours: number;
     max_volunteers: number;
+    status: string; // Add status field
   }): Promise<{ data: Event }> {
     return this.request<{ data: Event }>('/admin/events', {
       method: 'POST',
