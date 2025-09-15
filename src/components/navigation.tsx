@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Leaf, Menu, Home, Calendar, Trophy, User, Settings, Bell, LogOut } from "lucide-react"
+import { Leaf, Menu, Home, Calendar, Trophy, User, Settings, Bell, LogOut, FileText } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
 export function Navigation() {
@@ -15,6 +15,7 @@ export function Navigation() {
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/events", label: "Events", icon: Calendar },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+    { href: "/certificates", label: "Certificates", icon: FileText },
     { href: "/profile", label: "Profile", icon: User },
   ]
 
