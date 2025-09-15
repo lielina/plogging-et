@@ -23,6 +23,7 @@ interface EventFormData {
   longitude: number;
   estimated_duration_hours: number;
   max_volunteers: number;
+  status: string; // Add status field
 }
 
 export default function AdminEvents() {
@@ -49,6 +50,7 @@ export default function AdminEvents() {
     longitude: 0,
     estimated_duration_hours: 0,
     max_volunteers: 0,
+    status: 'Active', // Set default status to Active
   })
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [createSearchResults, setCreateSearchResults] = useState<any[]>([]);
@@ -118,7 +120,12 @@ export default function AdminEvents() {
         throw new Error('Estimated duration must be greater than 0')
       }
 
-      await apiClient.createEvent(formData)
+      await apiClient.createEvent({
+        ...formData,
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+        status: formData.status || 'Active', // Ensure status is set
+      })
       setIsCreateDialogOpen(false)
       resetForm()
       fetchEvents()
@@ -135,7 +142,12 @@ export default function AdminEvents() {
     if (!selectedEvent) return
 
     try {
-      await apiClient.updateEvent(selectedEvent.event_id, formData)
+      await apiClient.updateEvent(selectedEvent.event_id, {
+        ...formData,
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+        status: formData.status || 'Active', // Ensure status is preserved
+      })
       setIsEditDialogOpen(false)
       resetForm()
       fetchEvents()
@@ -180,6 +192,7 @@ export default function AdminEvents() {
       longitude: typeof event.longitude === 'string' ? parseFloat(event.longitude) : event.longitude,
       estimated_duration_hours: typeof event.estimated_duration_hours === 'string' ? parseFloat(event.estimated_duration_hours) : event.estimated_duration_hours,
       max_volunteers: event.max_volunteers,
+      status: event.status || 'Active' // Include status field
     })
     setIsEditDialogOpen(true)
   }
@@ -200,6 +213,7 @@ export default function AdminEvents() {
       longitude: 0,
       estimated_duration_hours: 0,
       max_volunteers: 0,
+      status: 'Active' // Reset to default status
     })
     setSelectedEvent(null)
   }
@@ -280,7 +294,8 @@ export default function AdminEvents() {
       ...formData,
       location_name: result.display_name,
       latitude: lat,
-      longitude: lng
+      longitude: lng,
+      status: formData.status || 'Active' // Ensure status is preserved
     });
     
     setCreateSearchResults([]);
@@ -295,7 +310,8 @@ export default function AdminEvents() {
       ...formData,
       location_name: result.display_name,
       latitude: lat,
-      longitude: lng
+      longitude: lng,
+      status: formData.status || 'Active' // Ensure status is preserved
     });
     
     setEditSearchResults([]);
@@ -461,7 +477,8 @@ export default function AdminEvents() {
                     setFormData({
                       ...formData,
                       latitude: lat,
-                      longitude: lng
+                      longitude: lng,
+                      status: formData.status || 'Active' // Ensure status is preserved
                     });
                   }}
                   selectedLocation={formData.latitude && formData.longitude ? [formData.latitude, formData.longitude] : null}
@@ -479,7 +496,7 @@ export default function AdminEvents() {
                       type="number"
                       step="any"
                       value={formData.latitude}
-                      onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value) || 0})}
+                      onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value) || 0, status: formData.status || 'Active'})}
                       placeholder="Latitude"
                     />
                   </div>
@@ -490,7 +507,7 @@ export default function AdminEvents() {
                       type="number"
                       step="any"
                       value={formData.longitude}
-                      onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value) || 0})}
+                      onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value) || 0, status: formData.status || 'Active'})}
                       placeholder="Longitude"
                     />
                   </div>
@@ -503,7 +520,7 @@ export default function AdminEvents() {
                   id="max_volunteers"
                   type="number"
                   value={formData.max_volunteers}
-                  onChange={(e) => setFormData({...formData, max_volunteers: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({...formData, max_volunteers: parseInt(e.target.value) || 0, status: formData.status || 'Active'})}
                   required
                 />
               </div>
@@ -515,9 +532,25 @@ export default function AdminEvents() {
                   type="number"
                   step="0.5"
                   value={formData.estimated_duration_hours}
-                  onChange={(e) => setFormData({...formData, estimated_duration_hours: parseFloat(e.target.value)})}
+                  onChange={(e) => setFormData({...formData, estimated_duration_hours: parseFloat(e.target.value) || 0, status: formData.status || 'Active'})}
                   required
                 />
+              </div>
+
+              {/* Status Field */}
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <select
+                  id="status"
+                  value={formData.status}
+                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="Completed">Completed</option>
+                </select>
               </div>
 
               <DialogFooter>
@@ -572,7 +605,6 @@ export default function AdminEvents() {
                     {formatTime(event.start_time)} - {formatTime(event.end_time)}
                   </span>
                 </div>
-
                 {/* Location */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -712,7 +744,7 @@ export default function AdminEvents() {
                 <Input
                   id="edit_event_name"
                   value={formData.event_name}
-                  onChange={(e) => setFormData({...formData, event_name: e.target.value})}
+                  onChange={(e) => setFormData({...formData, event_name: e.target.value, status: formData.status || 'Active'})}
                   required
                 />
               </div>
@@ -722,7 +754,7 @@ export default function AdminEvents() {
                   id="edit_event_date"
                   type="date"
                   value={formData.event_date}
-                  onChange={(e) => setFormData({...formData, event_date: e.target.value})}
+                  onChange={(e) => setFormData({...formData, event_date: e.target.value, status: formData.status || 'Active'})}
                   required
                 />
               </div>
@@ -733,7 +765,7 @@ export default function AdminEvents() {
               <Textarea
                 id="edit_description"
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({...formData, description: e.target.value, status: formData.status || 'Active'})}
                 required
               />
             </div>
@@ -745,7 +777,7 @@ export default function AdminEvents() {
                   id="edit_start_time"
                   type="time"
                   value={formData.start_time}
-                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                  onChange={(e) => setFormData({...formData, start_time: e.target.value, status: formData.status || 'Active'})}
                   required
                 />
               </div>
@@ -755,7 +787,7 @@ export default function AdminEvents() {
                   id="edit_end_time"
                   type="time"
                   value={formData.end_time}
-                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                  onChange={(e) => setFormData({...formData, end_time: e.target.value, status: formData.status || 'Active'})}
                   required
                 />
               </div>
@@ -767,7 +799,7 @@ export default function AdminEvents() {
                 id="edit_location_name"
                 value={formData.location_name}
                 onChange={(e) => {
-                  setFormData({...formData, location_name: e.target.value});
+                  setFormData({...formData, location_name: e.target.value, status: formData.status || 'Active'});
                   // Trigger search when typing in location name
                   if (e.target.value.trim()) {
                     searchEditLocationByName(e.target.value);
@@ -849,7 +881,7 @@ export default function AdminEvents() {
                 id="edit_max_volunteers"
                 type="number"
                 value={formData.max_volunteers}
-                onChange={(e) => setFormData({...formData, max_volunteers: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({...formData, max_volunteers: parseInt(e.target.value) || 0, status: formData.status || 'Active'})}
                 required
               />
             </div>
@@ -861,7 +893,7 @@ export default function AdminEvents() {
                 type="number"
                 step="0.5"
                 value={formData.estimated_duration_hours}
-                onChange={(e) => setFormData({...formData, estimated_duration_hours: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({...formData, estimated_duration_hours: parseFloat(e.target.value) || 0, status: formData.status || 'Active'})}
                 required
               />
             </div>
