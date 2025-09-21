@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 import { useAuth } from "@/contexts/AuthContext";
 import useHashScroll from "@/hooks/useHashScroll";
@@ -15,6 +16,7 @@ import {
 
 const Layout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isCollapsed } = useSidebar();
   const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
   useHashScroll();
@@ -32,7 +34,7 @@ const Layout = () => {
       {isAuthenticated && isDashboardRoute && <UserSidebar />}
       
       {/* Main content area */}
-      <div className={`flex-1 flex flex-col ${isAuthenticated && isDashboardRoute ? 'lg:ml-64' : ''}`}>
+      <div className="flex-1 flex flex-col">
         {/* Header - only show on non-dashboard pages or for unauthenticated users */}
         {(!isAuthenticated || !isDashboardRoute) && (
           <header className="bg-white shadow-sm">

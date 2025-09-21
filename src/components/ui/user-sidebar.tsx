@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSidebar } from "@/contexts/SidebarContext";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -10,11 +11,14 @@ import {
   LogOut,
   Menu,
   X,
-  Home
+  Home,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 const UserSidebar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { isCollapsed, toggleCollapse } = useSidebar();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -50,9 +54,11 @@ const UserSidebar = () => {
 
       {/* Sidebar */}
       <div 
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 bg-white shadow-lg transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col`}
+        } lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col ${
+          isCollapsed ? "w-20" : "w-64"
+        }`}
       >
         {/* Sidebar header with logo and user info */}
         <div className="p-4 border-b border-gray-200">
@@ -61,7 +67,7 @@ const UserSidebar = () => {
               <img
                 src="/logo.png"
                 alt="Plogging Ethiopia Logo"
-                className="h-12 w-auto"
+                className={`h-12 w-auto ${isCollapsed ? 'hidden' : ''}`}
               />
             </Link>
             <button 
@@ -70,9 +76,16 @@ const UserSidebar = () => {
             >
               <X className="h-5 w-5" />
             </button>
+            {/* Desktop collapse button */}
+            <button 
+              onClick={toggleCollapse}
+              className="hidden lg:block p-1 rounded-md hover:bg-gray-100"
+            >
+              {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+            </button>
           </div>
           
-          {isAuthenticated && user && (
+          {!isCollapsed && isAuthenticated && user && (
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                 <span className="text-white font-bold">
@@ -107,8 +120,8 @@ const UserSidebar = () => {
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    {!isCollapsed && <span>{item.name}</span>}
                   </Link>
                 </li>
               );
@@ -121,8 +134,8 @@ const UserSidebar = () => {
                 onClick={() => setIsOpen(false)}
                 className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
               >
-                <Home className="h-5 w-5" />
-                <span>Home</span>
+                <Home className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && <span>Home</span>}
               </Link>
             </li>
           </ul>
@@ -138,8 +151,8 @@ const UserSidebar = () => {
               }}
               className="flex items-center space-x-3 w-full px-3 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
             >
-              <LogOut className="h-5 w-5" />
-              <span>Logout</span>
+              <LogOut className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && <span>Logout</span>}
             </button>
           ) : (
             <Link
@@ -147,12 +160,23 @@ const UserSidebar = () => {
               onClick={() => setIsOpen(false)}
               className="flex items-center space-x-3 w-full px-3 py-2 text-left text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-md transition-colors"
             >
-              <LogOut className="h-5 w-5" />
-              <span>Login</span>
+              <LogOut className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && <span>Login</span>}
             </Link>
           )}
         </div>
       </div>
+      
+      {/* Collapse overlay for desktop */}
+      {isCollapsed && (
+        <button
+          onClick={toggleCollapse}
+          className="hidden lg:block fixed left-0 top-1/2 z-40 p-1 rounded-r-md bg-green-600 text-white shadow-lg"
+          aria-label="Expand sidebar"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
     </>
   );
 };

@@ -241,7 +241,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen p-4 bg-gray-50">
+    <div className="flex flex-col flex-1 min-h-screen bg-gray-50">
       {/* Enhanced Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 rounded-lg mb-6">
         <div className="flex items-center gap-4">
