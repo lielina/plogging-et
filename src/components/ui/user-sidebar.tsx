@@ -54,11 +54,11 @@ const UserSidebar = () => {
 
       {/* Sidebar */}
       <div 
-        className={`fixed lg:static inset-y-0 left-0 z-50 bg-white shadow-lg transform ${
+        className={`fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col ${
           isCollapsed ? "w-20" : "w-64"
-        }`}
+        } h-screen`}
       >
         {/* Sidebar header with logo and user info */}
         <div className="p-4 border-b border-gray-200">
