@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
@@ -101,16 +101,13 @@ export default function Dashboard() {
           apiClient.getVolunteerBadges()
             .then(response => {
               console.log('Badges response:', response.data)
-              setBadges(response.data || [])
+              // Ensure badges is an array
+              const badgesData = Array.isArray(response.data) ? response.data : []
+              setBadges(badgesData)
             })
             .catch(error => {
               console.error('Error fetching badges:', error)
-              // Only show error message for actual API errors, not empty arrays
-              if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('500')) {
-                setBadges([]) // Set empty array for now, will show "no badges" instead of "temporarily unavailable"
-              } else {
-                setBadges([]) // For other errors, assume no badges earned yet
-              }
+              setBadges([])
             })
         ]
         
@@ -187,16 +184,13 @@ export default function Dashboard() {
         apiClient.getVolunteerBadges()
           .then(response => {
             console.log('Refreshing badges response:', response.data)
-            setBadges(response.data || [])
+            // Ensure badges is an array
+            const badgesData = Array.isArray(response.data) ? response.data : []
+            setBadges(badgesData)
           })
           .catch(error => {
             console.error('Error refreshing badges:', error)
-            // Only show error message for actual API errors, not empty arrays
-            if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('500')) {
-              setBadges([]) // Set empty array for now, will show "no badges" instead of "temporarily unavailable"
-            } else {
-              setBadges([]) // For other errors, assume no badges earned yet
-            }
+            setBadges([])
           })
       ]
       
@@ -583,12 +577,12 @@ export default function Dashboard() {
               {badges.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {badges.map((badge) => (
-                    <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200">
+                    <div key={badge.badge_id || badge.id || badge.name} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200">
                       <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                         {badge.image_url ? (
                           <img 
                             src={badge.image_url} 
-                            alt={badge.badge_name}
+                            alt={badge.badge_name || badge.name || 'Badge'}
                             className="h-10 w-10 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
@@ -602,14 +596,14 @@ export default function Dashboard() {
                         ) : null}
                         <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
                       </div>
-                      <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
+                      <h4 className="font-semibold text-base text-gray-800">{badge.badge_name || badge.name || 'Unknown Badge'}</h4>
                       <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {badge.description}
+                        {badge.description || 'No description available'}
                       </p>
-                      {badge.criteria_type && badge.criteria_value && (
+                      {(badge.criteria_type || badge.criteria_value) && (
                         <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
                           <span className="text-xs text-yellow-800 font-medium">
-                            {badge.criteria_type}: {badge.criteria_value}
+                            {badge.criteria_type || 'Criteria'}: {badge.criteria_value || 'N/A'}
                           </span>
                         </div>
                       )}
