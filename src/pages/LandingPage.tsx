@@ -130,10 +130,10 @@ export default function LandingPage() {
         <main className="relative z-20 w-full flex flex-col items-center gap-12 pb-0">
           <div className="grid md:grid-cols-2 w-full text-white py-10 pl-5">
             <div className="flex flex-col items-start justify-center w-full h-full gap-8">
-              <h1 className="md:text-6xl text-3xl font-bold text-left">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-left">
                 Welcome to Plogging Ethiopia
               </h1>
-              <p className="italic text-2xl mb-6">
+              <p className="text-xl sm:text-2xl italic mb-6">
                 Stride with purpose, cleanse with passion
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -151,7 +151,7 @@ export default function LandingPage() {
             </div>
 
             <div className="relative z-20 flex items-center justify-center">
-              <img src="/header-left.png" alt="Plogging illustration" className="max-h-[70vh] object-contain" />
+              <img src="/header-left.png" alt="Plogging illustration" className="max-h-[70vh] object-contain hidden md:block" />
             </div>
           </div>
         </main>
@@ -160,27 +160,27 @@ export default function LandingPage() {
       {/* Our Story Section with transition */}
       <section
         ref={el => sectionRefs.current[0] = el as HTMLDivElement | null}
-        className={`py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 transform ${
+        className={`py-12 md:py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 transform ${
           visibleSections.has(0) 
             ? 'translate-y-0 opacity-100' 
             : 'translate-y-10 opacity-0'
         }`}
       >
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 shadow-xl">
             {/* Text Content */}
-            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+            <div className="flex flex-col items-start gap-4 md:gap-6 md:w-[60%] w-full md:order-1 order-2 p-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 text-left">
                 Our Story
               </h2>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 Plogging-Ethiopia traces its origins back to a family excursion
                 that spanned more than five years before officially launching in
                 January 2021 at Entoto Park, Addis Ababa. The individuals behind
                 this initiative are Firew Kefyalew, a father, and his three sons
                 – Yeab, Lihiq, and Amnen.
               </p>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 Plogging-Ethiopia goes beyond simply collecting trash; it
                 represents a dynamic movement that combines physical fitness,
                 community involvement, and environmental responsibility. The
@@ -199,7 +199,7 @@ export default function LandingPage() {
               <img
                 src="/story-1.png"
                 alt="Plogging Activity"
-                className="w-full h-80 object-cover rounded-lg shadow-lg"
+                className="w-full h-60 md:h-80 object-cover rounded-lg shadow-lg"
               />
             </div>
           </div>
@@ -209,29 +209,29 @@ export default function LandingPage() {
       {/* What is Plogging Section with transition */}
       <section
         ref={el => sectionRefs.current[1] = el as HTMLDivElement | null}
-        className={`py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-100 transform ${
+        className={`py-12 md:py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-100 transform ${
           visibleSections.has(1)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
       >
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 shadow-xl">
             {/* Image Section */}
             <div className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4">
               <img
                 src="/story-2.png"
                 alt="What is Plogging"
-                className="w-full h-80 object-cover rounded-lg shadow-lg"
+                className="w-full h-60 md:h-80 object-cover rounded-lg shadow-lg"
               />
             </div>
 
             {/* Text Content */}
-            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+            <div className="flex flex-col items-start gap-4 md:gap-6 md:w-[60%] w-full md:order-2 order-1 p-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 text-left">
                 What is Plogging?
               </h2>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 Plogging is more than an exercise routine; it's a revolutionary
                 approach to environmental stewardship. Participants jog or walk,
                 intermittently stopping to pick up litter along their route.
@@ -239,7 +239,7 @@ export default function LandingPage() {
                 fitness but also raises awareness about the impact of plastic
                 pollution on our communities and environment.
               </p>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 The beauty of plogging lies in its accessibility and immediate
                 impact. Whether you're a seasoned runner or prefer a leisurely
                 walk, plogging adapts to your fitness level while contributing
@@ -253,20 +253,20 @@ export default function LandingPage() {
       {/* Mission Section with transition */}
       <section
         ref={el => sectionRefs.current[2] = el as HTMLDivElement | null}
-        className={`py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 delay-200 transform ${
+        className={`py-12 md:py-16 px-4 bg-white w-full flex flex-col items-center justify-center transition-all duration-700 delay-200 transform ${
           visibleSections.has(2)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
       >
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 shadow-xl">
             {/* Text Content */}
-            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-1 order-2 p-4">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+            <div className="flex flex-col items-start gap-4 md:gap-6 md:w-[60%] w-full md:order-1 order-2 p-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 text-left">
                 Mission
               </h2>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 At the core of Plogging-Ethiopia is a mission to create a
                 cleaner, greener Ethiopia while promoting physical fitness and
                 community engagement. Every stride has impact, can pave the way
@@ -274,7 +274,7 @@ export default function LandingPage() {
                 inspire people to take responsibility for their environment
                 while promoting an active and healthy lifestyle.
               </p>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 We believe that small actions, when multiplied by millions of
                 people, can transform the world. Our mission extends beyond
                 cleaning up litter – we're building a movement that fosters
@@ -285,7 +285,7 @@ export default function LandingPage() {
 
             {/* Image Section */}
             <div className="md:order-2 order-1 w-full md:w-[40%] flex justify-center items-center p-4">
-              <div className="w-80 h-80 rounded-full overflow-hidden shadow-lg">
+              <div className="w-60 h-60 md:w-80 md:h-80 rounded-full overflow-hidden shadow-lg">
                 <img
                   src="/story-3.png"
                   alt="Mission"
@@ -300,17 +300,17 @@ export default function LandingPage() {
       {/* Our Impact Section with transition */}
       <section
         ref={el => sectionRefs.current[3] = el as HTMLDivElement | null}
-        className={`py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-300 transform ${
+        className={`py-12 md:py-16 px-4 bg-gray-50 w-full flex flex-col items-center justify-center transition-all duration-700 delay-300 transform ${
           visibleSections.has(3)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
       >
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 shadow-xl">
             {/* Image Section */}
             <div className="md:order-1 order-2 w-full md:w-[40%] flex justify-center items-center p-4">
-              <div className="w-80 h-80 rounded-full overflow-hidden shadow-lg">
+              <div className="w-60 h-60 md:w-80 md:h-80 rounded-full overflow-hidden shadow-lg">
                 <img
                   src="/story-4.png"
                   alt="Our Impact"
@@ -320,11 +320,11 @@ export default function LandingPage() {
             </div>
 
             {/* Text Content */}
-            <div className="flex flex-col items-start gap-6 md:w-[60%] w-full md:order-2 order-1 p-4">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-800 text-left">
+            <div className="flex flex-col items-start gap-4 md:gap-6 md:w-[60%] w-full md:order-2 order-1 p-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 text-left">
                 Our Impact
               </h2>
-              <p className="text-gray-700 text-lg leading-relaxed font-sans">
+              <p className="text-gray-700 text-base md:text-lg leading-relaxed font-sans">
                 Plogging Ethiopia's remarkable achievements have gained both
                 national and international recognition. Since our inception, we
                 have organized numerous events, contributed to Ethiopia's Prime
@@ -402,14 +402,14 @@ export default function LandingPage() {
       {/* Message From The Founder Section with transition */}
       <section
         ref={el => sectionRefs.current[6] = el as HTMLDivElement | null}
-        className={`founder-message grid md:grid-cols-2 place-items-center w-[90%] mx-auto gap-6 shadow-lg transition-all duration-700 delay-600 transform ${
+        className={`founder-message grid md:grid-cols-2 place-items-center w-[90%] mx-auto gap-6 shadow-lg transition-all duration-700 delay-600 transform mt-20 ${
           visibleSections.has(6)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
       >
         {/* Text Block */}
-        <div className="flex flex-col text-left gap-6 p-4">
+        <div className="flex flex-col text-left gap-5 p-4">
           <h1 className="text-2xl font-semibold text-gray-800">
             Message From The Founder
           </h1>
@@ -457,31 +457,31 @@ export default function LandingPage() {
       {/* FAQ Section with transition */}
       <section
         ref={el => sectionRefs.current[7] = el as HTMLDivElement | null}
-        className={`w-full flex flex-col items-center mt-20 transition-all duration-700 delay-700 transform ${
+        className={`w-full flex flex-col items-center mt-12 md:mt-20 transition-all duration-700 delay-700 transform ${
           visibleSections.has(7)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
       >
-        <div className="w-[90%] flex flex-col gap-5">
-          <h1 className="text-5xl mb-10 text-start">FAQ?</h1>
+        <div className="w-[90%] flex flex-col gap-4 md:gap-5">
+          <h1 className="text-3xl md:text-5xl mb-6 md:mb-10 text-start">FAQ?</h1>
 
           {faqItems.map((item, index) => (
             <div key={index} className="w-full text-left">
               <button
                 onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                className="cursor-pointer bg-green-500/20 w-full px-5 py-4 flex justify-between items-center mb-4"
+                className="cursor-pointer bg-green-500/20 w-full px-4 py-3 md:px-5 md:py-4 flex justify-between items-center mb-3 md:mb-4"
               >
-                <span className="font-none text-lg text-gray-800">
+                <span className="font-none text-base md:text-lg text-gray-800">
                   {item.question}
                 </span>
-                <span className="text-2xl font-bold text-gray-800">
+                <span className="text-xl md:text-2xl font-bold text-gray-800">
                   {openFaq === index ? "–" : "+"}
                 </span>
               </button>
 
               {openFaq === index && (
-                <div className="w-full px-5 py-2 bg-white text-lg">
+                <div className="w-full px-4 py-2 md:px-5 md:py-2 bg-white text-base md:text-lg">
                   <p className="text-gray-700 leading-relaxed">{item.answer}</p>
                 </div>
               )}
