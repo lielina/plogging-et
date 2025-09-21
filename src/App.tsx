@@ -56,34 +56,33 @@ function AppRoutes() {
           <Route path="/gallery" element={<div>Gallery Page</div>} />
           <Route path="/blog" element={<div>Blog Page</div>} />
           <Route path="/contact" element={<Contact />} />
+          {/* Protected Volunteer Routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/leaderboard" element={
+            <ProtectedRoute>
+              <Leaderboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/certificates" element={
+            <ProtectedRoute>
+              <VolunteerCertificates />
+            </ProtectedRoute>
+          } />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} /> {/* Added route for Register */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/welcome" element={<Welcome />} />
-        
-        {/* Protected Volunteer Routes */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/leaderboard" element={
-          <ProtectedRoute>
-            <Leaderboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
-        <Route path="/certificates" element={
-          <ProtectedRoute>
-            <VolunteerCertificates />
-          </ProtectedRoute>
-        } />
         
         {/* Protected Admin Routes */}
         <Route path="/admin" element={
@@ -113,4 +112,4 @@ function App() {
   )
 }
 
-export default App 
+export default App

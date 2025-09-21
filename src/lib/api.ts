@@ -87,7 +87,7 @@ export interface VolunteerBadge {
 export interface VolunteerCertificate {
   certificate_id: number;
   volunteer_id: string;
-  event_id: string | null;
+  event_id?: string;
   certificate_type: string;
   hours_on_certificate: string;
   generation_date: string;
@@ -197,7 +197,9 @@ class ApiClient {
         this.clearToken();
       }
 
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      // Create a more descriptive error message
+      const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -595,4 +597,4 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(BASE_URL); 
+export const apiClient = new ApiClient(BASE_URL);
