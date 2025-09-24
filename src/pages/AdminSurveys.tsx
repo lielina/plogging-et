@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,62 +16,32 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Calendar, User, ClipboardList } from 'lucide-react';
 
 const AdminSurveys: React.FC = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [surveys, setSurveys] = useState<any[]>([]);
   const [filteredSurveys, setFilteredSurveys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock data for surveys
+  // Fetch surveys from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockSurveys = [
-        {
-          id: 1,
-          volunteer_name: "Abebe Kebede",
-          email: "abebe@example.com",
-          submitted_date: "2023-06-15",
-          location: "Addis Ababa",
-          status: "completed"
-        },
-        {
-          id: 2,
-          volunteer_name: "Fatima Hassan",
-          email: "fatima@example.com",
-          submitted_date: "2023-06-18",
-          location: "Dire Dawa",
-          status: "completed"
-        },
-        {
-          id: 3,
-          volunteer_name: "Yohannes Tekle",
-          email: "yohannes@example.com",
-          submitted_date: "2023-06-20",
-          location: "Mekelle",
-          status: "completed"
-        },
-        {
-          id: 4,
-          volunteer_name: "Selamawit Mekonnen",
-          email: "selamawit@example.com",
-          submitted_date: "2023-06-22",
-          location: "Bahirdar",
-          status: "completed"
-        },
-        {
-          id: 5,
-          volunteer_name: "Kiros Weldu",
-          email: "kiros@example.com",
-          submitted_date: "2023-06-25",
-          location: "Gondar",
-          status: "completed"
-        }
-      ];
-      
-      setSurveys(mockSurveys);
-      setFilteredSurveys(mockSurveys);
-      setLoading(false);
-    }, 1000);
+    const fetchSurveys = async () => {
+      try {
+        const response = await apiClient.getAllSurveys();
+        setSurveys(response.data);
+        setFilteredSurveys(response.data);
+      } catch (error: any) {
+        console.error('Error fetching surveys:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch surveys. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSurveys();
   }, []);
 
   // Filter surveys based on search term
@@ -78,9 +50,9 @@ const AdminSurveys: React.FC = () => {
       setFilteredSurveys(surveys);
     } else {
       const filtered = surveys.filter(survey => 
-        survey.volunteer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        survey.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        survey.location.toLowerCase().includes(searchTerm.toLowerCase())
+        survey.volunteer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        survey.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        survey.plogging_location?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredSurveys(filtered);
     }
@@ -138,20 +110,24 @@ const AdminSurveys: React.FC = () => {
                   <TableBody>
                     {filteredSurveys.length > 0 ? (
                       filteredSurveys.map((survey) => (
-                        <TableRow key={survey.id}>
+                        <TableRow key={survey.id || survey.survey_id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                                 <User className="h-4 w-4 text-green-600" />
                               </div>
                               <div>
-                                <div className="font-medium">{survey.volunteer_name}</div>
+                                <div className="font-medium">{survey.volunteer_name || 'Unknown Volunteer'}</div>
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{survey.email}</TableCell>
-                          <TableCell>{survey.location}</TableCell>
-                          <TableCell>{new Date(survey.submitted_date).toLocaleDateString()}</TableCell>
+                          <TableCell>{survey.email || 'No email provided'}</TableCell>
+                          <TableCell>{survey.plogging_location || 'Location not specified'}</TableCell>
+                          <TableCell>
+                            {survey.created_at 
+                              ? new Date(survey.created_at).toLocaleDateString() 
+                              : 'Date not available'}
+                          </TableCell>
                           <TableCell>
                             <Badge variant="default" className="bg-green-100 text-green-800">
                               Completed

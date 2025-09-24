@@ -57,8 +57,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           .finally(() => {
             setIsLoading(false);
           });
+      } else if (userType === 'volunteer') {
+        // If we know it's a volunteer, only try volunteer profile
+        apiClient.getVolunteerProfile()
+          .then(response => {
+            setUser(response.data);
+          })
+          .catch((error) => {
+            // Only clear token for 401/403 errors
+            if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+              apiClient.clearToken();
+            }
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
       } else {
-        // Default to trying volunteer profile first, then admin if it fails
+        // If we don't know the user type, try to determine it from the token or make an educated guess
+        // For now, we'll try volunteer first as it's more common
         apiClient.getVolunteerProfile()
           .then(response => {
             setUser(response.data);
@@ -130,6 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.data.volunteer) {
         setUser(response.data.volunteer);
+        localStorage.setItem('userType', 'volunteer');
       }
     } catch (error) {
       throw error;

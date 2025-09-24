@@ -16,7 +16,7 @@ export interface AttendanceRequest {
 }
 
 export interface SurveyRequest {
-  event_id: number;
+  event_id?: number;
   plogging_location: string;
   age: number;
   gender: 'male' | 'female' | 'other';
@@ -191,7 +191,12 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: `HTTP error! status: ${response.status}` };
+      }
 
       // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors
       if (response.status === 401 || response.status === 403) {
@@ -199,7 +204,14 @@ class ApiClient {
       }
 
       // Create a more descriptive error message
-      const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+      const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+
+      // Include validation errors if present
+      if (errorData.errors) {
+        const validationErrors = Object.values(errorData.errors).flat().join(', ');
+        throw new Error(`${errorMessage}: ${validationErrors}`);
+      }
+
       throw new Error(errorMessage);
     }
 
@@ -307,6 +319,10 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async getAllSurveys(): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>('/admin/surveys');
   }
 
   async checkOut(eventId: number, qrCode: string): Promise<{ data: any }> {

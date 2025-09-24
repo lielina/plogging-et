@@ -18,6 +18,7 @@ import AdminEvents from './pages/AdminEvents'
 import AdminVolunteers from './pages/AdminVolunteers'
 import AdminCertificates from './pages/AdminCertificates'
 import AdminSettings from './pages/AdminSettings'
+import AdminSurveys from './pages/AdminSurveys'
 import EventDetail from './pages/EventDetail'
 import AdminVolunteerDetail from './pages/AdminVolunteerDetail'
 import Layout from './pages/Layout'
@@ -96,6 +97,7 @@ function AppRoutes() {
           <Route path="volunteers" element={<AdminVolunteers />} />
           <Route path="volunteers/:volunteerId" element={<AdminVolunteerDetail />} />
           <Route path="certificates" element={<AdminCertificates />} />
+          <Route path="surveys" element={<AdminSurveys />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>

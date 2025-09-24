@@ -15,17 +15,18 @@ interface SurveyModalProps {
   open: boolean;
   onClose: () => void;
   onSurveyComplete: () => void;
-  onSkip?: () => void; // Add skip handler
+  onSkip?: () => void;
+  eventId?: number; // Add optional event ID
 }
 
-const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComplete, onSkip }) => {
+const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComplete, onSkip, eventId }) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Survey data state
   const [surveyData, setSurveyData] = useState<Partial<SurveyRequest>>({
-    event_id: 0,
+    event_id: eventId,
     plogging_location: '',
     age: 0,
     gender: 'male',
@@ -33,11 +34,11 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
     residence_area: '',
     employment_status: '',
     main_reason: '',
-    main_reason_other: '',
+    main_reason_other: null,
     future_participation_likelihood: 3,
     participation_factors: [],
     barriers_to_participation: [],
-    barriers_to_participation_other: '',
+    barriers_to_participation_other: null,
     overall_satisfaction: ''
   });
 
@@ -96,8 +97,118 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
         return;
       }
 
+      // Validate age (assuming minimum age is 16)
+      if (surveyData.age < 16) {
+        toast({
+          title: "Error",
+          description: "Age must be at least 16 years old.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate main_reason - it's required
+      if (!surveyData.main_reason) {
+        toast({
+          title: "Error",
+          description: "Please select your main reason for participating.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate overall_satisfaction - it's required
+      if (!surveyData.overall_satisfaction) {
+        toast({
+          title: "Error",
+          description: "Please select your overall satisfaction.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate text fields have meaningful content
+      if (surveyData.plogging_location && surveyData.plogging_location.length < 2) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid location.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (surveyData.education_level && surveyData.education_level.length < 2) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid education level.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (surveyData.residence_area && surveyData.residence_area.length < 2) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid residence area.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (surveyData.employment_status && surveyData.employment_status.length < 2) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid employment status.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Prepare survey data for submission
+      const surveyPayload: any = { ...surveyData };
+      
+      // Handle event_id - only include if it's a valid number
+      if (surveyPayload.event_id && surveyPayload.event_id > 0) {
+        surveyPayload.event_id = surveyPayload.event_id;
+      } else {
+        delete surveyPayload.event_id;
+      }
+
+      // Ensure participation_factors is an array
+      if (!Array.isArray(surveyPayload.participation_factors)) {
+        surveyPayload.participation_factors = [];
+      }
+
+      // Ensure barriers_to_participation is an array
+      if (!Array.isArray(surveyPayload.barriers_to_participation)) {
+        surveyPayload.barriers_to_participation = [];
+      }
+
+      // Handle main_reason_other - set to null if not 'other'
+      if (surveyPayload.main_reason !== 'other') {
+        surveyPayload.main_reason_other = null;
+      } else if (!surveyPayload.main_reason_other) {
+        surveyPayload.main_reason_other = null;
+      }
+
+      // Handle barriers_to_participation_other - set to null if 'other' not selected
+      if (!surveyPayload.barriers_to_participation.includes('other')) {
+        surveyPayload.barriers_to_participation_other = null;
+      } else if (!surveyPayload.barriers_to_participation_other) {
+        surveyPayload.barriers_to_participation_other = null;
+      }
+
+      // Remove undefined values
+      Object.keys(surveyPayload).forEach(key => {
+        if (surveyPayload[key as keyof typeof surveyPayload] === undefined) {
+          delete surveyPayload[key as keyof typeof surveyPayload];
+        }
+      });
+
+      console.log('Survey payload being sent:', surveyPayload); // For debugging
+
       // Submit survey data
-      await apiClient.submitSurvey(surveyData as SurveyRequest);
+      await apiClient.submitSurvey(surveyPayload as SurveyRequest);
       
       toast({
         title: "Success",
@@ -108,9 +219,19 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
       onSurveyComplete();
       onClose();
     } catch (error: any) {
+      console.error('Survey submission error:', error);
+      
+      // Try to get more detailed error information
+      let errorMessage = error.message || "Failed to submit survey. Please try again.";
+      
+      // If we have more detailed error information from the API
+      if (error.message && error.message.includes('Validation failed')) {
+        errorMessage = "There was a validation error with your submission. Please check all fields and try again.";
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to submit survey. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -161,26 +282,21 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                   <RadioGroupItem value="female" id="female" />
                   <Label htmlFor="female">Female</Label>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other" />
+                  <Label htmlFor="other">Other</Label>
+                </div>
               </RadioGroup>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="education_level">Education Level</Label>
-              <Select 
-                value={surveyData.education_level || ''} 
-                onValueChange={(value) => handleInputChange('education_level', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select education level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high_school">High School</SelectItem>
-                  <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                  <SelectItem value="master">Master's Degree</SelectItem>
-                  <SelectItem value="phd">PhD</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="education_level"
+                value={surveyData.education_level || ''}
+                onChange={(e) => handleInputChange('education_level', e.target.value)}
+                placeholder="Enter your education level"
+              />
             </div>
             
             <div className="space-y-2">
@@ -195,21 +311,12 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
             
             <div className="space-y-2">
               <Label htmlFor="employment_status">Work Status</Label>
-              <Select 
-                value={surveyData.employment_status || ''} 
-                onValueChange={(value) => handleInputChange('employment_status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select work status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="self_employed">Self-Employed</SelectItem>
-                  <SelectItem value="job_seeker">Job Seeker</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="employed">Employed</SelectItem>
-                  <SelectItem value="unemployed">Unemployed</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="employment_status"
+                value={surveyData.employment_status || ''}
+                onChange={(e) => handleInputChange('employment_status', e.target.value)}
+                placeholder="Enter your work status"
+              />
             </div>
           </div>
         );
@@ -226,20 +333,20 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                 onValueChange={(value) => handleInputChange('main_reason', value)}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="protect_environment" id="protect_environment" />
-                  <Label htmlFor="protect_environment">To protect the environment</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="protect_health" id="protect_health" />
-                  <Label htmlFor="protect_health">To protect my own health by being active</Label>
+                  <RadioGroupItem value="environmental_health" id="environmental_health" />
+                  <Label htmlFor="environmental_health">Environmental and health benefits</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="social_interaction" id="social_interaction" />
-                  <Label htmlFor="social_interaction">For social interaction (meeting people)</Label>
+                  <Label htmlFor="social_interaction">Social interaction</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="enjoy_nature" id="enjoy_nature" />
-                  <Label htmlFor="enjoy_nature">For fun, to enjoy nature</Label>
+                  <RadioGroupItem value="community_service" id="community_service" />
+                  <Label htmlFor="community_service">Community service</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="exercise" id="exercise" />
+                  <Label htmlFor="exercise">Exercise and fitness</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="other" id="reason_other" />
@@ -290,10 +397,10 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
               </Label>
               <div className="space-y-2">
                 {[
-                  { id: 'frequent', label: 'If the plogging is organized frequently' },
-                  { id: 'different_places', label: 'If it is organized in different places' },
-                  { id: 'social_activities', label: 'If there are other social activities after plogging' },
-                  { id: 'recognition', label: 'If there is recognition or awards' },
+                  { id: 'regular_plogging', label: 'Regular plogging events' },
+                  { id: 'various_locations', label: 'Plogging in various locations' },
+                  { id: 'social_activities', label: 'Social activities after plogging' },
+                  { id: 'recognition', label: 'Recognition or awards' },
                   { id: 'always_motivated', label: 'I am always motivated to participate' }
                 ].map((item) => (
                   <div key={item.id} className="flex items-center space-x-2">
@@ -321,11 +428,11 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
               </Label>
               <div className="space-y-2">
                 {[
-                  { id: 'time_inconvenience', label: 'Inconvenience of time' },
-                  { id: 'location_inconvenience', label: 'The location is not convenient' },
-                  { id: 'physical_health', label: 'My physical health makes it difficult for me to participate' },
+                  { id: 'time_constraint', label: 'Time constraint' },
+                  { id: 'location_inconvenient', label: 'Location inconvenient' },
+                  { id: 'physical_health', label: 'Physical health issues' },
                   { id: 'lack_of_interest', label: 'Lack of interest' },
-                  { id: 'barrier_other', label: 'Other' }
+                  { id: 'other', label: 'Other' }
                 ].map((item) => (
                   <div key={item.id} className="flex items-center space-x-2">
                     <Checkbox
@@ -338,7 +445,7 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                     <Label htmlFor={item.id}>{item.label}</Label>
                   </div>
                 ))}
-                {(surveyData.barriers_to_participation || []).includes('barrier_other') && (
+                {(surveyData.barriers_to_participation || []).includes('other') && (
                   <div className="ml-6 mt-2">
                     <Input
                       placeholder="Please specify"
@@ -364,12 +471,12 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                 onValueChange={(value) => handleInputChange('overall_satisfaction', value)}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="happy" id="happy" />
-                  <Label htmlFor="happy">I am happy</Label>
+                  <RadioGroupItem value="satisfied" id="satisfied" />
+                  <Label htmlFor="satisfied">Satisfied</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="not_happy" id="not_happy" />
-                  <Label htmlFor="not_happy">I am not happy</Label>
+                  <RadioGroupItem value="not_satisfied" id="not_satisfied" />
+                  <Label htmlFor="not_satisfied">Not satisfied</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -408,7 +515,7 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
             
             <div className="text-sm">
               <Label className="font-medium">Main Reason:</Label>
-              <p>{surveyData.main_reason === 'other' ? `Other: ${surveyData.main_reason_other}` : surveyData.main_reason || 'Not provided'}</p>
+              <p>{surveyData.main_reason === 'other' ? `Other: ${surveyData.main_reason_other || ''}` : surveyData.main_reason || 'Not provided'}</p>
             </div>
             
             <div className="text-sm">
