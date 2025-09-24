@@ -28,6 +28,7 @@ export interface SurveyRequest {
   future_participation_likelihood: number;
   participation_factors: string[];
   barriers_to_participation: string[];
+  barriers_to_participation_other?: string | null;
   overall_satisfaction: string;
 }
 

@@ -7,7 +7,7 @@ import Events from './pages/Events'
 import Leaderboard from './pages/Leaderboard'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
-import Register from './pages/Register' // Added import for Register
+import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Welcome from './pages/Welcome'
@@ -23,6 +23,8 @@ import Layout from './pages/Layout'
 import Membership from './pages/Membership'
 import Contact from './pages/Contact'
 import VolunteerCertificates from './pages/VolunteerCertificates'
+import Survey from './pages/Survey'
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
@@ -77,9 +79,14 @@ function AppRoutes() {
               <VolunteerCertificates />
             </ProtectedRoute>
           } />
+          <Route path="/survey" element={
+            <ProtectedRoute>
+              <Survey />
+            </ProtectedRoute>
+          } />
         </Route>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} /> {/* Added route for Register */}
+        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/welcome" element={<Welcome />} />

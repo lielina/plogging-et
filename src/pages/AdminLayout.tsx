@@ -2,7 +2,7 @@ import React from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
-import { Calendar, Users, FileText, LogOut, BarChart3, Menu, Settings as SettingsIcon } from 'lucide-react'
+import { Calendar, Users, FileText, LogOut, BarChart3, Menu, Settings as SettingsIcon, ClipboardList } from 'lucide-react'
 
 export default function AdminLayout() {
   const { user, logout } = useAuth()
@@ -14,6 +14,7 @@ export default function AdminLayout() {
     { href: '/admin/events', label: 'Events', icon: Calendar },
     { href: '/admin/volunteers', label: 'Volunteers', icon: Users },
     { href: '/admin/certificates', label: 'Certificates', icon: FileText },
+    { href: '/admin/surveys', label: 'Surveys', icon: ClipboardList },
     { href: '/admin/settings', label: 'Settings', icon: SettingsIcon },
   ]
 

@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import SurveyModal from '@/components/SurveyModal'
 
 interface DashboardStats {
   total_events_attended: number;
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
+  const [showSurvey, setShowSurvey] = useState(false)
   
   // Progress tracking data
   const [progressData, setProgressData] = useState<ProgressData>({
@@ -53,6 +55,13 @@ export default function Dashboard() {
       try {
         setIsLoading(true)
         setError(null)
+        
+        // Check if user has completed survey
+        const hasCompletedSurvey = localStorage.getItem(`surveyCompleted_${user?.volunteer_id || 'unknown'}`);
+        if (!hasCompletedSurvey) {
+          // Show survey modal if not completed
+          setShowSurvey(true);
+        }
         
         // Fetch data individually with error handling for each endpoint
         const promises = [
@@ -130,7 +139,7 @@ export default function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [location.pathname]) // Re-fetch when navigating to dashboard
+  }, [location.pathname, user?.volunteer_id])
 
   const refreshDashboard = async () => {
     try {
@@ -204,6 +213,17 @@ export default function Dashboard() {
     }
   }
 
+  const handleSurveyComplete = () => {
+    // Mark survey as completed for this user
+    localStorage.setItem(`surveyCompleted_${user?.volunteer_id || 'unknown'}`, 'true');
+    setShowSurvey(false);
+  };
+
+  const handleSurveySkip = () => {
+    // User can skip for now, but we'll still show the option in quick actions
+    setShowSurvey(false);
+  };
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -242,6 +262,14 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50">
+      {/* Survey Modal */}
+      <SurveyModal 
+        open={showSurvey} 
+        onClose={() => setShowSurvey(false)} 
+        onSurveyComplete={handleSurveyComplete} 
+        onSkip={handleSurveySkip}
+      />
+      
       {/* Enhanced Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 rounded-lg mb-6">
         <div className="flex items-center gap-4">
@@ -635,7 +663,7 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <Button className="h-20 flex flex-col items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" asChild>
               <Link to="/events">
                 <Calendar className="h-7 w-7" />
@@ -652,6 +680,12 @@ export default function Dashboard() {
               <Link to="/leaderboard">
                 <Users className="h-7 w-7" />
                 <span className="text-base">Leaderboard</span>
+              </Link>
+            </Button>
+            <Button className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" variant="outline" asChild>
+              <Link to="/survey">
+                <FileText className="h-7 w-7" />
+                <span className="text-base">Take Survey</span>
               </Link>
             </Button>
           </div>

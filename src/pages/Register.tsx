@@ -1,279 +1,152 @@
-import { useState } from 'react'
-import { useNavigate, Link, NavLink, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Leaf, Menu, Eye, EyeOff } from "lucide-react";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Leaf, Users, Eye, EyeOff, Mail, Phone, User } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 
 export default function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const { register, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const { register: authRegister } = useAuth();
+  const { toast } = useToast();
+  
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (password !== confirmPassword) {
+      toast({
+        title: "Registration Failed",
+        description: "Passwords do not match.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast({
+        title: "Registration Failed",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
-    setError("");
-
+    
     try {
-      await register({
+      await authRegister({
         first_name: firstName,
         last_name: lastName,
         email,
-        phone_number: phoneNumber,
-        password,
+        phone_number: phone,
+        password
       });
-      navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+      
+      toast({
+        title: "Registration Successful",
+        description: "Welcome to Plogging Ethiopia! Your account has been created.",
+      });
+      
+      // Navigate to dashboard after successful registration
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-white">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center space-x-2">
-                <img
-                  src="/logo.png"
-                  alt="Plogging Ethiopia Logo"
-                  className="h-28 w-auto ml-5"
-                />
-              </Link>
+      <header className="bg-white shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-2">
+              <Leaf className="h-8 w-8 text-green-600" />
+              <span className="text-xl font-bold text-green-800">Plogging Ethiopia</span>
             </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-12 mr-10">
-              {[
-                { name: "Home", to: "/" },
-                { name: "About", to: "/#aboutus" },
-                { name: "Membership", to: "/membership" },
-                { name: "Gallery", to: "/gallery" },
-                { name: "Blog", to: "/blog" },
-                { name: "Event", to: "/events" },
-                { name: "Contact", to: "/contact" },
-              ].map((link) => {
-                const isHomeActive =
-                  location.pathname === "/" && location.hash === "";
-                const isAboutActive = location.hash === "#aboutus";
-                let isActive = false;
-                if (link.to === "/") {
-                  isActive = isHomeActive;
-                } else if (link.to === "/#aboutus") {
-                  isActive = isAboutActive;
-                } else {
-                  isActive = location.pathname === link.to;
-                }
-
-                return (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    className={`relative pb-1 font-normal text-xl transition-colors ${
-                      isActive
-                        ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
-                        : "text-black hover:text-green-600"
-                    }`}
-                  >
-                    {link.name}
-                  </NavLink>
-                );
-              })}
-              {isAuthenticated ? (
-                <>
-                  <NavLink
-                    to="/dashboard"
-                    className={({ isActive }) =>
-                      `relative pb-1 font-normal text-xl transition-colors ${
-                        isActive
-                          ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
-                          : "text-black hover:text-green-600"
-                      }`
-                    }
-                  >
-                    Dashboard
-                  </NavLink>
-                  <NavLink
-                    to="/profile"
-                    className={({ isActive }) =>
-                      `relative pb-1 font-normal text-xl transition-colors ${
-                        isActive
-                          ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
-                          : "text-black hover:text-green-600"
-                      }`
-                    }
-                  >
-                    Profile
-                  </NavLink>
-                  <button
-                    onClick={logout}
-                    className="relative pb-1 font-normal text-xl transition-colors text-black hover:text-green-600"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <NavLink
-                    to="/login"
-                    className={({ isActive }) =>
-                      `relative pb-1 font-normal text-xl transition-colors ${
-                        isActive
-                          ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
-                          : "text-black hover:text-green-600"
-                      }`
-                    }
-                  >
-                    Login
-                  </NavLink>
-                  <NavLink
-                    to="/register"
-                    className={({ isActive }) =>
-                      `relative pb-1 font-normal text-xl transition-colors ${
-                        isActive
-                          ? "text-black hover:text-green-600 after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-1 after:w-full after:bg-green-500 after:rounded-full"
-                          : "text-black hover:text-green-600"
-                      }`
-                    }
-                  >
-                    Register
-                  </NavLink>
-                </>
-              )}
-            </nav>
-
-            {/* Mobile Menu Button */}
-            <button
-              className="lg:hidden p-2"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <Menu className="w-6 h-6 text-gray-600" />
-            </button>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <nav className="lg:hidden mt-4 pb-4 border-t border-gray-100 pt-4">
-              <div className="flex flex-col space-y-3">
-                {[
-                  { name: "Home", to: "/" },
-                  { name: "About", to: "/#aboutus" },
-                  { name: "Membership", to: "/membership" },
-                  { name: "Gallery", to: "/gallery" },
-                  { name: "Blog", to: "/blog" },
-                  { name: "Event", to: "/events" },
-                  { name: "Contact", to: "/contact" },
-                ].map((link) => {
-                  const isHomeActive =
-                    location.pathname === "/" && location.hash === "";
-                  const isAboutActive = location.hash === "#aboutus";
-                  let isActive = false;
-                  if (link.to === "/") {
-                    isActive = isHomeActive;
-                  } else if (link.to === "/#aboutus") {
-                    isActive = isAboutActive;
-                  } else {
-                    isActive = location.pathname === link.to;
+            
+            <nav>
+              <div className="hidden md:flex items-center space-x-8">
+                <NavLink 
+                  to="/" 
+                  className={({ isActive }) => 
+                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
                   }
-                  return (
-                    <NavLink
-                      key={link.to}
-                      to={link.to}
-                      className={
-                        isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
-                      }
-                    >
-                      {link.name}
-                    </NavLink>
-                  );
-                })}
-                {isAuthenticated ? (
-                  <>
-                    <NavLink
-                      to="/dashboard"
-                      className={({ isActive }) =>
-                        isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
-                      }
-                    >
-                      Dashboard
-                    </NavLink>
-                    <NavLink
-                      to="/profile"
-                      className={({ isActive }) =>
-                        isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
-                      }
-                    >
-                      Profile
-                    </NavLink>
-                    <button
-                      onClick={logout}
-                      className="text-gray-700 hover:text-green-600 text-left"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <NavLink
-                      to="/login"
-                      className={({ isActive }) =>
-                        isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
-                      }
-                    >
-                      Login
-                    </NavLink>
-                    <NavLink
-                      to="/register"
-                      className={({ isActive }) =>
-                        isActive
-                          ? "text-green-600 font-medium"
-                          : "text-gray-700 hover:text-green-600"
-                      }
-                    >
-                      Register
-                    </NavLink>
-                  </>
-                )}
+                >
+                  Home
+                </NavLink>
+                <NavLink 
+                  to="/events" 
+                  className={({ isActive }) => 
+                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
+                  }
+                >
+                  Events
+                </NavLink>
+                <NavLink 
+                  to="/about" 
+                  className={({ isActive }) => 
+                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
+                  }
+                >
+                  About
+                </NavLink>
+                <NavLink 
+                  to="/membership" 
+                  className={({ isActive }) => 
+                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
+                  }
+                >
+                  Membership
+                </NavLink>
+                <NavLink 
+                  to="/contact" 
+                  className={({ isActive }) => 
+                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
+                  }
+                >
+                  Contact
+                </NavLink>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <Link to="/login" className="text-green-600 font-medium">
+                  Login
+                </Link>
+                <Link to="/register">
+                  <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 hidden md:block">
+                    Register
+                  </Button>
+                </Link>
               </div>
             </nav>
-          )}
+          </div>
         </div>
       </header>
 
       {/* Register Content */}
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+      <div className="flex-1 bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center mb-4">
@@ -296,56 +169,73 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    type="text"
-                    placeholder="First name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="firstName"
+                      placeholder="First name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="lastName"
+                      placeholder="Last name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    id="lastName"
-                    type="text"
-                    placeholder="Last name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="pl-10"
                   />
                 </div>
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="reg-email">Email</Label>
-                <Input
-                  id="reg-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="Phone number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  placeholder="+251912345678"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-password">Password</Label>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
-                    id="reg-password"
+                    id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Create a password"
+                    placeholder="Create password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -354,32 +244,79 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
+                      <EyeOff className="h-4 w-4 text-gray-400" />
                     ) : (
-                      <Eye className="h-5 w-5" />
+                      <Eye className="h-4 w-4 text-gray-400" />
                     )}
                   </button>
                 </div>
               </div>
-              {error && <div className="text-red-600 text-sm">{error}</div>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Create Account"}
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Registering...
+                  </>
+                ) : (
+                  "Register"
+                )}
               </Button>
             </form>
-            <div className="text-center mt-4">
-              <p className="text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link to="/login" className="text-green-600 hover:underline">
-                  Login here
-                </Link>
-              </p>
+            
+            <div className="text-center text-sm text-gray-600 mt-4">
+              Already have an account?{" "}
+              <Link 
+                to="/login" 
+                className="text-green-600 font-medium hover:text-green-800"
+              >
+                Login
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
+      
+      {/* Survey Modal */}
+      <SurveyModal 
+        open={showSurvey} 
+        onClose={() => setShowSurvey(false)} 
+        onSurveyComplete={handleSurveyComplete} 
+        onSkip={handleSurveySkip}
+      />
     </div>
   );
 }
