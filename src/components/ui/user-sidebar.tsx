@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSurvey } from "@/contexts/SurveyContext";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { 
   LayoutDashboard, 
@@ -13,11 +14,13 @@ import {
   X,
   Home,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clipboard
 } from "lucide-react";
 
 const UserSidebar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { openSurvey } = useSurvey();
   const { isCollapsed, toggleCollapse } = useSidebar();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -126,6 +129,20 @@ const UserSidebar = () => {
                 </li>
               );
             })}
+            
+            {/* Take Survey option */}
+            <li>
+              <button
+                onClick={() => {
+                  openSurvey();
+                  setIsOpen(false);
+                }}
+                className="flex items-center space-x-3 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <Clipboard className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && <span>Take Survey</span>}
+              </button>
+            </li>
             
             {/* Add Home link */}
             <li>

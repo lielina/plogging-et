@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { SurveyProvider } from './contexts/SurveyContext'
 import { Toaster } from './components/ui/toaster'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
@@ -23,9 +24,6 @@ import Layout from './pages/Layout'
 import Membership from './pages/Membership'
 import Contact from './pages/Contact'
 import VolunteerCertificates from './pages/VolunteerCertificates'
-import Survey from './pages/Survey'
-
-
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
@@ -79,11 +77,6 @@ function AppRoutes() {
               <VolunteerCertificates />
             </ProtectedRoute>
           } />
-          <Route path="/survey" element={
-            <ProtectedRoute>
-              <Survey />
-            </ProtectedRoute>
-          } />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -113,8 +106,10 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
-      <Toaster />
+      <SurveyProvider>
+        <AppRoutes />
+        <Toaster />
+      </SurveyProvider>
     </AuthProvider>
   )
 }

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSurvey } from '@/contexts/SurveyContext'
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,13 +28,14 @@ interface ProgressData {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<any[]>([])
   const [badges, setBadges] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
-  const [showSurvey, setShowSurvey] = useState(false)
+  const hasCheckedSurvey = useRef(false)
   
   // Progress tracking data
   const [progressData, setProgressData] = useState<ProgressData>({
@@ -56,11 +58,15 @@ export default function Dashboard() {
         setIsLoading(true)
         setError(null)
         
-        // Check if user has completed survey
-        const hasCompletedSurvey = localStorage.getItem(`surveyCompleted_${user?.volunteer_id || 'unknown'}`);
-        if (!hasCompletedSurvey) {
-          // Show survey modal if not completed
-          setShowSurvey(true);
+        // Check if user has completed survey (only once)
+        if (user && !hasCheckedSurvey.current) {
+          const userId = 'volunteer_id' in user ? user.volunteer_id : 'unknown';
+          const hasCompletedSurvey = localStorage.getItem(`surveyCompleted_${userId}`);
+          if (!hasCompletedSurvey && !isSurveyOpen) {
+            // Show survey modal if not completed
+            openSurvey()
+          }
+          hasCheckedSurvey.current = true
         }
         
         // Fetch data individually with error handling for each endpoint
@@ -139,7 +145,7 @@ export default function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [location.pathname, user?.volunteer_id])
+  }, [location.pathname, user, isSurveyOpen, openSurvey])
 
   const refreshDashboard = async () => {
     try {
@@ -215,13 +221,16 @@ export default function Dashboard() {
 
   const handleSurveyComplete = () => {
     // Mark survey as completed for this user
-    localStorage.setItem(`surveyCompleted_${user?.volunteer_id || 'unknown'}`, 'true');
-    setShowSurvey(false);
+    if (user && 'volunteer_id' in user) {
+      const userId = user.volunteer_id;
+      localStorage.setItem(`surveyCompleted_${userId}`, 'true');
+    }
+    closeSurvey();
   };
 
   const handleSurveySkip = () => {
     // User can skip for now, but we'll still show the option in quick actions
-    setShowSurvey(false);
+    closeSurvey();
   };
 
   if (error) {
@@ -264,8 +273,8 @@ export default function Dashboard() {
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50">
       {/* Survey Modal */}
       <SurveyModal 
-        open={showSurvey} 
-        onClose={() => setShowSurvey(false)} 
+        open={isSurveyOpen} 
+        onClose={closeSurvey} 
         onSurveyComplete={handleSurveyComplete} 
         onSkip={handleSurveySkip}
       />
@@ -682,11 +691,17 @@ export default function Dashboard() {
                 <span className="text-base">Leaderboard</span>
               </Link>
             </Button>
-            <Button className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" variant="outline" asChild>
-              <Link to="/survey">
-                <FileText className="h-7 w-7" />
-                <span className="text-base">Take Survey</span>
-              </Link>
+            <Button 
+              className="h-20 flex flex-col items-center justify-center gap-2 border-green-500 text-green-700 hover:bg-green-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" 
+              variant="outline"
+              onClick={() => {
+                // Open survey modal
+                const event = new Event('surveyOpen');
+                window.dispatchEvent(event);
+              }}
+            >
+              <FileText className="h-7 w-7" />
+              <span className="text-base">Take Survey</span>
             </Button>
           </div>
         </div>
