@@ -40,14 +40,35 @@ export default function QRScanner({ onScan, onClose, title, description, isOpen 
       setSuccess('')
       setIsScanning(true)
 
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // Get all available video devices
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter(device => device.kind === 'videoinput')
+      
+      // Try to find the back camera (environment facing)
+      let constraints: MediaStreamConstraints = {
         video: { 
-          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
         }
-      })
+      }
 
+      // Look for a back camera specifically
+      const backCamera = videoDevices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment')
+      )
+
+      if (backCamera) {
+        // Use the specific back camera if found
+        (constraints.video as MediaTrackConstraints).deviceId = backCamera.deviceId
+      } else {
+        // Fallback to environment facing mode
+        (constraints.video as MediaTrackConstraints).facingMode = 'environment'
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         streamRef.current = stream

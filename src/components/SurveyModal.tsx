@@ -272,7 +272,7 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
               <Label>Gender *</Label>
               <RadioGroup 
                 value={surveyData.gender || 'male'} 
-                onValueChange={(value) => handleInputChange('gender', value as 'male' | 'female' | 'other')}
+                onValueChange={(value) => handleInputChange('gender', value as 'male' | 'female')}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="male" id="male" />
@@ -281,10 +281,6 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="female" id="female" />
                   <Label htmlFor="female">Female</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other">Other</Label>
                 </div>
               </RadioGroup>
             </div>

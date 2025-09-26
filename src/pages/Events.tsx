@@ -116,6 +116,8 @@ export default function Events() {
               }
             : e
         ))
+        
+        // Don't show toast for already enrolled case - just update UI silently
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
         errorTitle = 'Event Full'
         errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
@@ -125,6 +127,13 @@ export default function Events() {
             ? { ...e, can_enroll: false }
             : e
         ))
+        
+        // Show error toast
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        })
       } else if (error.message?.includes('not available') || error.message?.includes('not open')) {
         errorTitle = 'Enrollment Closed'
         errorMessage = 'Enrollment for this event is currently closed.'
@@ -133,14 +142,21 @@ export default function Events() {
             ? { ...e, can_enroll: false }
             : e
         ))
+        
+        // Show error toast
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        })
+      } else {
+        // Show error toast for other errors
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        })
       }
-      
-      // Show error toast
-      toast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: "destructive",
-      })
     } finally {
       setEnrollingEvents(prev => {
         const newSet = new Set(prev)
@@ -184,7 +200,7 @@ export default function Events() {
     if (event.is_enrolled === true) {
       return {
         disabled: true,
-        text: 'Enrolled ✓',
+        text: 'Enrolled',
         variant: 'secondary' as const,
         icon: <CheckCircle className="h-4 w-4 ml-2 flex-shrink-0 text-green-600" />,
         showDetails: true,
