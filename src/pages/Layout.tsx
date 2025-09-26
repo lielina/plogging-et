@@ -242,7 +242,7 @@ const Layout = () => {
         )}
         
         {/* Main content */}
-        <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? (isCollapsed ? 'lg:ml-20 ml-20' : 'lg:ml-64 ml-64') : ''}`}>
+        <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? (isCollapsed ? 'lg:ml-20 ml-20' : 'lg:ml-64 ml-0') : ''}`}>
           <Outlet />
         </main>
         
