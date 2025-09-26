@@ -34,7 +34,7 @@ const Layout = () => {
       {isAuthenticated && isDashboardRoute && <UserSidebar />}
       
       {/* Main content area */}
-      <div className={`flex-1 flex flex-col ${isAuthenticated && isDashboardRoute ? (isCollapsed ? 'lg:ml-0' : 'lg:ml-64') : ''}`}>
+      <div className={`flex-1 flex flex-col`}>
         {/* Header - only show on non-dashboard pages or for unauthenticated users */}
         {(!isAuthenticated || !isDashboardRoute) && (
           <header className="bg-white shadow-sm">
@@ -242,7 +242,7 @@ const Layout = () => {
         )}
         
         {/* Main content */}
-        <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? (isCollapsed ? 'lg:ml-20' : 'lg:ml-68') : ''}`}>
+        <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? (isCollapsed ? 'lg:ml-20 ml-20' : 'lg:ml-64 ml-64') : ''}`}>
           <Outlet />
         </main>
         
