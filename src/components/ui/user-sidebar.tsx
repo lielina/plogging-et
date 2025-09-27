@@ -3,6 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSurvey } from "@/contexts/SurveyContext";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
+import QRScanner from "@/components/ui/qr-scanner";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -15,15 +18,17 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
-  Clipboard
+  Clipboard,
+  ScanLine
 } from "lucide-react";
 
 const UserSidebar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { openSurvey } = useSurvey();
   const { isCollapsed, toggleCollapse } = useSidebar();
+  const { toast } = useToast();
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Removed Dashboard and Profile from main navigation items
   const navItems = [
@@ -32,8 +37,67 @@ const UserSidebar = () => {
     { name: "Certificates", to: "/certificates", icon: FileText },
   ];
 
+  const handleQRScan = async (result: string) => {
+    try {
+      // Parse the QR code result
+      // Expected format: "event:{eventId}" 
+      let eventId: number | null = null;
+      
+      if (result.startsWith('event:')) {
+        eventId = parseInt(result.split(':')[1]);
+      } else {
+        eventId = parseInt(result);
+      }
+      
+      if (isNaN(eventId) || eventId <= 0) {
+        toast({
+          title: "Invalid QR Code",
+          description: "The scanned QR code is not valid for event check-in.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Get user's QR code (volunteer ID)
+      const volunteerId = user?.volunteer_id;
+      if (!volunteerId) {
+        toast({
+          title: "Authentication Error",
+          description: "Unable to identify volunteer. Please log in again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Perform check-in
+      // The QR code parameter should be "volunteer:{volunteerId}" as expected by the API
+      await apiClient.checkIn(eventId, `volunteer:${volunteerId}`);
+      
+      toast({
+        title: "Check-in Successful",
+        description: "You have been successfully checked in to the event!",
+      });
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      toast({
+        title: "Check-in Failed",
+        description: error.message || "Failed to check in. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <>
+      {/* QR Scanner Modal */}
+      <QRScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleQRScan}
+        title="Event Check-in"
+        description="Scan the event QR code to check in"
+      />
+      
       {/* Sidebar */}
       <div 
         className={`fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform transition-all duration-300 ease-in-out flex flex-col ${
@@ -99,6 +163,17 @@ const UserSidebar = () => {
                 </li>
               );
             })}
+            
+            {/* Check-in option */}
+            <li>
+              <button
+                onClick={() => setIsScannerOpen(true)}
+                className="flex items-center space-x-3 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <ScanLine className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && <span>Check In</span>}
+              </button>
+            </li>
             
             {/* Take Survey option */}
             <li>
