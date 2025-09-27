@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { apiClient, VolunteerCertificate } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar, Award, RefreshCw } from 'lucide-react'
+import { FileText, Download, Calendar, Award, RefreshCw, Search } from 'lucide-react'
 
 export default function VolunteerCertificates() {
   const [certificates, setCertificates] = useState<VolunteerCertificate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -29,6 +31,19 @@ export default function VolunteerCertificates() {
       setIsLoading(false)
     }
   }
+
+  // Filter certificates based on search term
+  const filteredCertificates = useMemo(() => {
+    if (!searchTerm) return certificates
+    
+    const term = searchTerm.toLowerCase().trim()
+    return certificates.filter(cert => 
+      cert.certificate_type.toLowerCase().includes(term) ||
+      cert.status.toLowerCase().includes(term) ||
+      (cert.event_id && cert.event_id.toString().includes(term)) ||
+      cert.certificate_id.toString().includes(term)
+    )
+  }, [certificates, searchTerm])
 
   const handleDownload = async (certificate: VolunteerCertificate) => {
     try {
@@ -135,6 +150,29 @@ export default function VolunteerCertificates() {
         <p className="text-sm sm:text-base text-gray-600">View and download your earned certificates and achievements</p>
       </div>
 
+      {/* Search Input */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search certificates by type, status, or ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 py-2"
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={() => setSearchTerm('')}
+            >
+              ×
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Certificates Stats */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
         <Card>
@@ -179,9 +217,9 @@ export default function VolunteerCertificates() {
       </div>
 
       {/* Certificates List */}
-      {certificates.length > 0 ? (
+      {filteredCertificates.length > 0 ? (
         <div className="grid gap-6">
-          {certificates.map((certificate) => (
+          {filteredCertificates.map((certificate) => (
             <Card key={certificate.certificate_id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between flex-wrap gap-2">
@@ -262,15 +300,23 @@ export default function VolunteerCertificates() {
             <div className="text-center py-12">
               <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                No certificates available yet
+                {searchTerm ? 'No certificates match your search' : 'No certificates available yet'}
               </h3>
               <p className="text-gray-500 mb-6">
-                Participate in events and achieve milestones to earn certificates!
+                {searchTerm 
+                  ? 'Try adjusting your search terms' 
+                  : 'Participate in events and achieve milestones to earn certificates!'}
               </p>
-              <Button variant="outline" onClick={fetchCertificates}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+              {searchTerm ? (
+                <Button onClick={() => setSearchTerm('')} variant="outline">
+                  Clear Search
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={fetchCertificates}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
