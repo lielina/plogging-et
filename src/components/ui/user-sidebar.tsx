@@ -30,8 +30,9 @@ const UserSidebar = () => {
   const location = useLocation();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
-  // Removed Dashboard and Profile from main navigation items
+  // Add Dashboard back to main navigation items
   const navItems = [
+    { name: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
     { name: "Events", to: "/events", icon: Calendar },
     { name: "Leaderboard", to: "/leaderboard", icon: BarChart3 },
     { name: "Certificates", to: "/certificates", icon: FileText },
