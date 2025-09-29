@@ -147,7 +147,8 @@ export default function EventDetail() {
 
   // Social Media Sharing Functions
   const getShareUrl = () => {
-    return window.location.href
+    // Use the public/user-side URL
+    return `https://ploggingethiopia.org/events/${eventId}`;
   }
 
   const getShareText = () => {

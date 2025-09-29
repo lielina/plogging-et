@@ -60,7 +60,8 @@ const UserSidebar = () => {
       }
       
       // Get user's QR code (volunteer ID)
-      const volunteerId = user?.volunteer_id;
+      // Check if user is a volunteer before accessing volunteer_id
+      const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : null;
       if (!volunteerId) {
         toast({
           title: "Authentication Error",
