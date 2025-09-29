@@ -176,10 +176,84 @@ export default function Events() {
   }
 
   const formatTime = (timeString: string) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    // Handle case where timeString might already be in a readable format
+    if (!timeString) return 'Invalid Time';
+    
+    try {
+      // Handle the specific datetime format: 2025-09-29T07:00:00.000000Z
+      if (timeString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$/)) {
+        // Parse the datetime string directly
+        const date = new Date(timeString);
+        
+        // Check if date is valid
+        if (!isNaN(date.getTime())) {
+          // Format only the time portion in HH:MM AM/PM format
+          let hours = date.getUTCHours();
+          const minutes = date.getUTCMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          hours = hours ? hours : 12; // the hour '0' should be '12'
+          const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+          const formattedTime = `${hours}:${minutesStr} ${ampm}`;
+          
+          return formattedTime;
+        }
+      }
+      
+      // If it's already in HH:MM format, format it as HH:MM AM/PM
+      if (/^\d{1,2}:\d{2}$/.test(timeString)) {
+        // Ensure it's in the correct format with leading zeros
+        const parts = timeString.split(':');
+        const hours = parts[0].padStart(2, '0');
+        const minutes = parts[1].padStart(2, '0');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        // Format as HH:MM AM/PM
+        let hoursNum = date.getHours();
+        const minutesNum = date.getMinutes();
+        const ampm = hoursNum >= 12 ? 'PM' : 'AM';
+        hoursNum = hoursNum % 12;
+        hoursNum = hoursNum ? hoursNum : 12; // the hour '0' should be '12'
+        const minutesStr = minutesNum < 10 ? '0' + minutesNum : minutesNum;
+        return `${hoursNum}:${minutesStr} ${ampm}`;
+      }
+      
+      // If it's in HH:MM:SS format, extract HH:MM and format
+      if (/^\d{1,2}:\d{2}:\d{2}$/.test(timeString)) {
+        const parts = timeString.split(':');
+        const hours = parts[0].padStart(2, '0');
+        const minutes = parts[1].padStart(2, '0');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        // Format as HH:MM AM/PM
+        let hoursNum = date.getHours();
+        const minutesNum = date.getMinutes();
+        const ampm = hoursNum >= 12 ? 'PM' : 'AM';
+        hoursNum = hoursNum % 12;
+        hoursNum = hoursNum ? hoursNum : 12; // the hour '0' should be '12'
+        const minutesStr = minutesNum < 10 ? '0' + minutesNum : minutesNum;
+        return `${hoursNum}:${minutesStr} ${ampm}`;
+      }
+      
+      // Try to parse as date string
+      const date = new Date(`2000-01-01T${timeString}`);
+      if (isNaN(date.getTime())) {
+        return timeString; // Return as is if parsing fails
+      }
+      
+      // Format as HH:MM AM/PM
+      let hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // the hour '0' should be '12'
+      const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+      return `${hours}:${minutesStr} ${ampm}`;
+    } catch (error) {
+      return timeString; // Return as is if any error occurs
+    }
   }
 
   // Helper function to determine button state and text based on backend data
