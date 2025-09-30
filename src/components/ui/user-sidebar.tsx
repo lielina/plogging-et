@@ -36,6 +36,7 @@ const UserSidebar = () => {
     { name: "Events", to: "/events", icon: Calendar },
     { name: "Leaderboard", to: "/leaderboard", icon: BarChart3 },
     { name: "Certificates", to: "/certificates", icon: FileText },
+    { name: "Profile", to: "/profile", icon: User },
   ];
 
   const handleQRScan = async (result: string) => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, SurveyRequest } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import { Menu, ArrowLeft, Save, SkipForward } from 'lucide-react';
 const Survey: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -445,15 +447,57 @@ const Survey: React.FC = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Mobile sidebar trigger */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50 lg:hidden">
-            <Menu className="h-4 w-4" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar className="border-r">
+      {/* Mobile sidebar trigger - hidden when authenticated (global sidebar present) */}
+      {!isAuthenticated && (
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="fixed top-4 left-4 z-50 lg:hidden">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-64">
+            <Sidebar className="border-r">
+              <SidebarContent>
+                <SidebarGroup>
+                  <SidebarGroupLabel>Survey Steps</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {steps.map((step, index) => (
+                        <SidebarMenuItem key={step.id}>
+                          <SidebarMenuButton
+                            onClick={() => {
+                              setCurrentStep(index);
+                              setSidebarOpen(false);
+                            }}
+                            isActive={currentStep === index}
+                            className="flex items-center gap-3"
+                          >
+                            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+                              currentStep === index 
+                                ? 'bg-green-500 text-white' 
+                                : currentStep > index 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <span>{step.title}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              </SidebarContent>
+            </Sidebar>
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* Desktop sidebar - hidden when authenticated (global sidebar present) */}
+      {!isAuthenticated && (
+        <div className="hidden lg:block w-64 border-r">
+          <Sidebar>
             <SidebarContent>
               <SidebarGroup>
                 <SidebarGroupLabel>Survey Steps</SidebarGroupLabel>
@@ -462,10 +506,7 @@ const Survey: React.FC = () => {
                     {steps.map((step, index) => (
                       <SidebarMenuItem key={step.id}>
                         <SidebarMenuButton
-                          onClick={() => {
-                            setCurrentStep(index);
-                            setSidebarOpen(false);
-                          }}
+                          onClick={() => setCurrentStep(index)}
                           isActive={currentStep === index}
                           className="flex items-center gap-3"
                         >
@@ -487,43 +528,8 @@ const Survey: React.FC = () => {
               </SidebarGroup>
             </SidebarContent>
           </Sidebar>
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop sidebar */}
-      <div className="hidden lg:block w-64 border-r">
-        <Sidebar>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Survey Steps</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {steps.map((step, index) => (
-                    <SidebarMenuItem key={step.id}>
-                      <SidebarMenuButton
-                        onClick={() => setCurrentStep(index)}
-                        isActive={currentStep === index}
-                        className="flex items-center gap-3"
-                      >
-                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                          currentStep === index 
-                            ? 'bg-green-500 text-white' 
-                            : currentStep > index 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {index + 1}
-                        </span>
-                        <span>{step.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-      </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">

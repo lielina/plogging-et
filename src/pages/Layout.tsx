@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { Menu, User } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -22,11 +22,12 @@ const Layout = () => {
   useHashScroll();
   
   // Show sidebar on dashboard pages when authenticated
+  // Note: '/events' is intentionally excluded so Events remains a public page
   const isDashboardRoute = location.pathname.startsWith('/dashboard') || 
                           location.pathname.startsWith('/profile') || 
-                          location.pathname.startsWith('/events') ||
                           location.pathname.startsWith('/leaderboard') ||
-                          location.pathname.startsWith('/certificates');
+                          location.pathname.startsWith('/certificates') ||
+                          location.pathname.startsWith('/survey');
 
   return (
     <div className="flex min-h-screen">
