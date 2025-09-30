@@ -49,6 +49,8 @@ function AppRoutes() {
           <Route path="/gallery" element={<div>Gallery Page</div>} />
           <Route path="/blog" element={<div>Blog Page</div>} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           {/* Protected Volunteer Routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
@@ -71,8 +73,6 @@ function AppRoutes() {
             </ProtectedRoute>
           } />
         </Route>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/welcome" element={<Welcome />} />

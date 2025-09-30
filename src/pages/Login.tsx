@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Leaf, Users, Eye, EyeOff, Mail } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -46,170 +45,99 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-2">
-              <Leaf className="h-8 w-8 text-green-600" />
-              <span className="text-xl font-bold text-green-800">Plogging Ethiopia</span>
+    <div className="flex-1 bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+              <Leaf className="w-6 h-6 text-white" />
             </div>
-            
-            <nav>
-              <div className="hidden md:flex items-center space-x-8">
-                <NavLink 
-                  to="/" 
-                  className={({ isActive }) => 
-                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
-                  }
-                >
-                  Home
-                </NavLink>
-                <NavLink 
-                  to="/events" 
-                  className={({ isActive }) => 
-                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
-                  }
-                >
-                  Events
-                </NavLink>
-                <NavLink 
-                  to="/about" 
-                  className={({ isActive }) => 
-                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
-                  }
-                >
-                  About
-                </NavLink>
-                <NavLink 
-                  to="/membership" 
-                  className={({ isActive }) => 
-                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
-                  }
-                >
-                  Membership
-                </NavLink>
-                <NavLink 
-                  to="/contact" 
-                  className={({ isActive }) => 
-                    `font-medium transition-colors hover:text-green-600 ${isActive ? 'text-green-600' : 'text-gray-600'}`
-                  }
-                >
-                  Contact
-                </NavLink>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-green-600 font-medium hidden md:block">
-                  Login
-                </Link>
-                <Link to="/register">
-                  <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-                    Register
-                  </Button>
-                </Link>
-              </div>
-            </nav>
           </div>
-        </div>
-      </header>
-
-      {/* Login Content */}
-      <div className="flex-1 bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-white" />
+          <CardTitle className="text-2xl font-bold text-green-800">
+            Volunteer Login
+          </CardTitle>
+          <CardDescription>
+            Access your volunteer dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleVolunteerLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="pl-10"
+                />
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-green-800">
-              Volunteer Login
-            </CardTitle>
-            <CardDescription>
-              Access your volunteer dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleVolunteerLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="pl-10"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-green-600 hover:bg-green-700"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Logging in...
-                  </>
-                ) : (
-                  "Login as Volunteer"
-                )}
-              </Button>
-            </form>
-            
-            <div className="text-center text-sm mt-4">
-              <Link 
-                to="/forgot-password" 
-                className="text-green-600 hover:text-green-800"
-              >
-                Forgot Password?
-              </Link>
             </div>
-            
-            <div className="text-center text-sm text-gray-600 mt-2">
-              Don't have an account?{" "}
-              <Link 
-                to="/register" 
-                className="text-green-600 font-medium hover:text-green-800"
-              >
-                Register
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Button 
+              type="submit" 
+              className="w-full bg-green-600 hover:bg-green-700"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Logging in...
+                </>
+              ) : (
+                "Login as Volunteer"
+              )}
+            </Button>
+          </form>
+          
+          <div className="text-center text-sm mt-4">
+            <Link 
+              to="/forgot-password" 
+              className="text-green-600 hover:text-green-800"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+          
+          <div className="text-center text-sm text-gray-600 mt-4">
+            Don't have an account?{" "}
+            <Link 
+              to="/register" 
+              className="text-green-600 font-medium hover:text-green-800"
+            >
+              Register
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
