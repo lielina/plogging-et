@@ -310,13 +310,6 @@ export default function Register() {
         </Card>
       </div>
       
-      {/* Survey Modal */}
-      <SurveyModal 
-        open={showSurvey} 
-        onClose={() => setShowSurvey(false)} 
-        onSurveyComplete={handleSurveyComplete} 
-        onSkip={handleSurveySkip}
-      />
     </div>
   );
 }

@@ -98,8 +98,8 @@ export default function EventDetail() {
         const response = await apiClient.getEventDetails(parseInt(eventId))
         setEvent(response.data as EventDetailData)
         
-        // Generate QR code for the event
-        const qrData = `event:${eventId}`
+        // Generate QR code for the event using the same URL format as the share link
+        const qrData = `https://ploggingethiopia.org/events/${eventId}`
         const qrCodeUrl = await QRCode.toDataURL(qrData, {
           width: 200,
           margin: 2,
@@ -334,10 +334,10 @@ ${description}
 
   const handleVolunteerScan = async (qrData: string) => {
     try {
-      // Parse QR data (format: event:eventId)
-      const parts = qrData.split(':')
-      if (parts.length === 2 && parts[0] === 'event') {
-        const scannedEventId = parseInt(parts[1])
+      // Parse QR data (format: https://ploggingethiopia.org/events/eventId)
+      if (qrData.startsWith('https://ploggingethiopia.org/events/')) {
+        const urlParts = qrData.split('/')
+        const scannedEventId = parseInt(urlParts[urlParts.length - 1])
         
         if (scannedEventId === parseInt(eventId!)) {
           setScanResult(`Event QR code scanned successfully! Event ID: ${scannedEventId}`)
@@ -347,7 +347,21 @@ ${description}
           setScanResult('Invalid event QR code')
         }
       } else {
-        setScanResult('Invalid QR code format')
+        // Handle old format for backward compatibility
+        const parts = qrData.split(':')
+        if (parts.length === 2 && parts[0] === 'event') {
+          const scannedEventId = parseInt(parts[1])
+          
+          if (scannedEventId === parseInt(eventId!)) {
+            setScanResult(`Event QR code scanned successfully! Event ID: ${scannedEventId}`)
+            // Here you could add logic to show a form for volunteer to enter their details
+            // or scan their volunteer badge
+          } else {
+            setScanResult('Invalid event QR code')
+          }
+        } else {
+          setScanResult('Invalid QR code format')
+        }
       }
     } catch (err: any) {
       setScanResult(err.message || 'Scan failed')
@@ -410,41 +424,47 @@ ${description}
   // User Check-in Function
   const handleUserCheckIn = async (qrData: string) => {
     try {
-      // Parse QR data (format: event:eventId)
-      const parts = qrData.split(':')
-      if (parts.length === 2 && parts[0] === 'event') {
-        const scannedEventId = parseInt(parts[1])
-        
-        if (scannedEventId === parseInt(eventId!)) {
-          // Get user ID based on user type
-          let userId = ''
-          if (user && 'volunteer_id' in user) {
-            userId = `volunteer:${user.volunteer_id}`
-          } else if (user && 'admin_id' in user) {
-            userId = `admin:${user.admin_id}`
-          }
-          
-          if (!userId) {
-            throw new Error('User not authenticated')
-          }
-          
-          // Perform check-in for the current user
-          await apiClient.checkIn(scannedEventId, userId)
-          setScanResult('Check-in successful!')
-          
-          // Refresh event data to show updated attendance
-          const response = await apiClient.getEventDetails(parseInt(eventId!))
-          setEvent(response.data as EventDetailData)
-          
-          toast({
-            title: "Check-in Successful",
-            description: "You have been successfully checked in to this event.",
-          })
-        } else {
-          setScanResult('Invalid event QR code')
-        }
+      // Parse QR data (format: https://ploggingethiopia.org/events/eventId)
+      let scannedEventId: number | null = null;
+      
+      if (qrData.startsWith('https://ploggingethiopia.org/events/')) {
+        const urlParts = qrData.split('/')
+        scannedEventId = parseInt(urlParts[urlParts.length - 1])
       } else {
-        setScanResult('Invalid QR code format')
+        // Handle old format for backward compatibility
+        const parts = qrData.split(':')
+        if (parts.length === 2 && parts[0] === 'event') {
+          scannedEventId = parseInt(parts[1])
+        }
+      }
+      
+      if (scannedEventId && scannedEventId === parseInt(eventId!)) {
+        // Get user ID based on user type
+        let userId = ''
+        if (user && 'volunteer_id' in user) {
+          userId = `volunteer:${user.volunteer_id}`
+        } else if (user && 'admin_id' in user) {
+          userId = `admin:${user.admin_id}`
+        }
+        
+        if (!userId) {
+          throw new Error('User not authenticated')
+        }
+        
+        // Perform check-in for the current user
+        await apiClient.checkIn(scannedEventId, userId)
+        setScanResult('Check-in successful!')
+        
+        // Refresh event data to show updated attendance
+        const response = await apiClient.getEventDetails(parseInt(eventId!))
+        setEvent(response.data as EventDetailData)
+        
+        toast({
+          title: "Check-in Successful",
+          description: "You have been successfully checked in to this event.",
+        })
+      } else {
+        setScanResult('Invalid event QR code')
       }
     } catch (err: any) {
       setScanResult(err.message || 'Check-in failed')
@@ -459,41 +479,47 @@ ${description}
   // User Check-out Function
   const handleUserCheckOut = async (qrData: string) => {
     try {
-      // Parse QR data (format: event:eventId)
-      const parts = qrData.split(':')
-      if (parts.length === 2 && parts[0] === 'event') {
-        const scannedEventId = parseInt(parts[1])
-        
-        if (scannedEventId === parseInt(eventId!)) {
-          // Get user ID based on user type
-          let userId = ''
-          if (user && 'volunteer_id' in user) {
-            userId = `volunteer:${user.volunteer_id}`
-          } else if (user && 'admin_id' in user) {
-            userId = `admin:${user.admin_id}`
-          }
-          
-          if (!userId) {
-            throw new Error('User not authenticated')
-          }
-          
-          // Perform check-out for the current user
-          await apiClient.checkOut(scannedEventId, userId)
-          setScanResult('Check-out successful!')
-          
-          // Refresh event data to show updated attendance
-          const response = await apiClient.getEventDetails(parseInt(eventId!))
-          setEvent(response.data as EventDetailData)
-          
-          toast({
-            title: "Check-out Successful",
-            description: "You have been successfully checked out from this event.",
-          })
-        } else {
-          setScanResult('Invalid event QR code')
-        }
+      // Parse QR data (format: https://ploggingethiopia.org/events/eventId)
+      let scannedEventId: number | null = null;
+      
+      if (qrData.startsWith('https://ploggingethiopia.org/events/')) {
+        const urlParts = qrData.split('/')
+        scannedEventId = parseInt(urlParts[urlParts.length - 1])
       } else {
-        setScanResult('Invalid QR code format')
+        // Handle old format for backward compatibility
+        const parts = qrData.split(':')
+        if (parts.length === 2 && parts[0] === 'event') {
+          scannedEventId = parseInt(parts[1])
+        }
+      }
+      
+      if (scannedEventId && scannedEventId === parseInt(eventId!)) {
+        // Get user ID based on user type
+        let userId = ''
+        if (user && 'volunteer_id' in user) {
+          userId = `volunteer:${user.volunteer_id}`
+        } else if (user && 'admin_id' in user) {
+          userId = `admin:${user.admin_id}`
+        }
+        
+        if (!userId) {
+          throw new Error('User not authenticated')
+        }
+        
+        // Perform check-out for the current user
+        await apiClient.checkOut(scannedEventId, userId)
+        setScanResult('Check-out successful!')
+        
+        // Refresh event data to show updated attendance
+        const response = await apiClient.getEventDetails(parseInt(eventId!))
+        setEvent(response.data as EventDetailData)
+        
+        toast({
+          title: "Check-out Successful",
+          description: "You have been successfully checked out from this event.",
+        })
+      } else {
+        setScanResult('Invalid event QR code')
       }
     } catch (err: any) {
       setScanResult(err.message || 'Check-out failed')
@@ -771,7 +797,7 @@ ${description}
                     </p>
                     <div className="inline-block px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 rounded-full">
                       <p className="text-[10px] sm:text-xs text-gray-600 font-mono">
-                        QR Data: event:{event.event_id}
+                        QR Data: https://ploggingethiopia.org/events/{event.event_id}
                       </p>
                     </div>
                   </div>
