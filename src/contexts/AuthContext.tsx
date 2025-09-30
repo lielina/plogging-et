@@ -39,6 +39,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check if user is already logged in
     const token = localStorage.getItem('token');
     if (token) {
+      // Sync token with apiClient
+      apiClient.setToken(token);
+      
       // Check if we have stored user type to determine which profile to fetch
       const userType = localStorage.getItem('userType');
       
@@ -52,6 +55,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Only clear token for 401/403 errors
             if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
               apiClient.clearToken();
+              setUser(null);
             }
           })
           .finally(() => {
@@ -67,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Only clear token for 401/403 errors
             if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
               apiClient.clearToken();
+              setUser(null);
             }
           })
           .finally(() => {
@@ -84,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // Only clear token for 401/403 errors
             if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
               apiClient.clearToken();
+              setUser(null);
             } else {
               // If volunteer profile fails, try admin profile
               apiClient.getAdminProfile()
@@ -95,6 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   // Only clear token for 401/403 errors
                   if (adminError.message && (adminError.message.includes('401') || adminError.message.includes('403'))) {
                     apiClient.clearToken();
+                    setUser(null);
                   }
                 });
             }

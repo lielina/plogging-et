@@ -164,6 +164,7 @@ class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
+    // Initialize token from localStorage if available
     this.token = localStorage.getItem('token');
   }
 
@@ -181,13 +182,22 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    if (this.token) {
+    // Always check for the latest token in localStorage to ensure synchronization
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      this.token = storedToken;
+      headers.Authorization = `Bearer ${this.token}`;
+    } else if (this.token) {
+      // If we have a token in memory but not in localStorage, sync it
+      localStorage.setItem('token', this.token);
       headers.Authorization = `Bearer ${this.token}`;
     }
 
     const response = await fetch(url, {
       ...options,
       headers,
+      // Remove credentials option to fix CORS issue with wildcard origin
+      // credentials: 'include',
     });
 
     if (!response.ok) {
@@ -228,6 +238,7 @@ class ApiClient {
     localStorage.removeItem('token');
     // Clear user-specific data on logout
     localStorage.removeItem('userEnrollments');
+    localStorage.removeItem('userType');
   }
 
   // Health Check

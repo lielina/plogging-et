@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { apiClient, VolunteerCertificate } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -6,27 +7,89 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, Calendar, Award, RefreshCw, Search } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function VolunteerCertificates() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { isAuthenticated, user } = useAuth()
   const [certificates, setCertificates] = useState<VolunteerCertificate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const { toast } = useToast()
 
+  // Ensure token is synced with apiClient on component mount
   useEffect(() => {
-    fetchCertificates()
+    const token = localStorage.getItem('token')
+    if (token) {
+      apiClient.setToken(token)
+    }
   }, [])
+
+  useEffect(() => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    
+    fetchCertificates()
+    
+    // Also fetch when the component becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Ensure token is still valid before fetching
+        const token = localStorage.getItem('token')
+        if (token) {
+          apiClient.setToken(token)
+          fetchCertificates()
+        } else {
+          navigate('/login')
+        }
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [location.pathname, isAuthenticated, navigate]) // Run when the pathname changes
 
   const fetchCertificates = async () => {
     try {
       setIsLoading(true)
       setError(null)
+      
+      // Ensure we have a valid token before making request
+      const token = localStorage.getItem('token')
+      if (!token) {
+        navigate('/login')
+        return
+      }
+      
+      // Sync token with apiClient
+      apiClient.setToken(token)
+      
       const response = await apiClient.getVolunteerCertificates()
       setCertificates(response.data)
     } catch (error: any) {
       console.error('Error fetching certificates:', error)
-      setError(error.message || 'Failed to load certificates')
+      // Handle authentication errors specifically
+      if (error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+        setError('Your session has expired. Please log in again.')
+        // Clear token and redirect to login
+        apiClient.clearToken()
+        navigate('/login')
+      } 
+      // Provide a more user-friendly error message
+      else if (error.message && (error.message.includes('500') || error.message.includes('Internal Server Error'))) {
+        setError('Certificate service is temporarily unavailable. Please try again later.')
+      } else {
+        setError(error.message || 'Failed to load certificates. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -47,26 +110,67 @@ export default function VolunteerCertificates() {
 
   const handleDownload = async (certificate: VolunteerCertificate) => {
     try {
-      // Create download link
-      const downloadUrl = `${apiClient['baseURL']}${certificate.file_path}`
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = `Certificate_${certificate.certificate_id}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // Create download link with proper authentication
+      const downloadUrl = `${apiClient['baseURL']}${certificate.file_path}`;
+      
+      // Create a fetch request with authentication headers
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to download certificates.",
+          variant: "destructive"
+        });
+        navigate('/login')
+        return
+      }
+      
+      // Sync token with apiClient
+      apiClient.setToken(token)
+      
+      const response = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Session Expired",
+            description: "Please log in again to download certificates.",
+            variant: "destructive"
+          });
+          // Clear token and redirect to login
+          apiClient.clearToken()
+          navigate('/login')
+          return
+        }
+        throw new Error(`Failed to download certificate: ${response.status} ${response.statusText}`);
+      }
+      
+      // Convert response to blob and create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Certificate_${certificate.certificate_id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       toast({
-        title: "Download Started",
-        description: "Your certificate download has started.",
-      })
+        title: "Download Complete",
+        description: "Your certificate has been downloaded successfully.",
+      });
     } catch (error: any) {
-      console.error('Error downloading certificate:', error)
+      console.error('Error downloading certificate:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to download certificate. Please try again.",
+        description: error.message || "Failed to download certificate. Please try again.",
         variant: "destructive"
-      })
+      });
     }
   }
 
@@ -146,8 +250,20 @@ export default function VolunteerCertificates() {
     <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Certificates</h1>
-        <p className="text-sm sm:text-base text-gray-600">View and download your earned certificates and achievements</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Certificates</h1>
+            <p className="text-sm sm:text-base text-gray-600">View and download your earned certificates and achievements</p>
+          </div>
+          <Button 
+            onClick={fetchCertificates} 
+            variant="outline"
+            className="border-green-500 text-green-700 hover:bg-green-50 w-full sm:w-auto"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Search Input */}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +16,7 @@ interface TopVolunteer {
 }
 
 export default function Leaderboard() {
+  const location = useLocation()
   const [topVolunteers, setTopVolunteers] = useState<TopVolunteer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,19 +27,43 @@ export default function Leaderboard() {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await apiClient.getTopVolunteersReport()
+        
+        // Use the existing method but with better error handling
+        const response = await apiClient.getTopVolunteersReport();
+        
         setTopVolunteers(response.data.volunteers || [])
         setCriteria(response.data.criteria || 'hours')
       } catch (error: any) {
         console.error('Error fetching top volunteers:', error)
-        setError('Leaderboard is currently unavailable. This feature requires admin privileges or the service may be temporarily down.')
+        // Provide a more user-friendly error message
+        if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+          setError('Leaderboard access requires admin privileges. This feature is currently unavailable for volunteers.')
+        } else if (error.message && (error.message.includes('500') || error.message.includes('Internal Server Error'))) {
+          setError('Leaderboard service is temporarily unavailable. Please try again later.')
+        } else {
+          setError('Leaderboard is temporarily unavailable. Please try again later.')
+        }
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchTopVolunteers()
-  }, [])
+    
+    // Also fetch when the component becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTopVolunteers()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [location.pathname]) // Run when the pathname changes
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -304,4 +330,4 @@ export default function Leaderboard() {
       </Card>
     </div>
   )
-} 
+}
