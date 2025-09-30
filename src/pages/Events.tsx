@@ -5,6 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle } from 'lucide-react'
 
 export default function Events() {
@@ -12,6 +22,7 @@ export default function Events() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [enrollingEvents, setEnrollingEvents] = useState<Set<number>>(new Set())
+  const [confirmEnrollEvent, setConfirmEnrollEvent] = useState<number | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -66,13 +77,6 @@ export default function Events() {
         localStorage.setItem('userEnrollments', JSON.stringify(storedEnrollments))
       }
       
-      // Show success message
-      toast({
-        title: "Enrollment Successful!",
-        description: "You have been successfully enrolled in the event. Check your dashboard to view your enrolled events.",
-        variant: "default",
-      })
-      
       // Update local event status immediately
       setEvents(prev => prev.map(e => 
         e.event_id === eventId 
@@ -116,8 +120,6 @@ export default function Events() {
               }
             : e
         ))
-        
-        // Don't show toast for already enrolled case - just update UI silently
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
         errorTitle = 'Event Full'
         errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
@@ -127,13 +129,6 @@ export default function Events() {
             ? { ...e, can_enroll: false }
             : e
         ))
-        
-        // Show error toast
-        toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: "destructive",
-        })
       } else if (error.message?.includes('not available') || error.message?.includes('not open')) {
         errorTitle = 'Enrollment Closed'
         errorMessage = 'Enrollment for this event is currently closed.'
@@ -142,15 +137,10 @@ export default function Events() {
             ? { ...e, can_enroll: false }
             : e
         ))
-        
-        // Show error toast
-        toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: "destructive",
-        })
-      } else {
-        // Show error toast for other errors
+      }
+      
+      // Show error toast for errors that need notification
+      if (!error.message?.includes('Already enrolled')) {
         toast({
           title: errorTitle,
           description: errorMessage,
@@ -163,6 +153,8 @@ export default function Events() {
         newSet.delete(eventId)
         return newSet
       })
+      // Close the confirmation dialog
+      setConfirmEnrollEvent(null)
     }
   }
 
@@ -462,7 +454,15 @@ export default function Events() {
                           disabled={buttonState.disabled}
                           onClick={(e) => {
                             e.preventDefault();
-                            !buttonState.disabled && handleEnroll(event.event_id)
+                            if (!buttonState.disabled) {
+                              // If it's an enroll button, show confirmation dialog
+                              if (buttonState.text === 'Enroll Now') {
+                                setConfirmEnrollEvent(event.event_id);
+                              } else {
+                                // For other actions, just handle enrollment directly
+                                handleEnroll(event.event_id);
+                              }
+                            }
                           }}
                         >
                           <span>{buttonState.text}</span>
@@ -525,6 +525,27 @@ export default function Events() {
           </div>
         </div>
       </div>
+
+      {/* Enrollment Confirmation Dialog */}
+      <AlertDialog open={confirmEnrollEvent !== null} onOpenChange={(open) => !open && setConfirmEnrollEvent(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Enrollment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to enroll in this event? Once enrolled, you'll be able to participate in the plogging activity.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => confirmEnrollEvent && handleEnroll(confirmEnrollEvent)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Confirm Enrollment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
