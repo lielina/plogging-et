@@ -164,7 +164,6 @@ class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    // Initialize token from localStorage if available
     this.token = localStorage.getItem('token');
   }
 
@@ -182,22 +181,18 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    // Always check for the latest token in localStorage to ensure synchronization
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      this.token = storedToken;
-      headers.Authorization = `Bearer ${this.token}`;
-    } else if (this.token) {
-      // If we have a token in memory but not in localStorage, sync it
-      localStorage.setItem('token', this.token);
+    // Always ensure we have the latest token from localStorage
+    this.token = localStorage.getItem('token');
+
+    if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
     const response = await fetch(url, {
       ...options,
       headers,
-      // Remove credentials option to fix CORS issue with wildcard origin
-      // credentials: 'include',
+      // Add credentials option to ensure cookies are sent with requests
+      credentials: 'include',
     });
 
     if (!response.ok) {

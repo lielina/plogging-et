@@ -19,14 +19,6 @@ export default function VolunteerCertificates() {
   const [searchTerm, setSearchTerm] = useState('')
   const { toast } = useToast()
 
-  // Ensure token is synced with apiClient on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      apiClient.setToken(token)
-    }
-  }, [])
-
   useEffect(() => {
     // Check if user is authenticated
     if (!isAuthenticated) {
@@ -39,14 +31,7 @@ export default function VolunteerCertificates() {
     // Also fetch when the component becomes visible again
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Ensure token is still valid before fetching
-        const token = localStorage.getItem('token')
-        if (token) {
-          apiClient.setToken(token)
-          fetchCertificates()
-        } else {
-          navigate('/login')
-        }
+        fetchCertificates()
       }
     }
     
@@ -63,15 +48,12 @@ export default function VolunteerCertificates() {
       setIsLoading(true)
       setError(null)
       
-      // Ensure we have a valid token before making request
+      // Check if token exists before making request
       const token = localStorage.getItem('token')
       if (!token) {
         navigate('/login')
         return
       }
-      
-      // Sync token with apiClient
-      apiClient.setToken(token)
       
       const response = await apiClient.getVolunteerCertificates()
       setCertificates(response.data)
@@ -80,8 +62,6 @@ export default function VolunteerCertificates() {
       // Handle authentication errors specifically
       if (error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
         setError('Your session has expired. Please log in again.')
-        // Clear token and redirect to login
-        apiClient.clearToken()
         navigate('/login')
       } 
       // Provide a more user-friendly error message
@@ -125,9 +105,6 @@ export default function VolunteerCertificates() {
         return
       }
       
-      // Sync token with apiClient
-      apiClient.setToken(token)
-      
       const response = await fetch(downloadUrl, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -141,8 +118,6 @@ export default function VolunteerCertificates() {
             description: "Please log in again to download certificates.",
             variant: "destructive"
           });
-          // Clear token and redirect to login
-          apiClient.clearToken()
           navigate('/login')
           return
         }
