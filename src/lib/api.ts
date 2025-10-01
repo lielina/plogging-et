@@ -191,8 +191,8 @@ class ApiClient {
     const response = await fetch(url, {
       ...options,
       headers,
-      // Add credentials option to ensure cookies are sent with requests
-      credentials: 'include',
+      // Remove credentials option to fix CORS issue with wildcard origin
+      // credentials: 'include',
     });
 
     if (!response.ok) {
