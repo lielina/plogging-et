@@ -86,6 +86,61 @@ export default function EventDetail() {
   const [scanResult, setScanResult] = useState('')
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
   const [copied, setCopied] = useState(false)
+  const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
+
+  // Check if current user is enrolled in this event
+  const isUserEnrolled = () => {
+    if (!user || !event) return false
+    return event.enrollments.some(enrollment => 
+      enrollment.volunteer.volunteer_id === (user as any).volunteer_id
+    )
+  }
+
+  // Handle enrollment button click
+  const handleEnrollClick = () => {
+    // Check if user is authenticated
+    if (!user) {
+      // Redirect to login page with return URL
+      navigate('/login', { state: { from: `/events/${eventId}` } })
+      return
+    }
+    
+    // If already enrolled, show message
+    if (isUserEnrolled()) {
+      toast({
+        title: "Already Enrolled",
+        description: "You are already enrolled in this event.",
+      })
+      return
+    }
+    
+    // Show confirmation dialog
+    setIsEnrollDialogOpen(true)
+  }
+
+  // Handle actual enrollment
+  const handleEnroll = async () => {
+    try {
+      await apiClient.enrollInEvent(parseInt(eventId!))
+      
+      // Refresh event data to show updated enrollment
+      const response = await apiClient.getEventDetails(parseInt(eventId!))
+      setEvent(response.data as EventDetailData)
+      
+      toast({
+        title: "Enrollment Successful",
+        description: "You have been successfully enrolled in this event.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Enrollment Failed",
+        description: error.message || "Failed to enroll in event. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsEnrollDialogOpen(false)
+    }
+  }
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -688,10 +743,31 @@ ${description}
               <div className="flex flex-wrap gap-3">
                 {!isAdmin ? (
                   <>
+                    {/* Enrollment button for regular users */}
+                    <Button 
+                      variant="default"
+                      onClick={handleEnrollClick}
+                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                      disabled={isUserEnrolled()}
+                    >
+                      {isUserEnrolled() ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Enrolled
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Enroll Now
+                        </>
+                      )}
+                    </Button>
+                    
                     <Button 
                       variant="outline"
                       onClick={() => setIsCheckInScannerOpen(true)}
                       className="bg-white hover:bg-gray-50 w-full sm:w-auto"
+                      disabled={!isUserEnrolled()}
                     >
                       <Scan className="h-4 w-4 mr-2" />
                       <span className="whitespace-nowrap">Check In</span>
@@ -700,6 +776,7 @@ ${description}
                       variant="outline"
                       onClick={() => setIsCheckOutScannerOpen(true)}
                       className="bg-white hover:bg-gray-50 w-full sm:w-auto"
+                      disabled={!isUserEnrolled()}
                     >
                       <Scan className="h-4 w-4 mr-2" />
                       <span className="whitespace-nowrap">Check Out</span>
@@ -1167,6 +1244,26 @@ ${description}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsShareDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Enrollment Confirmation Dialog */}
+      <Dialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Enrollment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to enroll in this event? Once enrolled, you'll be able to participate in the plogging activity.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEnrollDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEnroll} className="bg-green-600 hover:bg-green-700">
+              Confirm Enrollment
             </Button>
           </DialogFooter>
         </DialogContent>

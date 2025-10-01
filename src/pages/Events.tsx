@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([])
@@ -24,6 +25,8 @@ export default function Events() {
   const [enrollingEvents, setEnrollingEvents] = useState<Set<number>>(new Set())
   const [confirmEnrollEvent, setConfirmEnrollEvent] = useState<number | null>(null)
   const { toast } = useToast()
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -58,6 +61,18 @@ export default function Events() {
 
     fetchEvents()
   }, [])
+
+  const handleEnrollClick = (eventId: number) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Redirect to login page with return URL
+      navigate('/login', { state: { from: `/events/${eventId}` } })
+      return
+    }
+    
+    // If authenticated, proceed with enrollment confirmation
+    setConfirmEnrollEvent(eventId)
+  }
 
   const handleEnroll = async (eventId: number) => {
     // Prevent multiple enrollment attempts for the same event
@@ -455,12 +470,16 @@ export default function Events() {
                           onClick={(e) => {
                             e.preventDefault();
                             if (!buttonState.disabled) {
-                              // If it's an enroll button, show confirmation dialog
+                              // If it's an enroll button, check authentication and show confirmation dialog
                               if (buttonState.text === 'Enroll Now') {
-                                setConfirmEnrollEvent(event.event_id);
+                                handleEnrollClick(event.event_id);
                               } else {
-                                // For other actions, just handle enrollment directly
-                                handleEnroll(event.event_id);
+                                // For other actions, just handle enrollment directly (if user is authenticated)
+                                if (isAuthenticated) {
+                                  handleEnroll(event.event_id);
+                                } else {
+                                  navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                }
                               }
                             }
                           }}
