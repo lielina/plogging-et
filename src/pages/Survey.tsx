@@ -173,11 +173,12 @@ const Survey: React.FC = () => {
                   <SelectValue placeholder="Select education level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="high_school">High School</SelectItem>
+                  <SelectItem value="tvet">TVET</SelectItem>
+                  <SelectItem value="secondary_school">Secondary School</SelectItem>
+                  <SelectItem value="certificate">Certificate</SelectItem>
+                  <SelectItem value="diploma">Diploma</SelectItem>
                   <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                  <SelectItem value="master">Master's Degree</SelectItem>
                   <SelectItem value="phd">PhD</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -203,10 +204,8 @@ const Survey: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="self_employed">Self-Employed</SelectItem>
+                  <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="job_seeker">Job Seeker</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="employed">Employed</SelectItem>
-                  <SelectItem value="unemployed">Unemployed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -225,20 +224,20 @@ const Survey: React.FC = () => {
                 onValueChange={(value) => handleInputChange('main_reason', value)}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="protect_environment" id="protect_environment" />
-                  <Label htmlFor="protect_environment">To protect the environment</Label>
+                  <RadioGroupItem value="environmental_health" id="protect_environment" />
+                  <Label htmlFor="protect_environment">Environmental and health benefits</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="protect_health" id="protect_health" />
-                  <Label htmlFor="protect_health">To protect my own health by being active</Label>
+                  <RadioGroupItem value="personal_health" id="protect_health" />
+                  <Label htmlFor="protect_health">Personal health improvement</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="social_interaction" id="social_interaction" />
-                  <Label htmlFor="social_interaction">For social interaction (meeting people)</Label>
+                  <RadioGroupItem value="social_connection" id="social_interaction" />
+                  <Label htmlFor="social_interaction">Social connection</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="enjoy_nature" id="enjoy_nature" />
-                  <Label htmlFor="enjoy_nature">For fun, to enjoy nature</Label>
+                  <RadioGroupItem value="entertainment_nature" id="enjoy_nature" />
+                  <Label htmlFor="enjoy_nature">Entertainment in nature</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="other" id="reason_other" />
@@ -289,10 +288,10 @@ const Survey: React.FC = () => {
               </Label>
               <div className="space-y-2">
                 {[
-                  { id: 'frequent', label: 'If the plogging is organized frequently' },
-                  { id: 'different_places', label: 'If it is organized in different places' },
-                  { id: 'social_activities', label: 'If there are other social activities after plogging' },
-                  { id: 'recognition', label: 'If there is recognition or awards' },
+                  { id: 'regular_plogging', label: 'Regular plogging events' },
+                  { id: 'various_locations', label: 'Plogging in various locations' },
+                  { id: 'social_activities', label: 'Social activities after plogging' },
+                  { id: 'recognition_rewards', label: 'Recognition or rewards' },
                   { id: 'always_motivated', label: 'I am always motivated to participate' }
                 ].map((item) => (
                   <div key={item.id} className="flex items-center space-x-2">
@@ -320,11 +319,11 @@ const Survey: React.FC = () => {
               </Label>
               <div className="space-y-2">
                 {[
-                  { id: 'time_inconvenience', label: 'Inconvenience of time' },
-                  { id: 'location_inconvenience', label: 'The location is not convenient' },
-                  { id: 'physical_health', label: 'My physical health makes it difficult for me to participate' },
+                  { id: 'time_constraint', label: 'Time constraint' },
+                  { id: 'location_inconvenient', label: 'Location inconvenient' },
+                  { id: 'physical_health', label: 'Physical health issues' },
                   { id: 'lack_of_interest', label: 'Lack of interest' },
-                  { id: 'barrier_other', label: 'Other' }
+                  { id: 'other', label: 'Other' }
                 ].map((item) => (
                   <div key={item.id} className="flex items-center space-x-2">
                     <Checkbox
@@ -337,7 +336,7 @@ const Survey: React.FC = () => {
                     <Label htmlFor={item.id}>{item.label}</Label>
                   </div>
                 ))}
-                {(surveyData.barriers_to_participation || []).includes('barrier_other') && (
+                {(surveyData.barriers_to_participation || []).includes('other') && (
                   <div className="ml-6 mt-2">
                     <Input
                       placeholder="Please specify"
@@ -363,11 +362,11 @@ const Survey: React.FC = () => {
                 onValueChange={(value) => handleInputChange('overall_satisfaction', value)}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="happy" id="happy" />
+                  <RadioGroupItem value="satisfied" id="happy" />
                   <Label htmlFor="happy">I am happy</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="not_happy" id="not_happy" />
+                  <RadioGroupItem value="not-satisfied" id="not_happy" />
                   <Label htmlFor="not_happy">I am not happy</Label>
                 </div>
               </RadioGroup>

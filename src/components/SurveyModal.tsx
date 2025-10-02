@@ -137,28 +137,10 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
         return;
       }
 
-      if (surveyData.education_level && surveyData.education_level.length < 2) {
-        toast({
-          title: "Error",
-          description: "Please enter a valid education level.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       if (surveyData.residence_area && surveyData.residence_area.length < 2) {
         toast({
           title: "Error",
           description: "Please enter a valid residence area.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (surveyData.employment_status && surveyData.employment_status.length < 2) {
-        toast({
-          title: "Error",
-          description: "Please enter a valid employment status.",
           variant: "destructive"
         });
         return;
@@ -287,12 +269,22 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
             
             <div className="space-y-2">
               <Label htmlFor="education_level">Education Level</Label>
-              <Input
-                id="education_level"
-                value={surveyData.education_level || ''}
-                onChange={(e) => handleInputChange('education_level', e.target.value)}
-                placeholder="Enter your education level"
-              />
+              <Select 
+                value={surveyData.education_level || ''} 
+                onValueChange={(value) => handleInputChange('education_level', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select education level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tvet">TVET</SelectItem>
+                  <SelectItem value="secondary_school">Secondary School</SelectItem>
+                  <SelectItem value="certificate">Certificate</SelectItem>
+                  <SelectItem value="diploma">Diploma</SelectItem>
+                  <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                  <SelectItem value="phd">PhD</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
@@ -307,12 +299,19 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
             
             <div className="space-y-2">
               <Label htmlFor="employment_status">Work Status</Label>
-              <Input
-                id="employment_status"
-                value={surveyData.employment_status || ''}
-                onChange={(e) => handleInputChange('employment_status', e.target.value)}
-                placeholder="Enter your work status"
-              />
+              <Select 
+                value={surveyData.employment_status || ''} 
+                onValueChange={(value) => handleInputChange('employment_status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select work status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="self_employed">Self-Employed</SelectItem>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="job_seeker">Job Seeker</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         );
@@ -333,16 +332,16 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                   <Label htmlFor="environmental_health">Environmental and health benefits</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="social_interaction" id="social_interaction" />
-                  <Label htmlFor="social_interaction">Social interaction</Label>
+                  <RadioGroupItem value="personal_health" id="personal_health" />
+                  <Label htmlFor="personal_health">Personal health improvement</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="community_service" id="community_service" />
-                  <Label htmlFor="community_service">Community service</Label>
+                  <RadioGroupItem value="social_connection" id="social_connection" />
+                  <Label htmlFor="social_connection">Social connection</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="exercise" id="exercise" />
-                  <Label htmlFor="exercise">Exercise and fitness</Label>
+                  <RadioGroupItem value="entertainment_nature" id="entertainment_nature" />
+                  <Label htmlFor="entertainment_nature">Entertainment in nature</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="other" id="reason_other" />
@@ -396,7 +395,7 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                   { id: 'regular_plogging', label: 'Regular plogging events' },
                   { id: 'various_locations', label: 'Plogging in various locations' },
                   { id: 'social_activities', label: 'Social activities after plogging' },
-                  { id: 'recognition', label: 'Recognition or awards' },
+                  { id: 'recognition_rewards', label: 'Recognition or rewards' },
                   { id: 'always_motivated', label: 'I am always motivated to participate' }
                 ].map((item) => (
                   <div key={item.id} className="flex items-center space-x-2">
@@ -471,7 +470,7 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                   <Label htmlFor="satisfied">Satisfied</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="not_satisfied" id="not_satisfied" />
+                  <RadioGroupItem value="not-satisfied" id="not_satisfied" />
                   <Label htmlFor="not_satisfied">Not satisfied</Label>
                 </div>
               </RadioGroup>
