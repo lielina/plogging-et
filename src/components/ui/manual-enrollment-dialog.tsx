@@ -64,7 +64,7 @@ export default function ManualEnrollmentDialog({
       setSuccess('')
       
       await onEnroll(id)
-      setSuccess(`Volunteer ${id} enrolled successfully!`)
+      setSuccess('Volunteer enrolled successfully!')
       
       // Clear form and close after success
       setTimeout(() => {
@@ -73,7 +73,21 @@ export default function ManualEnrollmentDialog({
         onClose()
       }, 2000)
     } catch (err: any) {
-      setError(err.message || 'Failed to enroll volunteer')
+      // Handle specific error messages without exposing volunteer IDs
+      let errorMessage = err.message || 'Failed to enroll volunteer';
+      
+      // Check if it's an "already enrolled" error and clean it up
+      if (errorMessage.includes('already enrolled')) {
+        // Remove any volunteer ID patterns from the message
+        errorMessage = errorMessage.replace(/volunteer \d+ is already enrolled/i, 'This volunteer is already enrolled');
+        errorMessage = errorMessage.replace(/volunteer \d+/i, 'volunteer');
+        // Fallback if the pattern is different
+        if (errorMessage.toLowerCase().includes('already enrolled')) {
+          errorMessage = 'This volunteer is already enrolled in the event';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false)
     }

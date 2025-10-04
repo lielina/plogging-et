@@ -436,11 +436,11 @@ ${description}
         )
         
         if (isEnrolled) {
-          setScanResult(`Volunteer ${volunteerId} is already enrolled in this event`)
+          setScanResult('This volunteer is already enrolled in the event')
         } else {
           // Enroll the volunteer
           await apiClient.enrollVolunteerInEvent(parseInt(eventId!), volunteerId)
-          setScanResult(`Volunteer ${volunteerId} enrolled successfully!`)
+          setScanResult('Volunteer enrolled successfully!')
           
           // Refresh event data
           const response = await apiClient.getEventDetails(parseInt(eventId!))
@@ -462,7 +462,7 @@ ${description}
       )
       
       if (isEnrolled) {
-        throw new Error(`Volunteer ${volunteerId} is already enrolled in this event`)
+        throw new Error('This volunteer is already enrolled in the event')
       }
       
       // Enroll the volunteer
