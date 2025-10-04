@@ -208,7 +208,7 @@ const UserSidebar = () => {
             {/* Add Home link */}
             <li>
               <Link
-                to="/dashboard"
+                to="/"
                 className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 <Home className="h-5 w-5 flex-shrink-0" />

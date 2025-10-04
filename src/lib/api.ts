@@ -372,8 +372,13 @@ class ApiClient {
     return this.request<{ data: any }>('/volunteer/statistics');
   }
 
-  async getAvailableEvents(): Promise<{ data: Event[] }> {
-    return this.request<{ data: Event[] }>('/volunteer/events');
+  async getAvailableEvents(page: number = 1, perPage: number = 15): Promise<{ data: Event[], pagination?: any }> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString()
+    });
+
+    return this.request<{ data: Event[], pagination?: any }>(`/volunteer/events?${params.toString()}`);
   }
 
   async getEventDetails(eventId: number): Promise<{ data: Event }> {

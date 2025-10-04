@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function Events() {
@@ -24,43 +24,81 @@ export default function Events() {
   const [error, setError] = useState('')
   const [enrollingEvents, setEnrollingEvents] = useState<Set<number>>(new Set())
   const [confirmEnrollEvent, setConfirmEnrollEvent] = useState<number | null>(null)
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalEvents: 0,
+    perPage: 9
+  })
   const { toast } = useToast()
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setIsLoading(true)
-        setError('')
+  const fetchEvents = async (page: number = 1) => {
+    try {
+      setIsLoading(true)
+      setError('')
+      
+      console.log('Fetching events for page:', page);
+      
+      const response = await apiClient.getAvailableEvents(page, pagination.perPage)
+      const eventsData = response.data
+      
+      console.log('Events data:', eventsData);
+      console.log('Pagination data:', response.pagination);
+      
+      // Get stored enrollments from localStorage
+      const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+      
+      // Update events with local enrollment status
+      const updatedEvents = eventsData.map(event => {
+        const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
+        return {
+          ...event,
+          is_enrolled: event.is_enrolled || isLocallyEnrolled,
+          can_enroll: event.can_enroll !== false && !isLocallyEnrolled && event.is_enrolled !== true
+        }
+      })
+      
+      setEvents(updatedEvents)
+      
+      // Handle pagination data if available
+      if (response.pagination) {
+        const newPagination = {
+          currentPage: response.pagination.current_page,
+          totalPages: response.pagination.last_page,
+          totalEvents: response.pagination.total,
+          perPage: response.pagination.per_page
+        };
         
-        const response = await apiClient.getAvailableEvents()
-        const eventsData = response.data
-        
-        // Get stored enrollments from localStorage
-        const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-        
-        // Update events with local enrollment status
-        const updatedEvents = eventsData.map(event => {
-          const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
-          return {
-            ...event,
-            is_enrolled: event.is_enrolled || isLocallyEnrolled,
-            can_enroll: event.can_enroll !== false && !isLocallyEnrolled && event.is_enrolled !== true
-          }
+        console.log('Setting pagination:', newPagination);
+        setPagination(newPagination);
+      } else {
+        // If no pagination data, assume all events are loaded
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          totalEvents: eventsData.length,
+          perPage: pagination.perPage
         })
-        
-        setEvents(updatedEvents)
-      } catch (err: any) {
-        console.error('Error fetching events:', err)
-        setError('Events are temporarily unavailable. Please try again later.')
-      } finally {
-        setIsLoading(false)
       }
+    } catch (err: any) {
+      console.error('Error fetching events:', err)
+      setError('Events are temporarily unavailable. Please try again later.')
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    fetchEvents()
+  useEffect(() => {
+    fetchEvents(1)
   }, [])
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      fetchEvents(newPage)
+    }
+  }
 
   const handleEnrollClick = (eventId: number) => {
     // Check if user is authenticated
@@ -386,115 +424,200 @@ export default function Events() {
 
       {/* Events Grid */}
       {events.length > 0 ? (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-          {events.map((event) => (
-            <Link to={`/events/${event.event_id}`} key={event.event_id} className="block">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between flex-wrap gap-2">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base sm:text-lg mb-2 leading-tight">{event.event_name}</CardTitle>
-                      <CardDescription className="line-clamp-2 text-sm">
-                        {event.description}
-                      </CardDescription>
+        <>
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {events.map((event) => (
+              <Link to={`/events/${event.event_id}`} key={event.event_id} className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between flex-wrap gap-2">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base sm:text-lg mb-2 leading-tight">{event.event_name}</CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm">
+                          {event.description}
+                        </CardDescription>
+                      </div>
+                      <Badge 
+                        variant={event.status === 'Active' ? 'default' : 'secondary'}
+                        className="ml-2 flex-shrink-0 text-xs px-2 py-0.5"
+                      >
+                        {event.status}
+                      </Badge>
                     </div>
-                    <Badge 
-                      variant={event.status === 'Active' ? 'default' : 'secondary'}
-                      className="ml-2 flex-shrink-0 text-xs px-2 py-0.5"
-                    >
-                      {event.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    {/* Date and Time */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{formatDate(event.event_date)}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">
-                        {formatTime(event.start_time)} - {formatTime(event.end_time)}
-                      </span>
-                    </div>
-
-                    {/* Location */}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 flex-shrink-0" />
-                      <span className="line-clamp-1">{event.location_name}</span>
-                    </div>
-
-                    {/* Duration and Capacity */}
-                    <div className="flex items-center justify-between text-sm gap-4">
-                      <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {/* Date and Time */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{formatDate(event.event_date)}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Clock className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{event.estimated_duration_hours} hours</span>
+                        <span className="truncate">
+                          {formatTime(event.start_time)} - {formatTime(event.end_time)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-600 min-w-0">
-                        <Users className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">Max {event.max_volunteers}</span>
-                      </div>
-                    </div>
 
-                    {/* Enrollment Status (if enrolled) */}
-                    {(() => {
-                      const buttonState = getButtonState(event)
-                      if (buttonState.showDetails && buttonState.status) {
-                        return (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                              <span className="text-sm font-medium text-green-800">Enrollment Status</span>
+                      {/* Location */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 flex-shrink-0" />
+                        <span className="line-clamp-1">{event.location_name}</span>
+                      </div>
+
+                      {/* Duration and Capacity */}
+                      <div className="flex items-center justify-between text-sm gap-4">
+                        <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                          <Clock className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{event.estimated_duration_hours} hours</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                          <Users className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">Max {event.max_volunteers}</span>
+                        </div>
+                      </div>
+
+                      {/* Enrollment Status (if enrolled) */}
+                      {(() => {
+                        const buttonState = getButtonState(event)
+                        if (buttonState.showDetails && buttonState.status) {
+                          return (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                <span className="text-sm font-medium text-green-800">Enrollment Status</span>
+                              </div>
+                              <p className="text-sm text-green-700 mt-1">{buttonState.status}</p>
+                              <p className="text-xs text-green-600 mt-1">
+                                Check your dashboard for more details and event updates.
+                              </p>
                             </div>
-                            <p className="text-sm text-green-700 mt-1">{buttonState.status}</p>
-                            <p className="text-xs text-green-600 mt-1">
-                              Check your dashboard for more details and event updates.
-                            </p>
-                          </div>
-                        )
-                      }
-                      return null
-                    })()}
+                          )
+                        }
+                        return null
+                      })()}
 
-                    {/* Action Button */}
-                    {(() => {
-                      const buttonState = getButtonState(event)
-                      return (
-                        <Button 
-                          className="w-full mt-4 text-sm sm:text-base" 
-                          variant={buttonState.variant}
-                          disabled={buttonState.disabled}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (!buttonState.disabled) {
-                              // If it's an enroll button, check authentication and show confirmation dialog
-                              if (buttonState.text === 'Enroll Now') {
-                                handleEnrollClick(event.event_id);
-                              } else {
-                                // For other actions, just handle enrollment directly (if user is authenticated)
-                                if (isAuthenticated) {
-                                  handleEnroll(event.event_id);
+                      {/* Action Button */}
+                      {(() => {
+                        const buttonState = getButtonState(event)
+                        return (
+                          <Button 
+                            className="w-full mt-4 text-sm sm:text-base" 
+                            variant={buttonState.variant}
+                            disabled={buttonState.disabled}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (!buttonState.disabled) {
+                                // If it's an enroll button, check authentication and show confirmation dialog
+                                if (buttonState.text === 'Enroll Now') {
+                                  handleEnrollClick(event.event_id);
                                 } else {
-                                  navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                  // For other actions, just handle enrollment directly (if user is authenticated)
+                                  if (isAuthenticated) {
+                                    handleEnroll(event.event_id);
+                                  } else {
+                                    navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                  }
                                 }
                               }
-                            }
-                          }}
+                            }}
+                          >
+                            <span>{buttonState.text}</span>
+                            {buttonState.icon}
+                          </Button>
+                        )
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-8">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <Button
+                  onClick={() => handlePageChange(pagination.currentPage - 1)}
+                  disabled={pagination.currentPage === 1}
+                  variant="outline"
+                  size="sm"
+                >
+                  Previous
+                </Button>
+                <Button
+                  onClick={() => handlePageChange(pagination.currentPage + 1)}
+                  disabled={pagination.currentPage === pagination.totalPages}
+                  variant="outline"
+                  size="sm"
+                >
+                  Next
+                </Button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{(pagination.currentPage - 1) * pagination.perPage + 1}</span> to{' '}
+                    <span className="font-medium">
+                      {Math.min(pagination.currentPage * pagination.perPage, pagination.totalEvents)}
+                    </span>{' '}
+                    of <span className="font-medium">{pagination.totalEvents}</span> events
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <Button
+                      onClick={() => handlePageChange(pagination.currentPage - 1)}
+                      disabled={pagination.currentPage === 1}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-l-md"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = pagination.currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          variant={pageNum === pagination.currentPage ? "default" : "outline"}
+                          size="sm"
+                          className={pageNum === pagination.currentPage ? "z-10" : ""}
                         >
-                          <span>{buttonState.text}</span>
-                          {buttonState.icon}
+                          {pageNum}
                         </Button>
-                      )
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                      );
+                    })}
+                    <Button
+                      onClick={() => handlePageChange(pagination.currentPage + 1)}
+                      disabled={pagination.currentPage === pagination.totalPages}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-r-md"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-8 sm:py-12">
           <Calendar className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" />
