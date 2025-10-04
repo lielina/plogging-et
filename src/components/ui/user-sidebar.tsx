@@ -109,7 +109,7 @@ const UserSidebar = () => {
         {/* Sidebar header with logo and user info */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/dashboard" className="flex items-center space-x-2">
               <img
                 src="/logo.png"
                 alt="Plogging Ethiopia Logo"
@@ -208,7 +208,7 @@ const UserSidebar = () => {
             {/* Add Home link */}
             <li>
               <Link
-                to="/"
+                to="/dashboard"
                 className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 <Home className="h-5 w-5 flex-shrink-0" />

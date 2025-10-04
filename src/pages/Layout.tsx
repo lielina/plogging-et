@@ -27,7 +27,8 @@ const Layout = () => {
                           location.pathname.startsWith('/profile') || 
                           location.pathname.startsWith('/leaderboard') ||
                           location.pathname.startsWith('/certificates') ||
-                          location.pathname.startsWith('/survey');
+                          location.pathname.startsWith('/survey') ||
+                          location.pathname === '/events';
 
   return (
     <div className="flex min-h-screen">
