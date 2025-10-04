@@ -204,8 +204,10 @@ const Survey: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="self_employed">Self-Employed</SelectItem>
-                  <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="job_seeker">Job Seeker</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="employed">Employed</SelectItem>
+                  <SelectItem value="unemployed">Unemployed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -310,6 +310,8 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
                   <SelectItem value="self_employed">Self-Employed</SelectItem>
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="job_seeker">Job Seeker</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="unemployed">Unemployed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
