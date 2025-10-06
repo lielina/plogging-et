@@ -4,6 +4,7 @@ import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Crown, Medal, Star, Clock, Calendar, Award, Users } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface TopVolunteer {
   volunteer_id: number;
@@ -17,6 +18,7 @@ interface TopVolunteer {
 
 export default function Leaderboard() {
   const location = useLocation()
+  const { user, isAdmin } = useAuth()
   const [topVolunteers, setTopVolunteers] = useState<TopVolunteer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +65,7 @@ export default function Leaderboard() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [location.pathname]) // Run when the pathname changes
+  }, [location.pathname, isAdmin]) // Run when the pathname changes or isAdmin status changes
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -104,7 +106,40 @@ export default function Leaderboard() {
     )
   }
 
-  if (error) {
+  if (error && !isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trophy className="w-8 h-8 text-amber-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Leaderboard Access Restricted</h2>
+            <p className="text-gray-600 mb-4 max-w-md">The leaderboard is currently only available for administrators. As a volunteer, you can view your personal statistics in your profile.</p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">You can still:</p>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <a 
+                  href="/profile" 
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                >
+                  View Your Profile
+                </a>
+                <a 
+                  href="/events" 
+                  className="px-4 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50 transition-colors"
+                >
+                  Browse Events
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && isAdmin) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">

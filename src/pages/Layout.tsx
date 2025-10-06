@@ -18,7 +18,7 @@ const Layout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isCollapsed } = useSidebar();
   const location = useLocation();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin } = useAuth();
   useHashScroll();
   
   // Show sidebar on dashboard pages when authenticated
@@ -115,6 +115,13 @@ const Layout = () => {
                               Profile
                             </Link>
                           </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem asChild>
+                              <Link to="/leaderboard" className="w-full">
+                                Leaderboard
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
                             onClick={logout}
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -213,6 +220,19 @@ const Layout = () => {
                         >
                           Profile
                         </NavLink>
+                        {isAdmin && (
+                          <NavLink
+                            to="/leaderboard"
+                            onClick={() => setIsMenuOpen(false)}
+                            className={({ isActive }) =>
+                              isActive
+                                ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md block"
+                                : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
+                            }
+                          >
+                            Leaderboard
+                          </NavLink>
+                        )}
                         <button
                           onClick={() => {
                             logout();

@@ -52,10 +52,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(response.data);
           })
           .catch((error) => {
-            // Only clear token for 401/403 errors
+            // Only clear token for 401/403 errors on profile endpoints
+            // This prevents logout when accessing admin-only pages like leaderboard
             if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
-              apiClient.clearToken();
-              setUser(null);
+              // Check if it's a profile endpoint error specifically
+              if (error.message.includes('/profile')) {
+                apiClient.clearToken();
+                setUser(null);
+              }
             }
           })
           .finally(() => {
@@ -68,10 +72,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(response.data);
           })
           .catch((error) => {
-            // Only clear token for 401/403 errors
+            // Only clear token for 401/403 errors on profile endpoints
+            // This prevents logout when accessing admin-only pages like leaderboard
             if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
-              apiClient.clearToken();
-              setUser(null);
+              // Check if it's a profile endpoint error specifically
+              if (error.message.includes('/profile')) {
+                apiClient.clearToken();
+                setUser(null);
+              }
             }
           })
           .finally(() => {
@@ -86,24 +94,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('userType', 'volunteer');
           })
           .catch((error) => {
-            // Only clear token for 401/403 errors
+            // Only clear token for 401/403 errors on profile endpoints
             if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
-              apiClient.clearToken();
-              setUser(null);
-            } else {
-              // If volunteer profile fails, try admin profile
-              apiClient.getAdminProfile()
-                .then(response => {
-                  setUser(response.data);
-                  localStorage.setItem('userType', 'admin');
-                })
-                .catch((adminError) => {
-                  // Only clear token for 401/403 errors
-                  if (adminError.message && (adminError.message.includes('401') || adminError.message.includes('403'))) {
-                    apiClient.clearToken();
-                    setUser(null);
-                  }
-                });
+              // Check if it's a profile endpoint error specifically
+              if (error.message.includes('/profile')) {
+                apiClient.clearToken();
+                setUser(null);
+              } else {
+                // If volunteer profile fails but it's not a 401/403, try admin profile
+                apiClient.getAdminProfile()
+                  .then(response => {
+                    setUser(response.data);
+                    localStorage.setItem('userType', 'admin');
+                  })
+                  .catch((adminError) => {
+                    // Only clear token for 401/403 errors on profile endpoints
+                    if (adminError.message && (adminError.message.includes('401') || adminError.message.includes('403'))) {
+                      if (adminError.message.includes('/profile')) {
+                        apiClient.clearToken();
+                        setUser(null);
+                      }
+                    }
+                  });
+              }
             }
           })
           .finally(() => {

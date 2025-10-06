@@ -6,15 +6,17 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Leaf, Menu, Home, Calendar, Trophy, User, Settings, Bell, LogOut, FileText } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+  const { isAdmin } = useAuth()
 
   const navigationItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/events", label: "Events", icon: Calendar },
-    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+    { href: "/leaderboard", label: "Leaderboard", icon: Trophy, adminOnly: true },
     { href: "/certificates", label: "Certificates", icon: FileText },
     { href: "/profile", label: "Profile", icon: User },
   ]
@@ -38,18 +40,20 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  isActive(item.href) ? "bg-green-100 text-green-800 font-medium" : "text-green-600 hover:bg-green-50"
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            ))}
+            {navigationItems
+              .filter(item => !item.adminOnly || isAdmin)
+              .map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    isActive(item.href) ? "bg-green-100 text-green-800 font-medium" : "text-green-600 hover:bg-green-50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              ))}
           </nav>
 
           {/* Desktop Actions */}
@@ -97,21 +101,23 @@ export function Navigation() {
 
                 <nav className="flex-1 py-6">
                   <div className="space-y-2">
-                    {navigationItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        to={item.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                          isActive(item.href)
-                            ? "bg-green-100 text-green-800 font-medium"
-                            : "text-green-600 hover:bg-green-50"
-                        }`}
-                      >
-                        <item.icon className="w-5 h-5" />
-                        {item.label}
-                      </Link>
-                    ))}
+                    {navigationItems
+                      .filter(item => !item.adminOnly || isAdmin)
+                      .map((item) => (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                            isActive(item.href)
+                              ? "bg-green-100 text-green-800 font-medium"
+                              : "text-green-600 hover:bg-green-50"
+                          }`}
+                        >
+                          <item.icon className="w-5 h-5" />
+                          {item.label}
+                        </Link>
+                      ))}
                   </div>
                 </nav>
 
@@ -144,4 +150,7 @@ export function Navigation() {
           </Sheet>
         </div>
       </div>
-    </header>
+    </header>)
+}
+
+export default Navigation

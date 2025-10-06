@@ -203,9 +203,13 @@ class ApiClient {
         errorData = { message: `HTTP error! status: ${response.status}` };
       }
 
-      // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors
+      // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors on profile endpoints
+      // This prevents logout when accessing admin-only pages like leaderboard
       if (response.status === 401 || response.status === 403) {
-        this.clearToken();
+        // Check if it's a profile endpoint specifically
+        if (endpoint.includes('/profile')) {
+          this.clearToken();
+        }
       }
 
       // Create a more descriptive error message
