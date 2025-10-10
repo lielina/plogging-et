@@ -433,86 +433,11 @@ class ApiClient {
 
   async getVolunteerBadges(): Promise<{ data: VolunteerBadge[] }> {
     try {
-      const response = await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
-      return response;
+      return await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
     } catch (error) {
       console.error('Error fetching volunteer badges:', error);
-      // Return sample badges as fallback to prevent app crash and show UI
-      const sampleBadges: VolunteerBadge[] = [
-        {
-          badge_id: 1,
-          badge_name: "Community Helper",
-          description: "Participated in first plogging event",
-          image_url: "",
-          criteria_type: "first_event",
-          criteria_value: 1,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          pivot: {
-            volunteer_id: "0",
-            badge_id: "1",
-            earned_date: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        },
-        {
-          badge_id: 2,
-          badge_name: "Eco Hero",
-          description: "Contributed 25+ hours to environmental cleanup",
-          image_url: "",
-          criteria_type: "hours",
-          criteria_value: 25,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          pivot: {
-            volunteer_id: "0",
-            badge_id: "2",
-            earned_date: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        },
-        {
-          badge_id: 3,
-          badge_name: "Green Warrior",
-          description: "Contributed 50+ hours to environmental cleanup",
-          image_url: "",
-          criteria_type: "hours",
-          criteria_value: 50,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          pivot: {
-            volunteer_id: "0",
-            badge_id: "3",
-            earned_date: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        },
-        {
-          badge_id: 4,
-          badge_name: "Environmental Champion",
-          description: "Contributed 100+ hours to environmental cleanup",
-          image_url: "",
-          criteria_type: "hours",
-          criteria_value: 100,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          pivot: {
-            volunteer_id: "0",
-            badge_id: "4",
-            earned_date: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        }
-      ];
-      return { data: sampleBadges };
+      // Re-throw the error so the UI can handle it appropriately
+      throw error;
     }
   }
 

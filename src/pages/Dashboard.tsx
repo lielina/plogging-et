@@ -100,56 +100,57 @@ export default function Dashboard() {
                 const isStoredEnrolled = storedEnrollments.includes(event.event_id)
                 // Check multiple possible fields for enrollment status
                 const isBackendEnrolled = event.is_enrolled === true || 
-                                    event.enrollment_status === 'confirmed' || 
-                                    event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false; // If can't enroll, might mean already enrolled
-                
-                console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-                
-                return isStoredEnrolled || isBackendEnrolled
-              });
+                                      event.enrollment_status === 'confirmed' || 
+                                      event.enrollment_status === 'attended' ||
+                                      event.can_enroll === false; // If can't enroll, might mean already enrolled
               
-              console.log('Enrolled events:', enrolledEvents)
-              setRecentEvents(enrolledEvents.slice(0, 3));
-            })
-            .catch(error => {
-              console.error('Error fetching events:', error)
-              setRecentEvents([])
-            }),
-
-          // Fetch badges with proper error handling
-          apiClient.getVolunteerBadges()
-            .then(response => {
-              console.log('Badges response:', response)
-              setBadgesError(null)
-              // Ensure badges is an array
-              const badgesData = Array.isArray(response.data) ? response.data : []
-              setBadges(badgesData)
-            })
-            .catch(error => {
-              console.error('Error fetching badges:', error)
-              setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
-              setBadges([])
-            })
-        ]
+              console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+              
+              return isStoredEnrolled || isBackendEnrolled
+            });
+            
+            console.log('Enrolled events:', enrolledEvents)
+            setRecentEvents(enrolledEvents.slice(0, 3));
+          })
+          .catch(error => {
+            console.error('Error fetching events:', error)
+            setRecentEvents([])
+          }),
         
-        // Wait for all promises to complete (either resolve or reject)
-        await Promise.allSettled(promises)
-        
-        // Update progress data based on stats
-        if (stats) {
-          setProgressData(prev => ({
-            ...prev,
-            currentProgress: Math.min((stats.total_hours_contributed / prev.monthlyGoal) * 100, 100)
-          }))
-        }
-      } catch (error: any) {
-        console.error('Error fetching dashboard data:', error)
-        setError(error.message || 'Failed to load dashboard data')
-      } finally {
-        setIsLoading(false)
+        // Fetch badges with proper error handling
+        apiClient.getVolunteerBadges()
+          .then(response => {
+            console.log('Badges response:', response)
+            setBadgesError(null)
+            // Ensure badges is an array
+            const badgesData = Array.isArray(response.data) ? response.data : []
+            setBadges(badgesData)
+          })
+          .catch(error => {
+            console.error('Error fetching badges:', error)
+            setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
+            // Set badges to empty array so the UI doesn't break
+            setBadges([])
+          })
+      ]
+      
+      // Wait for all promises to complete (either resolve or reject)
+      await Promise.allSettled(promises)
+      
+      // Update progress data based on stats
+      if (stats) {
+        setProgressData(prev => ({
+          ...prev,
+          currentProgress: Math.min((stats.total_hours_contributed / prev.monthlyGoal) * 100, 100)
+        }))
       }
+    } catch (error: any) {
+      console.error('Error fetching dashboard data:', error)
+      setError(error.message || 'Failed to load dashboard data')
+    } finally {
+      setIsLoading(false)
     }
+  }
 
     fetchDashboardData()
   }, [location.pathname, user, isSurveyOpen, openSurvey])
@@ -189,22 +190,22 @@ export default function Dashboard() {
               const isStoredEnrolled = storedEnrollments.includes(event.event_id)
               // Check multiple possible fields for enrollment status
               const isBackendEnrolled = event.is_enrolled === true || 
-                                  event.enrollment_status === 'confirmed' || 
-                                  event.enrollment_status === 'attended' ||
-                                  event.can_enroll === false; // If can't enroll, might mean already enrolled
+                                    event.enrollment_status === 'confirmed' || 
+                                    event.enrollment_status === 'attended' ||
+                                    event.can_enroll === false; // If can't enroll, might mean already enrolled
+            
+            console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+            
+            return isStoredEnrolled || isBackendEnrolled
+          });
           
-              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-          
-              return isStoredEnrolled || isBackendEnrolled
-            });
-        
-            console.log('Refreshing - Enrolled events:', enrolledEvents)
-            setRecentEvents(enrolledEvents.slice(0, 3));
-          })
-          .catch(error => {
-            console.error('Error refreshing events:', error)
-            setRecentEvents([])
-          }),
+          console.log('Refreshing - Enrolled events:', enrolledEvents)
+          setRecentEvents(enrolledEvents.slice(0, 3));
+        })
+        .catch(error => {
+          console.error('Error refreshing events:', error)
+          setRecentEvents([])
+        }),
       
         // Refresh badges with proper error handling
         apiClient.getVolunteerBadges()
@@ -218,6 +219,7 @@ export default function Dashboard() {
           .catch(error => {
             console.error('Error refreshing badges:', error)
             setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
+            // Set badges to empty array so the UI doesn't break
             setBadges([])
           })
       ]
