@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<any[]>([])
   const [badges, setBadges] = useState<any[]>([])
+  const [badgesError, setBadgesError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
@@ -88,7 +89,7 @@ export default function Dashboard() {
           // Fetch events and check for local enrollment tracking
           apiClient.getAvailableEvents()
             .then(response => {
-              console.log('All events:', response.data)
+              console.log('All events response:', response);
               
               // Get locally stored enrollments from localStorage
               const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
@@ -97,9 +98,13 @@ export default function Dashboard() {
               // Filter events based on stored enrollments or backend enrollment fields
               const enrolledEvents = response.data.filter(event => {
                 const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-                const isBackendEnrolled = event.is_enrolled === true
+                // Check multiple possible fields for enrollment status
+                const isBackendEnrolled = event.is_enrolled === true || 
+                                    event.enrollment_status === 'confirmed' || 
+                                    event.enrollment_status === 'attended' ||
+                                    event.can_enroll === false; // If can't enroll, might mean already enrolled
                 
-                console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}, is_enrolled=${event.is_enrolled}, can_enroll=${event.can_enroll}`)
+                console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
                 
                 return isStoredEnrolled || isBackendEnrolled
               });
@@ -111,17 +116,19 @@ export default function Dashboard() {
               console.error('Error fetching events:', error)
               setRecentEvents([])
             }),
-          
+
           // Fetch badges with proper error handling
           apiClient.getVolunteerBadges()
             .then(response => {
-              console.log('Badges response:', response.data)
+              console.log('Badges response:', response)
+              setBadgesError(null)
               // Ensure badges is an array
               const badgesData = Array.isArray(response.data) ? response.data : []
               setBadges(badgesData)
             })
             .catch(error => {
               console.error('Error fetching badges:', error)
+              setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
               setBadges([])
             })
         ]
@@ -167,11 +174,11 @@ export default function Dashboard() {
               certificates_earned: 0
             })
           }),
-        
+      
         // Refresh events and filter for enrolled events
         apiClient.getAvailableEvents()
           .then(response => {
-            console.log('Refreshing - All events:', response.data)
+            console.log('Refreshing - All events response:', response);
             
             // Get locally stored enrollments from localStorage
             const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
@@ -180,13 +187,17 @@ export default function Dashboard() {
             // Filter events based on stored enrollments or backend enrollment fields
             const enrolledEvents = response.data.filter(event => {
               const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-              const isBackendEnrolled = event.is_enrolled === true
-              
-              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}, is_enrolled=${event.is_enrolled}, can_enroll=${event.can_enroll}`)
-              
+              // Check multiple possible fields for enrollment status
+              const isBackendEnrolled = event.is_enrolled === true || 
+                                  event.enrollment_status === 'confirmed' || 
+                                  event.enrollment_status === 'attended' ||
+                                  event.can_enroll === false; // If can't enroll, might mean already enrolled
+          
+              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+          
               return isStoredEnrolled || isBackendEnrolled
             });
-            
+        
             console.log('Refreshing - Enrolled events:', enrolledEvents)
             setRecentEvents(enrolledEvents.slice(0, 3));
           })
@@ -194,17 +205,19 @@ export default function Dashboard() {
             console.error('Error refreshing events:', error)
             setRecentEvents([])
           }),
-        
+      
         // Refresh badges with proper error handling
         apiClient.getVolunteerBadges()
           .then(response => {
-            console.log('Refreshing badges response:', response.data)
+            console.log('Refreshing badges response:', response)
+            setBadgesError(null)
             // Ensure badges is an array
             const badgesData = Array.isArray(response.data) ? response.data : []
             setBadges(badgesData)
           })
           .catch(error => {
             console.error('Error refreshing badges:', error)
+            setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
             setBadges([])
           })
       ]
@@ -611,15 +624,32 @@ export default function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {badges.length > 0 ? (
+              {badgesError ? (
+                <div className="text-center py-8">
+                  <Award className="h-16 w-16 text-red-300 mx-auto mb-4" />
+                  <p className="text-red-600 text-lg font-medium">{badgesError}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    There was an issue loading your badges. This won't affect your account.
+                  </p>
+                  <Button 
+                    onClick={refreshDashboard} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Try Again
+                  </Button>
+                </div>
+              ) : badges.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {badges.map((badge) => (
-                    <div key={badge.badge_id || badge.id || badge.name} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200">
+                    <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200">
                       <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                         {badge.image_url ? (
                           <img 
                             src={badge.image_url} 
-                            alt={badge.badge_name || badge.name || 'Badge'}
+                            alt={badge.badge_name}
                             className="h-10 w-10 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
@@ -633,14 +663,14 @@ export default function Dashboard() {
                         ) : null}
                         <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
                       </div>
-                      <h4 className="font-semibold text-base text-gray-800">{badge.badge_name || badge.name || 'Unknown Badge'}</h4>
+                      <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
                       <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {badge.description || 'No description available'}
+                        {badge.description}
                       </p>
-                      {(badge.criteria_type || badge.criteria_value) && (
+                      {badge.pivot && badge.pivot.earned_date && (
                         <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
                           <span className="text-xs text-yellow-800 font-medium">
-                            {badge.criteria_type || 'Criteria'}: {badge.criteria_value || 'N/A'}
+                            Earned: {new Date(badge.pivot.earned_date).toLocaleDateString()}
                           </span>
                         </div>
                       )}

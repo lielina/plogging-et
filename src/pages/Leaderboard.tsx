@@ -30,11 +30,47 @@ export default function Leaderboard() {
         setIsLoading(true)
         setError(null)
         
-        // Use the existing method but with better error handling
-        const response = await apiClient.getTopVolunteersReport();
+        // Use different endpoints based on user role
+        let response;
+        if (isAdmin) {
+          // Admins can access detailed reports
+          response = await apiClient.getTopVolunteersReport();
+        } else {
+          // Volunteers use the public endpoint
+          response = await apiClient.getPublicTopVolunteersReport();
+        }
         
-        setTopVolunteers(response.data.volunteers || [])
-        setCriteria(response.data.criteria || 'hours')
+        console.log('Leaderboard API Response:', response);
+        console.log('Response data type:', typeof response.data);
+        console.log('Response data keys:', Object.keys(response.data || {}));
+        console.log('Is array:', Array.isArray(response.data));
+        
+        // Handle different response structures
+        if (response.data.volunteers) {
+          console.log('Using volunteers property');
+          setTopVolunteers(response.data.volunteers)
+          setCriteria(response.data.criteria || 'hours')
+        } else if (Array.isArray(response.data)) {
+          console.log('Using direct array');
+          // If response is directly an array of volunteers
+          setTopVolunteers(response.data)
+          setCriteria('hours')
+        } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+          console.log('Using object structure');
+          // If response is an object with volunteer data
+          // Check if it has a data property that is an array
+          if (Array.isArray(response.data.data)) {
+            setTopVolunteers(response.data.data)
+            setCriteria(response.data.criteria || 'hours')
+          } else {
+            setTopVolunteers([response.data])
+            setCriteria('hours')
+          }
+        } else {
+          console.log('Using fallback empty array');
+          // Fallback to empty array
+          setTopVolunteers([])
+        }
       } catch (error: any) {
         console.error('Error fetching top volunteers:', error)
         // Provide a more user-friendly error message
@@ -100,6 +136,19 @@ export default function Leaderboard() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading leaderboard...</p>
+            <button 
+              onClick={async () => {
+                try {
+                  const response = await apiClient.getPublicTopVolunteersReport();
+                  console.log('Direct API call response:', response);
+                } catch (error) {
+                  console.error('Direct API call error:', error);
+                }
+              }}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Test API Call
+            </button>
           </div>
         </div>
       </div>
@@ -114,17 +163,17 @@ export default function Leaderboard() {
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trophy className="w-8 h-8 text-amber-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Leaderboard Access Restricted</h2>
-            <p className="text-gray-600 mb-4 max-w-md">The leaderboard is currently only available for administrators. As a volunteer, you can view your personal statistics in your profile.</p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Leaderboard Unavailable</h2>
+            <p className="text-gray-600 mb-4 max-w-md">{error}</p>
             <div className="space-y-2">
               <p className="text-sm text-gray-500">You can still:</p>
               <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                <a 
-                  href="/profile" 
+                <button 
+                  onClick={() => window.location.reload()} 
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                 >
-                  View Your Profile
-                </a>
+                  Try Again
+                </button>
                 <a 
                   href="/events" 
                   className="px-4 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50 transition-colors"
