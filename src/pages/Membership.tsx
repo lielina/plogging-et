@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Leaf, Users, Eye, EyeOff, Mail, Phone, User } from 'lucide-react';
 import story1 from "/story-1.png";
 
 const faqs = [
@@ -56,32 +63,83 @@ const faqs = [
 ];
 
 const Membership = () => {
+  const navigate = useNavigate();
+  const { register: authRegister } = useAuth();
+  const { toast } = useToast();
+  
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [formData, setFormData] = useState({
-    fname: "",
-    lname: "",
-    email: "",
-    phone: "",
-    password: "",
-    agree: false,
-  });
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [agree, setAgree] = useState(false);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData);
-    // Add your form submission logic here
+    
+    // Validation
+    if (!agree) {
+      toast({
+        title: "Registration Failed",
+        description: "You must agree to the terms and policy.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Registration Failed",
+        description: "Passwords do not match.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast({
+        title: "Registration Failed",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      await authRegister({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone_number: phone,
+        password
+      });
+      
+      toast({
+        title: "Registration Successful",
+        description: "Welcome to Plogging Ethiopia! Your account has been created.",
+      });
+      
+      // Navigate to dashboard after successful registration
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,86 +156,180 @@ const Membership = () => {
       </div>
       <div className="grid md:grid-cols-2 grid-cols-1 w-full gap-10">
         <img src={story1} className="w-full" alt="member" />
-        <form
-          name="member"
-          className="w-full shadow-lg shadow-form p-10 flex flex-col gap-5 rounded-md"
-          onSubmit={handleSubmit}
-        >
-          <div className="flex flex-col items-start w-full">
-            <label htmlFor="fname">First Name</label>
-            <input
-              name="fname"
-              placeholder="First Name"
-              type="text"
-              className="p-2 rounded-md w-full border-input border-2"
-              value={formData.fname}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="flex flex-col items-start w-full">
-            <label htmlFor="lname">Last Name</label>
-            <input
-              name="lname"
-              placeholder="Last Name"
-              type="text"
-              className="p-2 rounded-md w-full border-input border-2"
-              value={formData.lname}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="flex flex-col items-start w-full">
-            <label htmlFor="email">Email</label>
-            <input
-              name="email"
-              type="email"
-              className="p-2 rounded-md w-full border-input border-2"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="flex flex-col items-start w-full">
-            <label htmlFor="phone">Phone Number</label>
-            <input
-              name="phone"
-              type="text"
-              className="p-2 rounded-md w-full border-input border-2"
-              value={formData.phone}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="flex flex-col items-start w-full">
-            <label htmlFor="password">Password</label>
-            <input
-              name="password"
-              type="password"
-              className="p-2 rounded-md w-full border-input border-2"
-              value={formData.password}
-              onChange={handleChange}
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
-          >
-            Sign up
-          </button>
-          <div className="flex items-center gap-3">
-            <input
-              name="agree"
-              type="checkbox"
-              id="agree"
-              checked={formData.agree}
-              onChange={handleChange}
-            />
-            <label htmlFor="agree">I agree to the terms and policy</label>
-          </div>
-          <p className="w-full flex justify-center gap-2">
-            Already have an account?
-            <Link to="/login">
-              <span className="text-green-500">Login</span>
-            </Link>
-          </p>
-        </form>
+        <Card className="w-full">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                <Leaf className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold text-green-800">
+              Plogging Ethiopia
+            </CardTitle>
+            <CardDescription>
+              Environmental Care + Community Wellness
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <h3 className="text-lg font-semibold mb-4">
+              Register as Volunteer
+            </h3>
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="firstName"
+                      placeholder="First name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="lastName"
+                      placeholder="Last name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="Phone number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  id="agree"
+                  type="checkbox"
+                  checked={agree}
+                  onChange={(e) => setAgree(e.target.checked)}
+                  className="h-4 w-4 text-green-600 rounded"
+                />
+                <Label htmlFor="agree" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  I agree to the terms and policy
+                </Label>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Registering...
+                  </>
+                ) : (
+                  "Sign up"
+                )}
+              </Button>
+              
+              <div className="text-center text-sm text-gray-600">
+                Already have an account?{" "}
+                <Link 
+                  to="/login" 
+                  className="text-green-600 font-medium hover:text-green-800"
+                >
+                  Login
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
       <div className="w-[90%] flex flex-col gap-5">
         <h1 className="text-5xl mb-10">FAQ?</h1>
