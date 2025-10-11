@@ -26,11 +26,6 @@ interface ProgressData {
   activityData: { month: string; events: number; hours: number; waste: number }[];
 }
 
-interface VolunteerActivityData {
-  weekly_activity: { day: string; hours: number }[];
-  monthly_trends: { month: string; events: number; hours: number; waste: number }[];
-}
-
 export default function Dashboard() {
   const { user } = useAuth()
   const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
@@ -47,8 +42,15 @@ export default function Dashboard() {
   const [progressData, setProgressData] = useState<ProgressData>({
     monthlyGoal: 20, // 20 hours per month goal
     currentProgress: 0,
-    weeklyProgress: [],
-    activityData: []
+    weeklyProgress: [2, 4, 3, 6, 5, 4, 3], // Last 7 days
+    activityData: [
+      { month: 'Jan', events: 2, hours: 8, waste: 15 },
+      { month: 'Feb', events: 3, hours: 12, waste: 22 },
+      { month: 'Mar', events: 1, hours: 4, waste: 8 },
+      { month: 'Apr', events: 4, hours: 16, waste: 28 },
+      { month: 'May', events: 2, hours: 8, waste: 18 },
+      { month: 'Jun', events: 3, hours: 12, waste: 25 },
+    ]
   })
 
   useEffect(() => {
@@ -129,39 +131,7 @@ export default function Dashboard() {
             setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
             // Set badges to empty array so the UI doesn't break
             setBadges([])
-          }),
-          
-          // Fetch volunteer activity data for charts
-          apiClient.getVolunteerActivityReport()
-            .then(response => {
-              console.log('Volunteer activity report:', response);
-              const activityData: VolunteerActivityData = response.data;
-              
-              // Update weekly progress data
-              if (activityData.weekly_activity && Array.isArray(activityData.weekly_activity)) {
-                setProgressData(prev => ({
-                  ...prev,
-                  weeklyProgress: activityData.weekly_activity.map(item => item.hours)
-                }));
-              }
-              
-              // Update monthly trends data
-              if (activityData.monthly_trends && Array.isArray(activityData.monthly_trends)) {
-                setProgressData(prev => ({
-                  ...prev,
-                  activityData: activityData.monthly_trends
-                }));
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching volunteer activity report:', error);
-              // Keep using default empty arrays if fetch fails
-              setProgressData(prev => ({
-                ...prev,
-                weeklyProgress: [],
-                activityData: []
-              }));
-            })
+          })
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -183,7 +153,7 @@ export default function Dashboard() {
   }
 
     fetchDashboardData()
-  }, [location.pathname, user, isSurveyOpen, openSurvey, stats])
+  }, [location.pathname, user, isSurveyOpen, openSurvey])
 
   const refreshDashboard = async () => {
     try {
@@ -251,39 +221,7 @@ export default function Dashboard() {
             setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
             // Set badges to empty array so the UI doesn't break
             setBadges([])
-          }),
-          
-          // Refresh volunteer activity data for charts
-          apiClient.getVolunteerActivityReport()
-            .then(response => {
-              console.log('Volunteer activity report:', response);
-              const activityData: VolunteerActivityData = response.data;
-              
-              // Update weekly progress data
-              if (activityData.weekly_activity && Array.isArray(activityData.weekly_activity)) {
-                setProgressData(prev => ({
-                  ...prev,
-                  weeklyProgress: activityData.weekly_activity.map(item => item.hours)
-                }));
-              }
-              
-              // Update monthly trends data
-              if (activityData.monthly_trends && Array.isArray(activityData.monthly_trends)) {
-                setProgressData(prev => ({
-                  ...prev,
-                  activityData: activityData.monthly_trends
-                }));
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching volunteer activity report:', error);
-              // Keep using default empty arrays if fetch fails
-              setProgressData(prev => ({
-                ...prev,
-                weeklyProgress: [],
-                activityData: []
-              }));
-            })
+          })
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -494,18 +432,13 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={progressData.weeklyProgress && progressData.weeklyProgress.length > 0 
-                  ? progressData.weeklyProgress.map((hours, index) => ({ 
-                      day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index], 
-                      hours 
-                    }))
-                  : [{ day: 'Sun', hours: 0 }, { day: 'Mon', hours: 0 }, { day: 'Tue', hours: 0 }, 
-                     { day: 'Wed', hours: 0 }, { day: 'Thu', hours: 0 }, { day: 'Fri', hours: 0 }, 
-                     { day: 'Sat', hours: 0 }] // Default empty data
-                }>
+                <BarChart data={progressData.weeklyProgress.map((hours, index) => ({ 
+                  day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index], 
+                  hours 
+                }))}>
                   <Bar dataKey="hours" fill="#10b981" radius={[2, 2, 0, 0]} />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                  <YAxis hide domain={[0, 'dataMax + 2']} />
+                  <YAxis hide />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'white', 
@@ -578,20 +511,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={progressData.activityData && progressData.activityData.length > 0 
-                ? progressData.activityData
-                : [
-                    { month: 'Jan', events: 0, hours: 0, waste: 0 },
-                    { month: 'Feb', events: 0, hours: 0, waste: 0 },
-                    { month: 'Mar', events: 0, hours: 0, waste: 0 },
-                    { month: 'Apr', events: 0, hours: 0, waste: 0 },
-                    { month: 'May', events: 0, hours: 0, waste: 0 },
-                    { month: 'Jun', events: 0, hours: 0, waste: 0 }
-                  ] // Default empty data
-              }>
+              <LineChart data={progressData.activityData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} domain={[0, 'dataMax + 5']} />
+                <YAxis stroke="#666" fontSize={12} />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'white', 
@@ -607,7 +530,6 @@ export default function Dashboard() {
                   strokeWidth={3} 
                   dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                   name="Events Attended"
-                  isAnimationActive={false}
                 />
                 <Line 
                   type="monotone" 
@@ -616,7 +538,6 @@ export default function Dashboard() {
                   strokeWidth={3} 
                   dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
                   name="Hours Volunteered"
-                  isAnimationActive={false}
                 />
                 <Line 
                   type="monotone" 
@@ -625,7 +546,6 @@ export default function Dashboard() {
                   strokeWidth={3} 
                   dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
                   name="Waste Collected (kg)"
-                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>

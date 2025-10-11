@@ -365,7 +365,6 @@ export default function VolunteerCertificates() {
                       onClick={() => handleDownload(certificate)}
                       size="sm"
                       className="w-full text-xs sm:text-sm"
-                      disabled={certificate.status.toLowerCase() !== 'active' && certificate.status.toLowerCase() !== 'issued'}
                     >
                       <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
                       Download
