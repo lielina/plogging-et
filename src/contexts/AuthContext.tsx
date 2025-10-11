@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { apiClient, Volunteer, Admin } from '@/lib/api';
 
 interface AuthContextType {
@@ -15,6 +15,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  updateUser: (updatedUser: Volunteer | Admin) => void;
+  refreshUser: () => Promise<void>; // Add this method
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +36,38 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<Volunteer | Admin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Method to update user in context
+  const updateUser = useCallback((updatedUser: Volunteer | Admin) => {
+    setUser(updatedUser);
+  }, []);
+
+  // Method to refresh user data from API with debouncing
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Check if we have stored user type to determine which profile to fetch
+        const userType = localStorage.getItem('userType');
+        
+        console.log('Refreshing user profile, user type:', userType);
+        
+        if (userType === 'admin') {
+          const response = await apiClient.getAdminProfile();
+          console.log('Admin profile refresh response:', response);
+          setUser(response.data);
+        } else if (userType === 'volunteer') {
+          const response = await apiClient.getVolunteerProfile();
+          console.log('Volunteer profile refresh response:', response);
+          console.log('Volunteer profile data:', response.data);
+          setUser(response.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing user profile:', error);
+      throw error; // Re-throw the error so it can be handled by the caller
+    }
+  }, []);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -126,7 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshUser]);
 
   const login = async (identifier: string, password: string, isAdmin = false) => {
     try {
@@ -197,6 +231,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isAuthenticated,
     isAdmin,
+    updateUser,
+    refreshUser, // Add this method to the context value
   };
 
   return (

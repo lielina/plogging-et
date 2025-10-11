@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { User, Phone, Mail, Calendar, Award, Trophy, Clock, Eye, EyeOff, Save, RefreshCw } from 'lucide-react'
 
 export default function Profile() {
-  const { user } = useAuth()
+  const { user, updateUser, refreshUser } = useAuth() // Get updateUser and refreshUser methods from context
   const { toast } = useToast()
   const [profile, setProfile] = useState<Volunteer | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -38,6 +38,7 @@ export default function Profile() {
 
   useEffect(() => {
     fetchProfile()
+    // Note: We don't need to call refreshUser here as fetchProfile already gets the latest data
   }, [])
 
   const fetchProfile = async () => {
@@ -64,6 +65,8 @@ export default function Profile() {
       setSaving(true)
       const response = await apiClient.updateVolunteerProfile(profileForm)
       setProfile(response.data)
+      // Update user in context to ensure consistency across the app
+      updateUser(response.data)
       setIsEditing(false)
       toast({
         title: "Profile Updated",
@@ -132,13 +135,35 @@ export default function Profile() {
   const handleImageUpload = async (file: File) => {
     try {
       setIsUploadingImage(true)
+      console.log('Starting profile image upload...');
       const response = await apiClient.uploadProfileImage(file)
+      console.log('Profile image upload response:', response);
       
       // Update the profile with the new image URL
       if (profile) {
-        setProfile({ ...profile, image_url: response.data.image_url })
+        const updatedProfile = { ...profile, profile_image: response.data.profile_image }
+        setProfile(updatedProfile)
+        // Also update the form state to ensure consistency
+        setProfileForm({
+          ...profileForm,
+          // We don't have profile_image in the form state, but we update the profile
+        })
+        // Update user in context to ensure consistency across the app
+        updateUser(updatedProfile)
+        
+        console.log('Fetching updated profile after image upload...');
+        // Refresh the user data from the API to ensure it's properly saved
+        try {
+          await refreshUser()
+          console.log('Profile refreshed after image upload');
+        } catch (refreshError) {
+          console.error('Error refreshing user data:', refreshError)
+          // Even if refresh fails, we still want to show the uploaded image
+          // The user data in context has already been updated with the new image
+        }
       }
       
+      // Show success message
       toast({
         title: "Profile Picture Updated",
         description: "Your profile picture has been successfully updated.",
@@ -162,7 +187,22 @@ export default function Profile() {
       
       // Update the profile to remove the image URL
       if (profile) {
-        setProfile({ ...profile, image_url: undefined })
+        const updatedProfile = { ...profile, profile_image: undefined }
+        setProfile(updatedProfile)
+        // Update user in context to ensure consistency across the app
+        updateUser(updatedProfile)
+        
+        // Refresh the user data from the API to ensure it's properly saved
+        try {
+          await refreshUser()
+        } catch (refreshError) {
+          console.error('Error refreshing user data after delete:', refreshError)
+          // Even if refresh fails, we still want to show the deleted state
+          // The user data in context has already been updated without the image
+        }
+        
+        // Also update the local profile state to ensure UI consistency
+        setProfile(updatedProfile)
       }
       
       toast({
@@ -235,9 +275,9 @@ export default function Profile() {
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
                 <ImageUpload
-                  currentImageUrl={profile.image_url}
+                  currentImageUrl={profile.profile_image}
                   onImageUpload={handleImageUpload}
-                  onImageDelete={profile.image_url ? handleImageDelete : undefined}
+                  onImageDelete={profile.profile_image ? handleImageDelete : undefined}
                   isUploading={isUploadingImage}
                   className=""
                 />

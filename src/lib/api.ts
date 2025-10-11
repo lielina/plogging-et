@@ -41,7 +41,7 @@ export interface Volunteer {
   phone_number: string;
   qr_code_path: string;
   total_hours_contributed: number;
-  image_url?: string; // Profile image URL
+  profile_image?: string; // Profile image URL
 }
 
 export interface DetailedVolunteer extends Volunteer {
@@ -105,7 +105,7 @@ export interface Admin {
   role: string;
   first_name: string;
   last_name: string;
-  image_url?: string; // Profile image URL
+  profile_image?: string; // Profile image URL
 }
 
 export interface Event {
@@ -188,7 +188,9 @@ class ApiClient {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
-    console.log(`API Request: ${options.method || 'GET'} ${url}`, {
+    console.log('API Request:', {
+      url,
+      method: options.method || 'GET',
       headers,
       body: options.body
     });
@@ -200,17 +202,21 @@ class ApiClient {
       // credentials: 'include',
     });
 
-    console.log(`API Response: ${response.status} ${response.statusText} for ${url}`);
+    console.log('API Response:', {
+      url,
+      status: response.status,
+      statusText: response.statusText
+    });
 
     if (!response.ok) {
       let errorData;
       try {
         errorData = await response.json();
-        console.error(`API Error Details for ${url}:`, errorData);
       } catch (e) {
         errorData = { message: `HTTP error! status: ${response.status}` };
-        console.error(`API Error (no JSON) for ${url}:`, response.status, response.statusText);
       }
+
+      console.log('API Error Response:', errorData);
 
       // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors on profile endpoints
       // This prevents logout when accessing admin-only pages like leaderboard
@@ -234,7 +240,7 @@ class ApiClient {
     }
 
     const responseData = await response.json();
-    console.log(`API Success Response for ${url}:`, responseData);
+    console.log('API Success Response:', responseData);
     return responseData;
   }
 
@@ -355,7 +361,9 @@ class ApiClient {
 
   // Volunteer Endpoints
   async getVolunteerProfile(): Promise<{ data: Volunteer }> {
-    return this.request<{ data: Volunteer }>('/volunteer/profile');
+    const response = await this.request<{ data: Volunteer }>('/volunteer/profile');
+    console.log('Get volunteer profile response:', response);
+    return response;
   }
 
   async updateVolunteerProfile(data: Partial<Volunteer>): Promise<{ data: Volunteer }> {
@@ -366,21 +374,50 @@ class ApiClient {
   }
 
   // Profile Image Upload
-  async uploadProfileImage(file: File): Promise<{ data: { image_url: string } }> {
+  async uploadProfileImage(file: File): Promise<{ data: { profile_image: string } }> {
     const formData = new FormData();
+    // Try different field names that the server might expect
     formData.append('profile_image', file);
+    // formData.append('image', file);
+    // formData.append('image_url', file);
 
-    return this.request<{ data: { image_url: string } }>('/volunteer/profile/image', {
-      method: 'POST',
-      body: formData,
-      headers: {}, // Let the browser set Content-Type for FormData
+    console.log('Uploading profile image with field name: profile_image');
+    console.log('File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
     });
+
+    // Log FormData contents
+    for (let [key, value] of formData.entries()) {
+      console.log('FormData entry:', key, value);
+    }
+
+    try {
+      // Use PUT request to /volunteer/profile with FormData to update profile image
+      const response = await this.request<{ data: { profile_image: string } }>('/volunteer/profile', {
+        method: 'PUT',
+        body: formData,
+        headers: {}, // Let the browser set Content-Type for FormData
+      });
+
+      console.log('Profile image upload response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error during profile image upload:', error);
+      throw error;
+    }
   }
 
   async deleteProfileImage(): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/volunteer/profile/image', {
-      method: 'DELETE',
+    // To delete profile image, send PUT request with null profile_image
+    console.log('Deleting profile image by setting profile_image to null');
+    const response = await this.request<{ message: string }>('/volunteer/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ profile_image: null }),
     });
+    console.log('Profile image delete response:', response);
+    return response;
   }
 
   async getVolunteerStatistics(): Promise<{ data: any }> {

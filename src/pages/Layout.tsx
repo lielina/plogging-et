@@ -96,7 +96,24 @@ const Layout = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center space-x-2 focus:outline-none">
                           <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
+                            {user?.image ? (
+                              <img 
+                                src={user.image} 
+                                alt="Profile" 
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  // If the image fails to load, show the initials fallback
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    const initials = parent.querySelector('.initials-fallback') as HTMLElement;
+                                    if (initials) initials.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <span className="text-white font-bold text-sm initials-fallback" style={{ display: user?.image ? 'none' : 'flex' }}>
                               {user?.first_name?.[0]}{user?.last_name?.[0]}
                             </span>
                           </div>

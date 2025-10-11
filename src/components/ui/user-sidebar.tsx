@@ -127,7 +127,27 @@ const UserSidebar = () => {
           
           {!isCollapsed && isAuthenticated && user && (
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+              {('profile_image' in user && user.profile_image) ? (
+                <img 
+                  src={user.profile_image} 
+                  alt="Profile" 
+                  className="w-10 h-10 rounded-full object-cover"
+                  onError={(e) => {
+                    // If the image fails to load, show the initials fallback
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = parent.querySelector('.initials-fallback') as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }
+                  }}
+                />
+              ) : null}
+              <div 
+                className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center initials-fallback"
+                style={{ display: ('profile_image' in user && user.profile_image) ? 'none' : 'flex' }}
+              >
                 <span className="text-white font-bold">
                   {user.first_name?.[0]}{user.last_name?.[0]}
                 </span>
