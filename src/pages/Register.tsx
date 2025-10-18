@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Leaf, Users, Eye, EyeOff, Mail, Phone, User } from 'lucide-react';
+import { formatEthiopianPhoneNumber } from '@/utils/phoneFormatter';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -22,6 +23,13 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Format the phone number as the user types
+    const formattedPhone = formatEthiopianPhoneNumber(inputValue);
+    setPhone(formattedPhone);
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +60,7 @@ export default function Register() {
         first_name: firstName,
         last_name: lastName,
         email,
-        phone_number: phone,
+        phone_number: phone, // This will now be in +251 format
         password
       });
       
@@ -149,13 +157,14 @@ export default function Register() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="Phone number"
+                  placeholder="+251 ..."
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={handlePhoneChange}
                   required
                   className="pl-10"
                 />
               </div>
+              <p className="text-xs text-gray-500">Please enter your phone number in +251 format</p>
             </div>
             
             <div className="space-y-2">

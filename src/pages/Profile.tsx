@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import ImageUpload from "@/components/ui/image-upload"
 import { useToast } from "@/hooks/use-toast"
 import { User, Phone, Mail, Calendar, Award, Trophy, Clock, Eye, EyeOff, Save, RefreshCw } from 'lucide-react'
+import { formatEthiopianPhoneNumber, removeEthiopianPrefix } from '@/utils/phoneFormatter';
 
 export default function Profile() {
   const { user, updateUser, refreshUser } = useAuth() // Get updateUser and refreshUser methods from context
@@ -60,27 +61,52 @@ export default function Profile() {
     }
   }
 
+  // Format phone number for display
+  const displayPhoneNumber = profile?.phone_number 
+    ? removeEthiopianPrefix(profile.phone_number) 
+    : '';
+
+  // Format phone number in the form
+  const formDisplayPhoneNumber = profileForm?.phone_number 
+    ? removeEthiopianPrefix(profileForm.phone_number) 
+    : '';
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Format the phone number as the user types
+    const formattedPhone = formatEthiopianPhoneNumber(inputValue);
+    setProfileForm({ ...profileForm, phone_number: formattedPhone });
+  };
+
   const handleProfileUpdate = async () => {
+    if (!profile) return;
+    
+    setIsSaving(true);
     try {
-      setSaving(true)
-      const response = await apiClient.updateVolunteerProfile(profileForm)
-      setProfile(response.data)
-      // Update user in context to ensure consistency across the app
-      updateUser(response.data)
-      setIsEditing(false)
+      // Send the phone number in +251 format to the API
+      const updateData = {
+        ...profileForm,
+        phone_number: profileForm.phone_number // This is already in +251 format
+      };
+      
+      const response = await apiClient.updateVolunteerProfile(updateData);
+      setProfile(response.data);
+      updateUser(response.data);
+      setIsEditing(false);
+      
       toast({
         title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
-      })
+        description: "Your profile information has been successfully updated.",
+      });
     } catch (error: any) {
-      console.error('Error updating profile:', error)
+      console.error('Profile update error:', error);
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive"
-      })
+      });
     } finally {
-      setSaving(false)
+      setIsSaving(false);
     }
   }
 
@@ -151,16 +177,9 @@ export default function Profile() {
         // Update user in context to ensure consistency across the app
         updateUser(updatedProfile)
         
-        console.log('Fetching updated profile after image upload...');
-        // Refresh the user data from the API to ensure it's properly saved
-        try {
-          await refreshUser()
-          console.log('Profile refreshed after image upload');
-        } catch (refreshError) {
-          console.error('Error refreshing user data:', refreshError)
-          // Even if refresh fails, we still want to show the uploaded image
-          // The user data in context has already been updated with the new image
-        }
+        console.log('Profile image updated in context');
+        // Don't refresh immediately after upload to avoid race conditions
+        // The refresh will happen when the page is reloaded or when explicitly requested
       }
       
       // Show success message
@@ -192,17 +211,9 @@ export default function Profile() {
         // Update user in context to ensure consistency across the app
         updateUser(updatedProfile)
         
-        // Refresh the user data from the API to ensure it's properly saved
-        try {
-          await refreshUser()
-        } catch (refreshError) {
-          console.error('Error refreshing user data after delete:', refreshError)
-          // Even if refresh fails, we still want to show the deleted state
-          // The user data in context has already been updated without the image
-        }
-        
-        // Also update the local profile state to ensure UI consistency
-        setProfile(updatedProfile)
+        console.log('Profile image removed from context');
+        // Don't refresh immediately after delete to avoid race conditions
+        // The refresh will happen when the page is reloaded or when explicitly requested
       }
       
       toast({
@@ -371,16 +382,21 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-sm sm:text-base">Phone Number</Label>
                 {isEditing ? (
-                  <Input
-                    id="phone"
-                    value={profileForm.phone_number}
-                    onChange={(e) => setProfileForm({ ...profileForm, phone_number: e.target.value })}
-                    className="text-sm sm:text-base"
-                  />
+                  <div>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+251 ..."
+                      value={profileForm.phone_number ? removeEthiopianPrefix(profileForm.phone_number) : ''}
+                      onChange={handlePhoneChange}
+                      className="text-sm sm:text-base"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Please enter your phone number in +251 format</p>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-md">
                     <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                    <span className="text-sm sm:text-base">{profile.phone_number}</span>
+                    <span className="text-sm sm:text-base">{displayPhoneNumber}</span>
                   </div>
                 )}
               </div>
