@@ -7,6 +7,7 @@ import {
   Youtube,
   Linkedin,
   Leaf,
+  ImageIcon,
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -15,7 +16,7 @@ export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(8).fill(null));  // Initialize with nulls for 8 sections
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(9).fill(null));  // Updated to 9 sections
 
   const faqItems = [
     {
@@ -454,11 +455,62 @@ export default function LandingPage() {
         />
       </section>
 
+      {/* Gallery Preview Section */}
+      <section
+        ref={el => sectionRefs.current[8] = el as HTMLDivElement | null}
+        className={`py-12 md:py-16 px-4 bg-green-50 w-full transition-all duration-700 transform ${
+          visibleSections.has(8) 
+            ? 'translate-y-0 opacity-100' 
+            : 'translate-y-10 opacity-0'
+        }`}
+      >
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-4">
+              <ImageIcon className="h-8 w-8 text-green-600 mr-2" />
+              <h2 className="text-3xl md:text-4xl font-bold text-green-800">
+                Gallery
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Take a look at some memorable moments from our plogging events and community activities.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            {[
+              { id: 1, src: '/story-1.png', alt: 'Community cleanup' },
+              { id: 2, src: '/story-2.png', alt: 'Team plogging' },
+              { id: 3, src: '/story-3.png', alt: 'Group photo' },
+              { id: 4, src: '/story-4.png', alt: 'Before and after' },
+              { id: 5, src: '/about-5.png', alt: 'Youth participation' },
+              { id: 6, src: '/about-6.png', alt: 'Plogging gear' },
+            ].map((image) => (
+              <div key={image.id} className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="w-full h-32 object-cover hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/gallery">
+              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
+                View Full Gallery
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section with transition */}
       <section
-        ref={el => sectionRefs.current[7] = el as HTMLDivElement | null}
+        ref={el => sectionRefs.current[8] = el as HTMLDivElement | null}
         className={`w-full flex flex-col items-center mt-12 md:mt-20 transition-all duration-700 delay-700 transform ${
-          visibleSections.has(7)
+          visibleSections.has(8)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}

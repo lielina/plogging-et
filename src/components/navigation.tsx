@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Leaf, Menu, Home, Calendar, Trophy, User, Settings, Bell, LogOut, FileText } from "lucide-react"
+import { Leaf, Menu, Home, Calendar, Trophy, User, Settings, Bell, LogOut, FileText, Image } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -18,6 +18,7 @@ export function Navigation() {
     { href: "/events", label: "Events", icon: Calendar },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy, adminOnly: true },
     { href: "/certificates", label: "Certificates", icon: FileText },
+    { href: "/gallery", label: "Gallery", icon: Image },
     { href: "/profile", label: "Profile", icon: User },
   ]
 
