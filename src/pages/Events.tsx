@@ -203,6 +203,16 @@ export default function Events() {
       } else if (error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
         errorTitle = 'Server Error'
         errorMessage = 'There was a server error while processing your enrollment. Please try again later.'
+      } else if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        errorTitle = 'Authentication Required'
+        errorMessage = 'Your session has expired. Please log in again.'
+        // Redirect to login page
+        navigate('/login')
+        return
+      } else if (!error.message) {
+        // Handle network errors or other issues with no message
+        errorTitle = 'Connection Error'
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.'
       }
       
       // Show error toast for errors that need notification

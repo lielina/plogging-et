@@ -471,11 +471,17 @@ class ApiClient {
 
   async getVolunteerBadges(): Promise<{ data: VolunteerBadge[] }> {
     try {
-      return await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
+      const response = await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
+      // Ensure we always return an array, even if the response is malformed
+      if (!response.data || !Array.isArray(response.data)) {
+        console.warn('Badges API returned invalid data structure:', response);
+        return { data: [] };
+      }
+      return response;
     } catch (error) {
       console.error('Error fetching volunteer badges:', error);
-      // Re-throw the error so the UI can handle it appropriately
-      throw error;
+      // Return empty array on error to prevent UI breakage
+      return { data: [] };
     }
   }
 
@@ -484,25 +490,40 @@ class ApiClient {
   }
 
   async downloadCertificate(certificateId: number): Promise<Blob> {
-    const response = await fetch(`${this.baseURL}/volunteer/certificates/${certificateId}/download`, {
-      headers: {
-        'Authorization': this.token ? `Bearer ${this.token}` : '',
-      },
-    });
+    // Always ensure we have the latest token from localStorage
+    this.token = localStorage.getItem('token');
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      // Handle specific error cases
-      if (response.status === 404) {
-        throw new Error('Certificate file not found. Please contact an administrator to regenerate the certificate.');
-      } else if (response.status === 500) {
-        throw new Error('Server error while retrieving certificate. Please try again later.');
-      } else {
-        throw new Error(`Failed to download certificate: ${response.status} ${response.statusText}. ${errorText}`);
+    // First get the certificate details using the existing endpoint
+    const response = await this.request<{ data: VolunteerCertificate }>(`/volunteer/certificates/${certificateId}`);
+
+    // If there's a file_path, construct a download URL
+    if (response.data && response.data.file_path) {
+      // Try to construct a download URL from the file_path
+      const downloadUrl = `${this.baseURL}${response.data.file_path}`;
+
+      // For direct file download, we need to use fetch with authentication
+      const downloadResponse = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': this.token ? `Bearer ${this.token}` : '',
+        },
+      });
+
+      if (!downloadResponse.ok) {
+        // Handle specific error cases
+        if (downloadResponse.status === 404) {
+          throw new Error('Certificate file not found. Please contact an administrator to regenerate the certificate.');
+        } else if (downloadResponse.status === 500) {
+          throw new Error('Server error while retrieving certificate. Please try again later.');
+        } else {
+          throw new Error(`Failed to download certificate: ${downloadResponse.status} ${downloadResponse.statusText}`);
+        }
       }
+
+      return downloadResponse.blob();
     }
 
-    return response.blob();
+    // If no file_path, throw an error
+    throw new Error('Certificate file path not available');
   }
 
   // Admin Endpoints
@@ -680,7 +701,7 @@ class ApiClient {
   }
 
   async getTopVolunteersReport(): Promise<{ data: any }> {
-    return this.request<{ data: any }>('/admin/reports/top-volunteers');
+    return this.request<{ data: any }>('/reports/top-volunteers');
   }
 
   // Volunteer Reports (Public)

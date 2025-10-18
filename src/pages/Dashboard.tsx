@@ -152,6 +152,10 @@ export default function Dashboard() {
           // More specific error handling for 500 errors
           if (error.message && error.message.includes('500')) {
             setBadgesError('Badges service is temporarily unavailable. Please try again later.')
+          } else if (error.message && error.message.includes('404')) {
+            // Handle case where badges endpoint doesn't exist
+            setBadgesError(null) // Don't show error for missing endpoint
+            setBadges([]) // Set empty array
           } else {
             setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
           }
@@ -267,6 +271,10 @@ useEffect(() => {
             // More specific error handling for 500 errors
             if (error.message && error.message.includes('500')) {
               setBadgesError('Badges service is temporarily unavailable. Please try again later.')
+            } else if (error.message && error.message.includes('404')) {
+              // Handle case where badges endpoint doesn't exist
+              setBadgesError(null) // Don't show error for missing endpoint
+              setBadges([]) // Set empty array
             } else {
               setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
             }

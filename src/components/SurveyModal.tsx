@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Save, SkipForward } from 'lucide-react';
 
@@ -560,6 +560,9 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
               Step {currentStep + 1} of {steps.length}
             </span>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Please complete this volunteer survey to help us improve our events and services.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
