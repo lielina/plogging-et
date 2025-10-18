@@ -9,11 +9,16 @@ import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, Calendar, Award, RefreshCw, Search } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
+// Extend the VolunteerCertificate interface to include download state
+interface ExtendedVolunteerCertificate extends VolunteerCertificate {
+  isDownloading?: boolean;
+}
+
 export default function VolunteerCertificates() {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
-  const [certificates, setCertificates] = useState<VolunteerCertificate[]>([])
+  const [certificates, setCertificates] = useState<ExtendedVolunteerCertificate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -56,6 +61,7 @@ export default function VolunteerCertificates() {
       }
       
       const response = await apiClient.getVolunteerCertificates()
+      console.log('Certificates response:', response)
       setCertificates(response.data)
     } catch (error: any) {
       console.error('Error fetching certificates:', error)
@@ -88,64 +94,67 @@ export default function VolunteerCertificates() {
     )
   }, [certificates, searchTerm])
 
-  const handleDownload = async (certificate: VolunteerCertificate) => {
+  const handleDownload = async (certificate: ExtendedVolunteerCertificate) => {
     try {
-      // Create download link with proper authentication
-      const downloadUrl = `${apiClient['baseURL']}${certificate.file_path}`;
+      // Set loading state for this specific certificate
+      setCertificates(prev => prev.map(cert => 
+        cert.certificate_id === certificate.certificate_id 
+          ? { ...cert, isDownloading: true } 
+          : cert
+      ));
       
-      // Create a fetch request with authentication headers
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to download certificates.",
-          variant: "destructive"
-        });
-        navigate('/login')
-        return
-      }
+      // Use the API client method to download the certificate
+      const blob = await apiClient.downloadCertificate(certificate.certificate_id);
       
-      const response = await fetch(downloadUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          toast({
-            title: "Session Expired",
-            description: "Please log in again to download certificates.",
-            variant: "destructive"
-          });
-          navigate('/login')
-          return
-        }
-        throw new Error(`Failed to download certificate: ${response.status} ${response.statusText}`);
-      }
-      
-      // Convert response to blob and create download link
-      const blob = await response.blob();
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Certificate_${certificate.certificate_id}.pdf`;
+      link.download = `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast({
         title: "Download Complete",
         description: "Your certificate has been downloaded successfully.",
       });
     } catch (error: any) {
       console.error('Error downloading certificate:', error);
-      toast({
-        title: "Download Failed",
-        description: error.message || "Failed to download certificate. Please try again.",
-        variant: "destructive"
-      });
+      // Check if it's the specific error about missing file path
+      if (error.message && error.message.includes('regenerate')) {
+        toast({
+          title: "Certificate Not Available",
+          description: "This certificate is not available for download and may need to be regenerated. Please contact an administrator.",
+          variant: "destructive"
+        });
+      } else if (error.message && (error.message.includes('500') || error.message.includes('Internal Server Error'))) {
+        toast({
+          title: "Server Error",
+          description: "There was a server error while trying to download your certificate. Please try again later.",
+          variant: "destructive"
+        });
+      } else if (error.message && error.message.includes('404')) {
+        toast({
+          title: "Certificate Not Found",
+          description: "The certificate file could not be found. Please contact an administrator to regenerate it.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Download Failed",
+          description: error.message || "Failed to download certificate. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      // Reset loading state for this specific certificate
+      setCertificates(prev => prev.map(cert => 
+        cert.certificate_id === certificate.certificate_id 
+          ? { ...cert, isDownloading: false } 
+          : cert
+      ));
     }
   }
 
@@ -365,9 +374,19 @@ export default function VolunteerCertificates() {
                       onClick={() => handleDownload(certificate)}
                       size="sm"
                       className="w-full text-xs sm:text-sm"
+                      disabled={certificate.isDownloading}
                     >
-                      <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
-                      Download
+                      {certificate.isDownloading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                          Download
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

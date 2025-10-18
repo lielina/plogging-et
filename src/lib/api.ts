@@ -236,7 +236,8 @@ class ApiClient {
         throw new Error(`${errorMessage}: ${validationErrors}`);
       }
 
-      throw new Error(errorMessage);
+      // Include status code in error message for better debugging
+      throw new Error(`${errorMessage} (Status: ${response.status})`);
     }
 
     const responseData = await response.json();
@@ -482,6 +483,28 @@ class ApiClient {
     return this.request<{ data: VolunteerCertificate[] }>('/volunteer/certificates');
   }
 
+  async downloadCertificate(certificateId: number): Promise<Blob> {
+    const response = await fetch(`${this.baseURL}/volunteer/certificates/${certificateId}/download`, {
+      headers: {
+        'Authorization': this.token ? `Bearer ${this.token}` : '',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      // Handle specific error cases
+      if (response.status === 404) {
+        throw new Error('Certificate file not found. Please contact an administrator to regenerate the certificate.');
+      } else if (response.status === 500) {
+        throw new Error('Server error while retrieving certificate. Please try again later.');
+      } else {
+        throw new Error(`Failed to download certificate: ${response.status} ${response.statusText}. ${errorText}`);
+      }
+    }
+
+    return response.blob();
+  }
+
   // Admin Endpoints
   async getAdminDashboard(): Promise<{ data: any }> {
     return this.request<{ data: any }>('/admin/dashboard');
@@ -610,17 +633,37 @@ class ApiClient {
   }
 
   async generateEventCertificate(volunteerId: number, eventId: number): Promise<{ data: Certificate }> {
-    return this.request<{ data: Certificate }>('/admin/certificates/generate-event', {
-      method: 'POST',
-      body: JSON.stringify({ volunteer_id: volunteerId, event_id: eventId }),
-    });
+    console.log('Generating event certificate for volunteer:', volunteerId, 'event:', eventId);
+    console.log('Making POST request to:', `${this.baseURL}/admin/certificates/generate-event`);
+
+    try {
+      const result = await this.request<{ data: Certificate }>('/admin/certificates/generate-event', {
+        method: 'POST',
+        body: JSON.stringify({ volunteer_id: volunteerId, event_id: eventId }),
+      });
+      console.log('Certificate generation successful:', result);
+      return result;
+    } catch (error) {
+      console.error('Certificate generation failed:', error);
+      throw error;
+    }
   }
 
   async generateMilestoneCertificate(volunteerId: number, milestoneHours: number): Promise<{ data: Certificate }> {
-    return this.request<{ data: Certificate }>('/admin/certificates/generate-milestone', {
-      method: 'POST',
-      body: JSON.stringify({ volunteer_id: volunteerId, milestone_hours: milestoneHours }),
-    });
+    console.log('Generating milestone certificate for volunteer:', volunteerId, 'hours:', milestoneHours);
+    console.log('Making POST request to:', `${this.baseURL}/admin/certificates/generate-milestone`);
+
+    try {
+      const result = await this.request<{ data: Certificate }>('/admin/certificates/generate-milestone', {
+        method: 'POST',
+        body: JSON.stringify({ volunteer_id: volunteerId, milestone_hours: milestoneHours }),
+      });
+      console.log('Milestone certificate generation successful:', result);
+      return result;
+    } catch (error) {
+      console.error('Milestone certificate generation failed:', error);
+      throw error;
+    }
   }
 
   // Reports & Analytics (Admin)

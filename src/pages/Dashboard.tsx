@@ -53,107 +53,134 @@ export default function Dashboard() {
     ]
   })
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Check if user has completed survey (only once)
-        if (user && !hasCheckedSurvey.current) {
-          const userId = 'volunteer_id' in user ? user.volunteer_id : 'unknown';
-          const hasCompletedSurvey = localStorage.getItem(`surveyCompleted_${userId}`);
-          if (!hasCompletedSurvey && !isSurveyOpen) {
-            // Show survey modal if not completed
-            openSurvey()
-          }
-          hasCheckedSurvey.current = true
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // Check if user has completed survey (only once)
+      if (user && !hasCheckedSurvey.current) {
+        const userId = 'volunteer_id' in user ? user.volunteer_id : 'unknown';
+        const hasCompletedSurvey = localStorage.getItem(`surveyCompleted_${userId}`);
+        if (!hasCompletedSurvey && !isSurveyOpen) {
+          // Show survey modal if not completed
+          openSurvey()
         }
-        
-        // Fetch data individually with error handling for each endpoint
-        const promises = [
-          // Fetch volunteer statistics
-          apiClient.getVolunteerStatistics()
-            .then(response => setStats(response.data))
-            .catch(error => {
-              console.error('Error fetching volunteer statistics:', error)
-              setStats({
-                total_events_attended: 0,
-                total_hours_contributed: 0,
-                total_waste_collected: 0,
-                badges_earned: 0,
-                certificates_earned: 0
-              })
-            }),
-          
-          // Fetch events and check for local enrollment tracking
-          apiClient.getAvailableEvents()
-            .then(response => {
-              console.log('All events response:', response);
-              
-              // Get locally stored enrollments from localStorage
-              const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-              console.log('Stored enrollments:', storedEnrollments)
-              
-              // Filter events based on stored enrollments or backend enrollment fields
-              const enrolledEvents = response.data.filter(event => {
-                const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-                // Check multiple possible fields for enrollment status
-                const isBackendEnrolled = event.is_enrolled === true || 
-                                      event.enrollment_status === 'confirmed' || 
-                                      event.enrollment_status === 'attended' ||
-                                      event.can_enroll === false; // If can't enroll, might mean already enrolled
-              
-              console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-              
-              return isStoredEnrolled || isBackendEnrolled
-            });
-            
-            console.log('Enrolled events:', enrolledEvents)
-            setRecentEvents(enrolledEvents.slice(0, 3));
+        hasCheckedSurvey.current = true
+      }
+      
+      // Fetch data individually with error handling for each endpoint
+      const promises = [
+        // Fetch volunteer statistics
+        apiClient.getVolunteerStatistics()
+          .then(response => {
+            console.log('Volunteer statistics response:', response);
+            setStats(response.data)
           })
           .catch(error => {
-            console.error('Error fetching events:', error)
-            setRecentEvents([])
+            console.error('Error fetching volunteer statistics:', error)
+            setStats({
+              total_events_attended: 0,
+              total_hours_contributed: 0,
+              total_waste_collected: 0,
+              badges_earned: 0,
+              certificates_earned: 0
+            })
           }),
         
-        // Fetch badges with proper error handling
-        apiClient.getVolunteerBadges()
+        // Fetch events and check for local enrollment tracking
+        apiClient.getAvailableEvents()
           .then(response => {
-            console.log('Badges response:', response)
-            setBadgesError(null)
-            // Ensure badges is an array
-            const badgesData = Array.isArray(response.data) ? response.data : []
-            setBadges(badgesData)
-          })
-          .catch(error => {
-            console.error('Error fetching badges:', error)
+            console.log('All events response:', response);
+            
+            // Get locally stored enrollments from localStorage
+            let storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+            console.log('Stored enrollments:', storedEnrollments)
+            
+            // Validate stored enrollments by checking with backend
+            // This helps synchronize local storage with actual backend state
+            const validatedEnrollments = []
+            for (const eventId of storedEnrollments) {
+              const event = response.data.find(e => e.event_id === eventId)
+              // If event exists and is enrolled according to backend, keep it
+              if (event && (event.is_enrolled === true || 
+                           event.enrollment_status === 'confirmed' || 
+                           event.enrollment_status === 'attended')) {
+                validatedEnrollments.push(eventId)
+              }
+            }
+            
+            // Update localStorage with validated enrollments
+            if (validatedEnrollments.length !== storedEnrollments.length) {
+              localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
+              storedEnrollments = validatedEnrollments
+            }
+            
+            // Filter events based on stored enrollments or backend enrollment fields
+            const enrolledEvents = response.data.filter(event => {
+              const isStoredEnrolled = storedEnrollments.includes(event.event_id)
+              // Check multiple possible fields for enrollment status
+              const isBackendEnrolled = event.is_enrolled === true || 
+                                    event.enrollment_status === 'confirmed' || 
+                                    event.enrollment_status === 'attended' ||
+                                    event.can_enroll === false; // If can't enroll, might mean already enrolled
+            
+            console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+            
+            return isStoredEnrolled || isBackendEnrolled
+          });
+          
+          console.log('Enrolled events:', enrolledEvents)
+          setRecentEvents(enrolledEvents.slice(0, 3));
+        })
+        .catch(error => {
+          console.error('Error fetching events:', error)
+          setRecentEvents([])
+        }),
+      
+      // Fetch badges with proper error handling
+      apiClient.getVolunteerBadges()
+        .then(response => {
+          console.log('Badges response:', response)
+          setBadgesError(null)
+          // Ensure badges is an array
+          const badgesData = Array.isArray(response.data) ? response.data : []
+          setBadges(badgesData)
+        })
+        .catch(error => {
+          console.error('Error fetching badges:', error)
+          // More specific error handling for 500 errors
+          if (error.message && error.message.includes('500')) {
+            setBadgesError('Badges service is temporarily unavailable. Please try again later.')
+          } else {
             setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
-            // Set badges to empty array so the UI doesn't break
-            setBadges([])
-          })
-      ]
-      
-      // Wait for all promises to complete (either resolve or reject)
-      await Promise.allSettled(promises)
-      
-      // Update progress data based on stats
-      if (stats) {
-        setProgressData(prev => ({
-          ...prev,
-          currentProgress: Math.min((stats.total_hours_contributed / prev.monthlyGoal) * 100, 100)
-        }))
-      }
-    } catch (error: any) {
-      console.error('Error fetching dashboard data:', error)
-      setError(error.message || 'Failed to load dashboard data')
-    } finally {
-      setIsLoading(false)
+          }
+          // Set badges to empty array so the UI doesn't break
+          setBadges([])
+        })
+    ]
+    
+    // Wait for all promises to complete (either resolve or reject)
+    await Promise.allSettled(promises)
+    
+    // Update progress data based on stats
+    if (stats) {
+      setProgressData(prev => ({
+        ...prev,
+        currentProgress: Math.min((stats.total_hours_contributed / prev.monthlyGoal) * 100, 100)
+      }))
     }
+  } catch (error: any) {
+    console.error('Error fetching dashboard data:', error)
+    setError(error.message || 'Failed to load dashboard data')
+  } finally {
+    setIsLoading(false)
   }
+}
 
-    fetchDashboardData()
-  }, [location.pathname, user, isSurveyOpen, openSurvey])
+useEffect(() => {
+  fetchDashboardData()
+}, [location.pathname, user, isSurveyOpen, openSurvey])
 
   const refreshDashboard = async () => {
     try {
@@ -178,12 +205,31 @@ export default function Dashboard() {
       
         // Refresh events and filter for enrolled events
         apiClient.getAvailableEvents()
-          .then(response => {
+          .then(async response => {
             console.log('Refreshing - All events response:', response);
             
             // Get locally stored enrollments from localStorage
-            const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+            let storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
             console.log('Refreshing - Stored enrollments:', storedEnrollments)
+            
+            // Validate stored enrollments by checking with backend
+            // This helps synchronize local storage with actual backend state
+            const validatedEnrollments = []
+            for (const eventId of storedEnrollments) {
+              const event = response.data.find(e => e.event_id === eventId)
+              // If event exists and is enrolled according to backend, keep it
+              if (event && (event.is_enrolled === true || 
+                           event.enrollment_status === 'confirmed' || 
+                           event.enrollment_status === 'attended')) {
+                validatedEnrollments.push(eventId)
+              }
+            }
+            
+            // Update localStorage with validated enrollments
+            if (validatedEnrollments.length !== storedEnrollments.length) {
+              localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
+              storedEnrollments = validatedEnrollments
+            }
             
             // Filter events based on stored enrollments or backend enrollment fields
             const enrolledEvents = response.data.filter(event => {
@@ -218,7 +264,12 @@ export default function Dashboard() {
           })
           .catch(error => {
             console.error('Error refreshing badges:', error)
-            setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
+            // More specific error handling for 500 errors
+            if (error.message && error.message.includes('500')) {
+              setBadgesError('Badges service is temporarily unavailable. Please try again later.')
+            } else {
+              setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
+            }
             // Set badges to empty array so the UI doesn't break
             setBadges([])
           })

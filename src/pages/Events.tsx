@@ -53,10 +53,14 @@ export default function Events() {
       // Update events with local enrollment status
       const updatedEvents = eventsData.map(event => {
         const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
+        // Prioritize backend enrollment status over local storage
+        const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+        const canEnroll = event.can_enroll !== false && !isEnrolled
+        
         return {
           ...event,
-          is_enrolled: event.is_enrolled || isLocallyEnrolled,
-          can_enroll: event.can_enroll !== false && !isLocallyEnrolled && event.is_enrolled !== true
+          is_enrolled: isEnrolled,
+          can_enroll: canEnroll
         }
       })
       
@@ -121,7 +125,7 @@ export default function Events() {
     setEnrollingEvents(prev => new Set(prev).add(eventId))
 
     try {
-      await apiClient.enrollInEvent(eventId)
+      const response = await apiClient.enrollInEvent(eventId)
       
       // Store successful enrollment in localStorage
       const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
@@ -137,10 +141,16 @@ export default function Events() {
               ...e, 
               is_enrolled: true, 
               can_enroll: false,
-              enrollment_status: 'Enrolled'
+              enrollment_status: response.data?.enrollment_status || 'Enrolled'
             }
           : e
       ))
+      
+      // Show success toast
+      toast({
+        title: "Enrollment Successful",
+        description: response.data?.message || "You have been successfully enrolled in this event.",
+      })
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
       
@@ -190,6 +200,9 @@ export default function Events() {
             ? { ...e, can_enroll: false }
             : e
         ))
+      } else if (error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
+        errorTitle = 'Server Error'
+        errorMessage = 'There was a server error while processing your enrollment. Please try again later.'
       }
       
       // Show error toast for errors that need notification
