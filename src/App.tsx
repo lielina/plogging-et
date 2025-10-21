@@ -18,6 +18,7 @@ import Membership from './pages/Membership'
 import Contact from './pages/Contact'
 import VolunteerCertificates from './pages/VolunteerCertificates'
 import Gallery from './pages/Gallery'
+import Blog from './pages/Blog'
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
@@ -48,7 +49,7 @@ function AppRoutes() {
           <Route path="/about" element={<div>About Page</div>} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/gallery" element={<Gallery />} />
-          <Route path="/blog" element={<div>Blog Page</div>} />
+          <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

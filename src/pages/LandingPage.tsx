@@ -8,6 +8,8 @@ import {
   Linkedin,
   Leaf,
   ImageIcon,
+  Calendar,
+  Clock
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -16,7 +18,7 @@ export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(9).fill(null));  // Updated to 9 sections
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(11).fill(null));  // Updated to 11 sections
 
   const faqItems = [
     {
@@ -506,11 +508,90 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Blog Preview Section */}
+      <section
+        ref={el => sectionRefs.current[9] = el as HTMLDivElement | null}
+        className={`py-12 md:py-16 px-4 bg-white w-full transition-all duration-700 transform ${
+          visibleSections.has(9) 
+            ? 'translate-y-0 opacity-100' 
+            : 'translate-y-10 opacity-0'
+        }`}
+      >
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-4">
+              <Leaf className="h-8 w-8 text-green-600 mr-2" />
+              <h2 className="text-3xl md:text-4xl font-bold text-green-800">
+                Latest Blog Posts
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Read our latest articles on environmental conservation, plogging tips, and community events.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[
+              {
+                id: 1,
+                title: "The Environmental Impact of Plogging",
+                excerpt: "Discover how plogging contributes to environmental conservation...",
+                image: "/story-1.png",
+                date: "May 15, 2024",
+                readTime: "5 min read"
+              },
+              {
+                id: 2,
+                title: "Getting Started with Plogging",
+                excerpt: "Learn everything you need to know to start your plogging journey...",
+                image: "/story-2.png",
+                date: "May 10, 2024",
+                readTime: "4 min read"
+              },
+              {
+                id: 3,
+                title: "Plogging Events This Weekend",
+                excerpt: "Join us for our upcoming plogging events in Addis Ababa...",
+                image: "/story-3.png",
+                date: "May 5, 2024",
+                readTime: "3 min read"
+              }
+            ].map((post) => (
+              <div key={post.id} className="bg-green-50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+                <img
+                  src={post.image}
+                  alt={post.title}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-4">
+                  <h3 className="font-bold text-lg mb-2 text-green-800">{post.title}</h3>
+                  <p className="text-gray-600 text-sm mb-3">{post.excerpt}</p>
+                  <div className="flex items-center text-gray-500 text-xs">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    <span className="mr-3">{post.date}</span>
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>{post.readTime}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/blog">
+              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
+                Read More Articles
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section with transition */}
       <section
-        ref={el => sectionRefs.current[8] = el as HTMLDivElement | null}
+        ref={el => sectionRefs.current[9] = el as HTMLDivElement | null}
         className={`w-full flex flex-col items-center mt-12 md:mt-20 transition-all duration-700 delay-700 transform ${
-          visibleSections.has(8)
+          visibleSections.has(9)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
