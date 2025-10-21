@@ -3,66 +3,70 @@
  * This script demonstrates how to use the downloadCertificate method
  */
 
-import { apiClient } from './lib/api';
+import { CertificateData } from './lib/api';
+import { downloadCertificate } from './lib/certificate-generator';
 
-async function testCertificateDownload() {
+// Example usage of the downloadCertificate method
+export const testCertificateDownload = async () => {
     try {
-        // Example usage of the downloadCertificate method
-        const certificateId = 1; // Replace with actual certificate ID
-
-        console.log('Attempting to download certificate with ID:', certificateId);
+        // Create sample certificate data
+        const certificateData: CertificateData = {
+            volunteerName: "John Doe",
+            eventName: "Community Cleanup Event",
+            eventDate: "2023-06-15",
+            hoursContributed: 4,
+            location: "Addis Ababa, Ethiopia",
+            organizerName: "Plogging Ethiopia",
+            certificateId: "PE-12345",
+            issueDate: "2023-06-15",
+            badgeType: "Environmental Champion",
+            totalHours: 12,
+            rank: 1
+        };
 
         // Download the certificate
-        const blob = await apiClient.downloadCertificate(certificateId);
+        downloadCertificate(certificateData, "test-certificate.pdf");
 
-        // Create a download link
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `certificate-${certificateId}.pdf`;
-
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-
-        // Cleanup
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        console.log('Certificate downloaded successfully');
+        console.log("Certificate download initiated successfully");
     } catch (error) {
-        console.error('Error downloading certificate:', error);
+        console.error("Error downloading certificate:", error);
     }
+};
+
+// Example usage with certificate ID
+export const testCertificateDownloadById = async (certificateId: number) => {
+    try {
+        // In a real application, you would fetch the certificate data from the API
+        // For this test, we'll use sample data
+
+        const certificateData: CertificateData = {
+            volunteerName: "Jane Smith",
+            eventName: "Beach Cleanup",
+            eventDate: "2023-07-20",
+            hoursContributed: 6,
+            location: "Addis Ababa, Ethiopia",
+            organizerName: "Plogging Ethiopia",
+            certificateId: `PE-${certificateId}`,
+            issueDate: "2023-07-20",
+            badgeType: "Ocean Guardian",
+            totalHours: 18,
+            rank: 2
+        };
+
+        // Download the certificate
+        downloadCertificate(certificateData, `certificate-${certificateId}.pdf`);
+
+        console.log(`Certificate ${certificateId} download initiated successfully`);
+    } catch (error) {
+        console.error(`Error downloading certificate ${certificateId}:`, error);
+    }
+};
+
+// Run the test if this file is executed directly
+if (typeof window !== 'undefined') {
+    // Test the download functionality
+    testCertificateDownload();
+
+    // Test with a specific certificate ID
+    testCertificateDownloadById(12345);
 }
-
-// Example usage in a React component (this would be in a .tsx file in practice)
-function CertificateDownloadButton(certificateId: number) {
-    const handleDownload = async () => {
-        try {
-            const blob = await apiClient.downloadCertificate(certificateId);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `certificate-${certificateId}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Download failed:', error);
-            // Handle error (show notification, etc.)
-        }
-    };
-
-    // In a real React component, you would return JSX like:
-    // return (
-    //   <button onClick={handleDownload}>
-    //     Download Certificate
-    //   </button>
-    // );
-
-    // For this .ts file, we'll just return the function that would be called
-    return handleDownload;
-}
-
-export { testCertificateDownload, CertificateDownloadButton };

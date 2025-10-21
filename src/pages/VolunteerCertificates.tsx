@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, Calendar, Award, RefreshCw, Search } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { downloadCertificate, CertificateGenerator } from '@/lib/certificate-generator'
 
 // Extend the VolunteerCertificate interface to include download state
 interface ExtendedVolunteerCertificate extends VolunteerCertificate {
@@ -103,18 +104,63 @@ export default function VolunteerCertificates() {
           : cert
       ));
       
-      // Use the API client method to download the certificate
-      const blob = await apiClient.downloadCertificate(certificate.certificate_id);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // First try to download from the server
+      try {
+        const blob = await apiClient.downloadCertificate(certificate.certificate_id);
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (serverError: any) {
+        // If server download fails, generate locally
+        console.log('Server download failed, generating locally:', serverError);
+        
+        // Create certificate data for local generation
+        const certificateData = {
+          volunteerName: `${user?.first_name || 'Volunteer'} ${user?.last_name || ''}`,
+          eventName: certificate.event_id ? `Event #${certificate.event_id}` : 'Community Service',
+          eventDate: certificate.generation_date ? new Date(certificate.generation_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          hoursContributed: parseInt(certificate.hours_on_certificate) || 0,
+          location: 'Addis Ababa, Ethiopia',
+          organizerName: 'Plogging Ethiopia',
+          certificateId: `PE-${certificate.certificate_id}`,
+          issueDate: certificate.generation_date ? new Date(certificate.generation_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          badgeType: 'Volunteer',
+          totalHours: parseInt(certificate.hours_on_certificate) || 0,
+          rank: 1
+        };
+        
+        // Generate and download locally using the new utility function
+        try {
+          downloadCertificate(certificateData, `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`);
+        } catch (localError) {
+          console.error('Error generating local certificate with utility function:', localError);
+          throw localError;
+        }
+
+      }
 
       toast({
         title: "Download Complete",

@@ -160,7 +160,7 @@ export class CertificateGenerator {
     // Draw sophisticated pattern elements based on template type
     this.pdf.setDrawColor(this.template.secondaryColor)
     this.pdf.setLineWidth(0.3)
-    
+
     switch (this.template.id) {
       case "premium-gold":
         this.drawPremiumGoldPattern()
@@ -212,7 +212,7 @@ export class CertificateGenerator {
   private drawPremiumGoldPattern() {
     // Elegant gold pattern with stars and circles
     this.pdf.setFillColor(this.template.secondaryColor, 0.3)
-    
+
     // Top decorative elements
     for (let i = 0; i < 10; i++) {
       const x = 20 + (i * 28)
@@ -238,7 +238,7 @@ export class CertificateGenerator {
   private drawNaturePattern() {
     // Nature-inspired pattern with leaves and waves
     this.pdf.setFillColor(this.template.secondaryColor, 0.2)
-    
+
     // Top wave pattern
     for (let i = 0; i < 12; i++) {
       const x = 20 + (i * 23)
@@ -265,7 +265,7 @@ export class CertificateGenerator {
     // Classic elegant pattern with geometric shapes
     this.pdf.setDrawColor(this.template.secondaryColor)
     this.pdf.setLineWidth(0.5)
-    
+
     // Top geometric pattern
     for (let i = 0; i < 8; i++) {
       const x = 25 + (i * 35)
@@ -286,7 +286,7 @@ export class CertificateGenerator {
   private drawVibrantPattern() {
     // Vibrant community pattern with hearts and stars
     this.pdf.setFillColor(this.template.secondaryColor, 0.3)
-    
+
     // Top vibrant elements
     for (let i = 0; i < 10; i++) {
       const x = 20 + (i * 28)
@@ -324,11 +324,11 @@ export class CertificateGenerator {
     corners.forEach(corner => {
       // Main corner circle
       this.pdf.circle(corner.x, corner.y, cornerSize, "F")
-      
+
       // Inner decorative circle
       this.pdf.setFillColor(255, 255, 255, 0.3)
       this.pdf.circle(corner.x, corner.y, cornerSize - 5, "F")
-      
+
       // Reset to primary color
       this.pdf.setFillColor(this.template.primaryColor)
       this.pdf.circle(corner.x, corner.y, cornerSize - 8, "F")
@@ -337,7 +337,7 @@ export class CertificateGenerator {
     // Add environmental symbols in corners
     this.pdf.setTextColor(255, 255, 255)
     this.pdf.setFontSize(14)
-    
+
     // Top-left: Tree
     this.pdf.text("🌳", 22, 28)
     // Top-right: Leaf
@@ -350,7 +350,7 @@ export class CertificateGenerator {
     // Add small decorative elements around corners
     this.pdf.setFillColor(this.template.secondaryColor)
     this.pdf.setFontSize(8)
-    
+
     // Small decorative dots
     const decorativeDots = [
       { x: 15, y: 15 }, { x: 35, y: 15 }, { x: 15, y: 35 }, { x: 35, y: 35 },
@@ -372,15 +372,15 @@ export class CertificateGenerator {
     // Outer ring
     this.pdf.setFillColor(this.template.primaryColor)
     this.pdf.circle(logoX, logoY, 20, "F")
-    
+
     // Middle ring
     this.pdf.setFillColor(255, 255, 255, 0.2)
     this.pdf.circle(logoX, logoY, 16, "F")
-    
+
     // Inner circle
     this.pdf.setFillColor(this.template.primaryColor)
     this.pdf.circle(logoX, logoY, 12, "F")
-    
+
     // Center logo symbol
     this.pdf.setTextColor(255, 255, 255)
     this.pdf.setFontSize(18)
@@ -389,13 +389,13 @@ export class CertificateGenerator {
     // Add decorative elements around logo
     this.pdf.setFillColor(this.template.secondaryColor)
     this.pdf.setFontSize(8)
-    
+
     // Small decorative circles around logo
     const logoDecorations = [
       { x: logoX - 25, y: logoY - 25 }, { x: logoX + 25, y: logoY - 25 },
       { x: logoX - 25, y: logoY + 25 }, { x: logoX + 25, y: logoY + 25 }
     ]
-    
+
     logoDecorations.forEach(dec => {
       this.pdf.circle(dec.x, dec.y, 2, "F")
     })
@@ -407,7 +407,7 @@ export class CertificateGenerator {
     this.pdf.text("PLOGGING ETHIOPIA", logoX, logoY + 35, {
       align: "center",
     })
-    
+
     // Subtitle with decorative lines
     this.pdf.setFontSize(10)
     this.pdf.setFont(undefined, 'normal')
@@ -433,7 +433,7 @@ export class CertificateGenerator {
     this.pdf.setTextColor(this.template.primaryColor)
     this.pdf.setFontSize(28)
     this.pdf.setFont(undefined, 'bold')
-    
+
     // Main title
     this.pdf.text(
       "CERTIFICATE OF " + certificateType.toUpperCase(),
@@ -445,10 +445,10 @@ export class CertificateGenerator {
     // Add decorative elements around title
     this.pdf.setDrawColor(this.template.secondaryColor)
     this.pdf.setLineWidth(2)
-    
+
     // Top decorative line with ornaments
     this.pdf.line(70, titleY - 8, 227, titleY - 8)
-    
+
     // Bottom decorative line with ornaments
     this.pdf.line(70, titleY + 8, 227, titleY + 8)
 
@@ -492,7 +492,7 @@ export class CertificateGenerator {
     // Volunteer name (highlighted with decorative background)
     this.pdf.setFillColor(this.template.primaryColor, 0.1)
     this.pdf.roundedRect(centerX - 80, startY + 5, 160, 25, 3, 3, "F")
-    
+
     this.pdf.setTextColor(this.template.primaryColor)
     this.pdf.setFontSize(22)
     this.pdf.setFont(undefined, 'bold')
@@ -523,11 +523,11 @@ export class CertificateGenerator {
 
     // Event details in a structured layout
     this.pdf.setFontSize(11)
-    
+
     // Left column
     this.pdf.text(`Event: ${data.eventName}`, 60, startY + 55)
     this.pdf.text(`Date: ${data.eventDate}`, 60, startY + 62)
-    
+
     // Right column
     this.pdf.text(`Location: ${data.location}`, 200, startY + 55)
     this.pdf.text(`Hours: ${data.hoursContributed}`, 200, startY + 62)
@@ -644,13 +644,13 @@ export class CertificateGenerator {
     this.pdf.setDrawColor(this.template.primaryColor)
     this.pdf.setLineWidth(2)
     this.pdf.rect(250, footerY - 15, 25, 25)
-    
+
     // Inner QR code design
     this.pdf.setFillColor(this.template.primaryColor)
     this.pdf.rect(252, footerY - 13, 21, 21, "F")
     this.pdf.setFillColor(255, 255, 255)
     this.pdf.rect(254, footerY - 11, 17, 17, "F")
-    
+
     // QR code pattern (simplified)
     this.pdf.setFillColor(this.template.primaryColor)
     this.pdf.rect(256, footerY - 9, 3, 3, "F")
@@ -690,10 +690,20 @@ export class CertificateGenerator {
   }
 
   public downloadCertificate(data: CertificateData, filename?: string): void {
-    this.generateCertificate(data)
-    const fileName =
-      filename || `certificate-${data.volunteerName.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.pdf`
-    this.pdf.save(fileName)
+    try {
+      const blob = this.getCertificateBlob(data);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || `certificate-${data.volunteerName.replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      throw new Error('Failed to download certificate');
+    }
   }
 
   public getCertificateBlob(data: CertificateData): Blob {
@@ -720,6 +730,11 @@ export function formatDate(date: Date): string {
     month: "long",
     day: "numeric",
   })
+}
+
+export function downloadCertificate(data: CertificateData, filename?: string, template: CertificateTemplate = defaultTemplates[0]): void {
+  const generator = new CertificateGenerator(template);
+  generator.downloadCertificate(data, filename);
 }
 
 // Batch certificate generation
