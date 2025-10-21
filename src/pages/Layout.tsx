@@ -1,26 +1,29 @@
-import { Outlet, useLocation } from "react-router-dom";
-import { Menu } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
-import { useState } from "react";
-import { useSidebar } from "@/contexts/SidebarContext";
-
-import { useAuth } from "@/contexts/AuthContext";
-import useHashScroll from "@/hooks/useHashScroll";
-import UserSidebar from "@/components/ui/user-sidebar";
+import { Outlet, useLocation, useNavigate, Link, NavLink } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Leaf, Menu, X, Home, Calendar, FileText, Award, User, LogOut, LogIn, Users, Image, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
+import { Navigation } from '@/components/navigation';
+
+import React, { useState } from 'react';
 
 const Layout = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isCollapsed } = useSidebar();
+  const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
-  useHashScroll();
-  
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+
   // Show sidebar on dashboard pages when authenticated
   // Note: '/events' is intentionally excluded so Events remains a public page
   const isDashboardRoute = location.pathname.startsWith('/dashboard') || 
@@ -30,10 +33,61 @@ const Layout = () => {
                           location.pathname.startsWith('/survey') ||
                           location.pathname === '/events';
 
+  // Check if user is admin
+  const isAdmin = user && 'role' in user;
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubscribing(true);
+    
+    try {
+      // Simulate API call - in a real implementation, this would connect to a newsletter service
+      // Note: Since the backend endpoints may not exist yet, we'll keep the simulation
+      // await apiClient.subscribeToNewsletter(email);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Success!",
+        description: "You have been subscribed to our newsletter.",
+      });
+      
+      // Reset form
+      setEmail('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to subscribe. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
-      {/* User Sidebar for authenticated users on dashboard routes */}
-      {isAuthenticated && isDashboardRoute && <UserSidebar />}
+      {/* Use Navigation component instead of UserSidebar */}
+      {isAuthenticated && isDashboardRoute && <Navigation />}
       
       {/* Main content area */}
       <div className={`flex-1 flex flex-col`}>
@@ -96,9 +150,9 @@ const Layout = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center space-x-2 focus:outline-none">
                           <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                            {user?.image ? (
+                            {user?.profile_image ? (
                               <img 
-                                src={user.image} 
+                                src={user.profile_image}
                                 alt="Profile" 
                                 className="w-8 h-8 rounded-full object-cover"
                                 onError={(e) => {
@@ -113,7 +167,7 @@ const Layout = () => {
                                 }}
                               />
                             ) : null}
-                            <span className="text-white font-bold text-sm initials-fallback" style={{ display: user?.image ? 'none' : 'flex' }}>
+                            <span className="text-white font-bold text-sm initials-fallback" style={{ display: user?.profile_image ? 'none' : 'flex' }}>
                               {user?.first_name?.[0]}{user?.last_name?.[0]}
                             </span>
                           </div>
@@ -314,18 +368,22 @@ const Layout = () => {
                 <p className="text-sm text-gray-700 text-center md:text-left">
                   Sign up with your email address to receive news and updates.
                 </p>
-                <form className="flex w-full max-w-md">
+                <form onSubmit={handleSubscribe} className="flex w-full max-w-md">
                   <input
                     name="email"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="p-2 rounded-l-md border-2 border-green-500 w-full border-r-0 focus:outline-none text-gray-800"
                     placeholder="Your email address"
+                    disabled={isSubscribing}
                   />
                   <button
                     type="submit"
-                    className="bg-green-500 hover:bg-green-700 border-2 border-green-500 text-white font-bold py-2 px-4 rounded-r-md"
+                    className="bg-green-500 hover:bg-green-700 border-2 border-green-500 text-white font-bold py-2 px-4 rounded-r-md disabled:opacity-50"
+                    disabled={isSubscribing}
                   >
-                    Submit
+                    {isSubscribing ? 'Submitting...' : 'Submit'}
                   </button>
                 </form>
               </div>

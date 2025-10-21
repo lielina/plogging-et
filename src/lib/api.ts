@@ -758,6 +758,25 @@ class ApiClient {
       body: JSON.stringify({ new_password: newPassword }),
     });
   }
+
+  // Contact and Subscription Methods
+  async submitContactForm(data: {
+    name: string;
+    email: string;
+    message: string;
+  }): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/contact', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async subscribeToNewsletter(email: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient(BASE_URL);

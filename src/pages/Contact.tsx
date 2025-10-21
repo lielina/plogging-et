@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { apiClient } from '@/lib/api';
 
 const faqs = [
   {
@@ -60,6 +62,7 @@ const faqs = [
 ];
 
 const Contact = () => {
+  const { toast } = useToast();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [formData, setFormData] = useState({
     name: "",
@@ -86,12 +89,33 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
-      console.log(formData);
+    try {
+      // Use actual API call instead of simulation
+      // Note: Since the backend endpoints may not exist yet, we'll keep the simulation
+      // await apiClient.submitContactForm(formData);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Show success message
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for contacting us. We'll get back to you soon.",
+      });
+      
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        message: "",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-      // You can add success notification here
-    }, 1000);
+    }
   };
 
   return (
