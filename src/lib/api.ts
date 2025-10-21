@@ -450,10 +450,18 @@ class ApiClient {
   }
 
   async enrollVolunteerInEvent(eventId: number, volunteerId: number): Promise<{ data: any }> {
-    return this.request<{ data: any }>('/volunteer/enrollments', {
-      method: 'POST',
-      body: JSON.stringify({ event_id: eventId, volunteer_id: volunteerId }),
-    });
+    try {
+      return await this.request<{ data: any }>('/volunteer/enrollments', {
+        method: 'POST',
+        body: JSON.stringify({ event_id: eventId, volunteer_id: volunteerId }),
+      });
+    } catch (error: any) {
+      // Provide more specific error messages for enrollment issues
+      if (error.message && (error.message.includes('404') || error.message.includes('500'))) {
+        throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.');
+      }
+      throw error;
+    }
   }
 
   async cancelEnrollment(enrollmentId: number): Promise<{ data: any }> {

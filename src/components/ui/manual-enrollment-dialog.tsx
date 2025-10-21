@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { User, Plus, AlertCircle, CheckCircle, Search, Mail, Phone } from 'lucide-react'
+import { User, Plus, AlertCircle, CheckCircle, Search, Mail, Phone, Info } from 'lucide-react'
 import { apiClient, Volunteer } from '@/lib/api'
 
 interface ManualEnrollmentDialogProps {
@@ -87,6 +87,11 @@ export default function ManualEnrollmentDialog({
         }
       }
       
+      // Handle system limitation error
+      if (err.message && (err.message.includes('404') || err.message.includes('500') || err.message.includes('system limitation'))) {
+        errorMessage = 'System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.';
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false)
@@ -138,6 +143,17 @@ export default function ManualEnrollmentDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* System Limitation Notice */}
+          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-blue-800 font-medium">System Limitation</p>
+              <p className="text-xs text-blue-700 mt-1">
+                Volunteers must enroll themselves through their dashboard. You can only search and select volunteers here.
+              </p>
+            </div>
+          </div>
+
           {/* Search Section */}
           <div className="space-y-2">
             <Label htmlFor="search-volunteer">Search Volunteers</Label>
@@ -225,7 +241,7 @@ export default function ManualEnrollmentDialog({
           <div className="text-xs text-gray-500">
             <p>• Search for volunteers by name, email, or phone number</p>
             <p>• Click on a search result to select the volunteer</p>
-            <p>• The volunteer will be enrolled in this event</p>
+            <p>• Volunteers must enroll themselves through their dashboard</p>
           </div>
         </div>
 
@@ -233,21 +249,36 @@ export default function ManualEnrollmentDialog({
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancel
           </Button>
-                      <Button onClick={handleEnroll} disabled={isLoading || !volunteerId}>
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Enrolling...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Enroll Volunteer
-                </>
-              )}
-            </Button>
+          <Button 
+            onClick={() => {
+              // Instead of enrolling directly, we'll show instructions
+              if (volunteerId) {
+                setSuccess('Please share the event link with the selected volunteer so they can enroll through their dashboard.')
+                setTimeout(() => {
+                  setVolunteerId('')
+                  setSuccess('')
+                  onClose()
+                }, 3000)
+              } else {
+                setError('Please select a volunteer first')
+              }
+            }} 
+            disabled={isLoading || !volunteerId}
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <Info className="h-4 w-4 mr-2" />
+                Share Event Link
+              </>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
-} 
+}

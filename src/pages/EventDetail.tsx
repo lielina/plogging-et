@@ -465,12 +465,8 @@ ${description}
         throw new Error('This volunteer is already enrolled in the event')
       }
       
-      // Enroll the volunteer
-      await apiClient.enrollVolunteerInEvent(parseInt(eventId!), volunteerId)
-      
-      // Refresh event data
-      const response = await apiClient.getEventDetails(parseInt(eventId!))
-      setEvent(response.data as EventDetailData)
+      // Show a user-friendly message instead of trying to enroll directly
+      throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.')
     } catch (err: any) {
       throw err
     }
