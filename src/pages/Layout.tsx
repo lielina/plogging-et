@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Navigation } from '@/components/navigation';
+import UserSidebar from '@/components/ui/user-sidebar'; // Import UserSidebar instead
 
 import React, { useState } from 'react';
 
@@ -20,7 +20,6 @@ const Layout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
 
@@ -86,11 +85,11 @@ const Layout = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Use Navigation component instead of UserSidebar */}
-      {isAuthenticated && isDashboardRoute && <Navigation />}
+      {/* Use UserSidebar component for proper vertical sidebar */}
+      {isAuthenticated && isDashboardRoute && <UserSidebar />}
       
       {/* Main content area */}
-      <div className={`flex-1 flex flex-col`}>
+      <div className={`flex-1 flex flex-col ${isAuthenticated && isDashboardRoute ? 'ml-0 md:ml-64' : ''}`}>
         {/* Header - only show on non-dashboard pages or for unauthenticated users */}
         {(!isAuthenticated || !isDashboardRoute) && (
           <header className="bg-white shadow-sm">
@@ -335,7 +334,7 @@ const Layout = () => {
         )}
         
         {/* Main content */}
-        <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? (isCollapsed ? 'lg:ml-20 ml-20' : 'lg:ml-64 ml-0') : ''}`}>
+        <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? 'pt-0' : ''}`}>
           <Outlet />
         </main>
         
