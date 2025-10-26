@@ -163,7 +163,11 @@ const BlogPostPage: React.FC = () => {
           </Button>
           
           <div className="max-w-4xl mx-auto">
-            <Badge className="mb-4 bg-green-600">{blogPost.category}</Badge>
+            <Badge className="mb-4 bg-green-600">
+              {typeof blogPost.category === 'object' && blogPost.category !== null 
+                ? (blogPost.category as any).name || (blogPost.category as any).id 
+                : blogPost.category}
+            </Badge>
             <h1 className="text-3xl md:text-4xl font-bold text-green-800 mb-4">{blogPost.title}</h1>
             
             <div className="flex flex-wrap items-center text-gray-600 mb-6">
@@ -204,11 +208,11 @@ const BlogPostPage: React.FC = () => {
           {/* Tags */}
           <div className="mb-12">
             <div className="flex flex-wrap gap-2">
-              {blogPost.tags.map((tag: string) => (
+              {blogPost.tags && Array.isArray(blogPost.tags) ? blogPost.tags.map((tag: string) => (
                 <Badge key={tag} variant="secondary" className="text-sm py-1 px-3">
                   {tag}
                 </Badge>
-              ))}
+              )) : null}
             </div>
           </div>
 

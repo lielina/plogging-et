@@ -47,13 +47,32 @@ const Blog: React.FC = () => {
       try {
         setLoading(true);
         const response = await apiClient.getAllBlogPosts();
-        console.log('Frontend blog posts response:', response);
-        console.log('Frontend blog posts response.data:', response.data);
-        console.log('Type of frontend blog posts response.data:', typeof response.data);
-        // Handle the response structure correctly
-        // The response format is { data: [...] }
-        const postsData = Array.isArray(response.data) ? response.data : [];
-        console.log('Frontend posts data:', postsData);
+        
+        // Handle different possible response structures
+        let postsData = [];
+        if (Array.isArray(response.data)) {
+          postsData = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          const dataObj = response.data as Record<string, any>;
+          // Check if posts are in a 'posts' property
+          if (Object.hasOwnProperty.call(dataObj, 'posts') && Array.isArray(dataObj.posts)) {
+            postsData = dataObj.posts;
+          }
+          // Check if posts are in a 'data' property
+          else if (Object.hasOwnProperty.call(dataObj, 'data') && Array.isArray(dataObj.data)) {
+            postsData = dataObj.data;
+          }
+          // If it's just an object with post properties, treat it as a single post in an array
+          else if (Object.hasOwnProperty.call(dataObj, 'id')) {
+            postsData = [dataObj];
+          }
+          // Log the keys to help debug
+          else {
+            console.log('Unknown frontend posts data structure. Keys:', Object.keys(dataObj));
+            postsData = [];
+          }
+        }
+        
         setBlogPosts(postsData);
         setError(null);
       } catch (err: any) {
@@ -68,17 +87,29 @@ const Blog: React.FC = () => {
   }, []);
 
   // Get unique categories
-  const categories = ['All', ...Array.from(new Set(blogPosts.map(post => post.category)))];
+  const categories = ['All', ...Array.from(new Set(blogPosts.map(post => {
+    if (typeof post.category === 'object' && post.category !== null) {
+      return (post.category as any).name || (post.category as any).id;
+    }
+    return post.category;
+  })))];
 
   // Get all tags
-  const allTags = Array.from(new Set(blogPosts.flatMap(post => post.tags)));
+  const allTags = Array.from(new Set(blogPosts.flatMap(post => 
+    post.tags && Array.isArray(post.tags) ? post.tags : []
+  )));
 
   // Filter posts based on category and search query
   useEffect(() => {
     let result = blogPosts;
     
     if (selectedCategory !== 'All') {
-      result = result.filter(post => post.category === selectedCategory);
+      result = result.filter(post => {
+        if (typeof post.category === 'object' && post.category !== null) {
+          return ((post.category as any).name || (post.category as any).id) === selectedCategory;
+        }
+        return post.category === selectedCategory;
+      });
     }
     
     if (searchQuery) {
@@ -86,7 +117,7 @@ const Blog: React.FC = () => {
       result = result.filter(post => 
         post.title.toLowerCase().includes(query) ||
         post.excerpt.toLowerCase().includes(query) ||
-        post.tags.some(tag => tag.toLowerCase().includes(query))
+        (post.tags && Array.isArray(post.tags) && post.tags.some(tag => tag.toLowerCase().includes(query)))
       );
     }
     
@@ -189,7 +220,7 @@ const Blog: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {blogPosts.filter(post => post.featured).map(post => (
                 <Card 
-                  key={post.id} 
+                  key={post.id || Math.random()} 
                   className="overflow-hidden hover:shadow-xl transition-shadow duration-300"
                 >
                   <div className="md:flex">
@@ -202,7 +233,11 @@ const Blog: React.FC = () => {
                     </div>
                     <div className="md:w-3/5">
                       <CardContent className="p-6">
-                        <Badge className="mb-2 bg-green-600">{post.category}</Badge>
+                        <Badge className="mb-2 bg-green-600">
+                          {typeof post.category === 'object' && post.category !== null 
+                            ? (post.category as any).name || (post.category as any).id 
+                            : post.category}
+                        </Badge>
                         <h3 className="text-xl font-bold mb-2 text-green-800">{post.title}</h3>
                         <p className="text-gray-600 mb-4">{post.excerpt}</p>
                         <div className="flex items-center text-sm text-gray-500">
@@ -239,7 +274,7 @@ const Blog: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosts.map(post => (
                 <Card 
-                  key={post.id} 
+                  key={post.id || Math.random()} 
                   className="overflow-hidden hover:shadow-xl transition-shadow duration-300"
                 >
                   <div className="relative">
@@ -249,7 +284,9 @@ const Blog: React.FC = () => {
                       className="w-full h-48 object-cover"
                     />
                     <Badge className="absolute top-2 right-2 bg-green-600">
-                      {post.category}
+                      {typeof post.category === 'object' && post.category !== null 
+                        ? (post.category as any).name || (post.category as any).id 
+                        : post.category}
                     </Badge>
                   </div>
                   <CardContent className="p-4">
@@ -264,11 +301,11 @@ const Blog: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {post.tags.slice(0, 3).map((tag: string) => (
+                      {post.tags && Array.isArray(post.tags) ? post.tags.slice(0, 3).map((tag: string) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
-                      ))}
+                      )) : null}
                     </div>
                     
                     <div className="flex items-center justify-between">
