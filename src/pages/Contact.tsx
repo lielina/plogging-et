@@ -91,9 +91,7 @@ const Contact = () => {
 
     try {
       // Use actual API call instead of simulation
-      // Note: Since the backend endpoints may not exist yet, we'll keep the simulation
-      // await apiClient.submitContactForm(formData);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await apiClient.submitContactForm(formData);
       
       // Show success message
       toast({
@@ -107,10 +105,10 @@ const Contact = () => {
         email: "",
         message: "",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to send your message. Please try again.",
+        description: error.message || "Failed to send your message. Please try again.",
         variant: "destructive",
       });
     } finally {

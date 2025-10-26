@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,88 +28,44 @@ interface BlogPost {
   tags: string[];
   image: string;
   featured: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 const Blog: React.FC = () => {
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([
-    {
-      id: 1,
-      title: "The Environmental Impact of Plogging: Making a Difference One Step at a Time",
-      excerpt: "Discover how plogging contributes to environmental conservation and the positive impact it has on our communities.",
-      author: "Firew Kefyalew",
-      date: "2024-05-15",
-      readTime: "5 min read",
-      category: "Environment",
-      tags: ["environment", "community", "fitness"],
-      image: "/story-1.png",
-      featured: true
-    },
-    {
-      id: 2,
-      title: "Getting Started with Plogging: A Beginner's Guide",
-      excerpt: "Learn everything you need to know to start your plogging journey and become part of the environmental solution.",
-      author: "Sarah Johnson",
-      date: "2024-05-10",
-      readTime: "4 min read",
-      category: "Guides",
-      tags: ["beginners", "equipment", "tips"],
-      image: "/story-2.png",
-      featured: false
-    },
-    {
-      id: 3,
-      title: "Plogging Events in Addis Ababa: Join Our Community This Weekend",
-      excerpt: "Join us for our upcoming plogging events and connect with like-minded environmental enthusiasts in your area.",
-      author: "Michael Tesfaye",
-      date: "2024-05-05",
-      readTime: "3 min read",
-      category: "Events",
-      tags: ["events", "addis ababa", "community"],
-      image: "/story-3.png",
-      featured: false
-    },
-    {
-      id: 4,
-      title: "The Health Benefits of Plogging: More Than Just Exercise",
-      excerpt: "Explore the physical and mental health advantages of incorporating plogging into your fitness routine.",
-      author: "Dr. Amina Hassan",
-      date: "2024-04-28",
-      readTime: "6 min read",
-      category: "Health",
-      tags: ["health", "fitness", "wellness"],
-      image: "/story-4.png",
-      featured: true
-    },
-    {
-      id: 5,
-      title: "Youth Engagement in Environmental Conservation: The Future of Plogging",
-      excerpt: "How young people are leading the charge in environmental awareness through plogging initiatives.",
-      author: "Lihiq Kefyalew",
-      date: "2024-04-22",
-      readTime: "4 min read",
-      category: "Community",
-      tags: ["youth", "leadership", "future"],
-      image: "/about-5.png",
-      featured: false
-    },
-    {
-      id: 6,
-      title: "Sustainable Living Tips: Small Changes, Big Impact",
-      excerpt: "Practical advice for incorporating sustainable practices into your daily life beyond plogging.",
-      author: "Amnen Kefyalew",
-      date: "2024-04-15",
-      readTime: "5 min read",
-      category: "Lifestyle",
-      tags: ["sustainability", "tips", "lifestyle"],
-      image: "/about-6.png",
-      featured: false
-    }
-  ]);
-
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch blog posts from API
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.getAllBlogPosts();
+        console.log('Frontend blog posts response:', response);
+        console.log('Frontend blog posts response.data:', response.data);
+        console.log('Type of frontend blog posts response.data:', typeof response.data);
+        // Handle the response structure correctly
+        // The response format is { data: [...] }
+        const postsData = Array.isArray(response.data) ? response.data : [];
+        console.log('Frontend posts data:', postsData);
+        setBlogPosts(postsData);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching blog posts:', err);
+        setError(err.message || 'Failed to fetch blog posts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogPosts();
+  }, []);
 
   // Get unique categories
   const categories = ['All', ...Array.from(new Set(blogPosts.map(post => post.category)))];
@@ -149,6 +106,31 @@ const Blog: React.FC = () => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading blog posts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center max-w-md">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Blog Posts</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
@@ -231,6 +213,13 @@ const Blog: React.FC = () => {
                           <Clock className="h-4 w-4 mr-1" />
                           <span>{post.readTime}</span>
                         </div>
+                        <div className="mt-4">
+                          <Link to={`/blog/${post.id}`}>
+                            <Button variant="link" className="text-green-600 p-0 h-auto">
+                              Read more <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </Link>
+                        </div>
                       </CardContent>
                     </div>
                   </div>
@@ -275,7 +264,7 @@ const Blog: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {post.tags.slice(0, 3).map(tag => (
+                      {post.tags.slice(0, 3).map((tag: string) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
@@ -287,9 +276,11 @@ const Blog: React.FC = () => {
                         <Clock className="h-3 w-3 mr-1" />
                         {post.readTime}
                       </span>
-                      <Button variant="link" size="sm" className="text-green-600 p-0 h-auto">
-                        Read more <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
+                      <Link to={`/blog/${post.id}`}>
+                        <Button variant="link" size="sm" className="text-green-600 p-0 h-auto">
+                          Read more <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>

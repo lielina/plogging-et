@@ -147,6 +147,73 @@ export interface Certificate {
   download_url: string;
 }
 
+// Add Blog and Gallery interfaces
+export interface BlogPostItem {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string;
+  author: string;
+  date: string;
+  readTime: string;
+  category: string;
+  tags: string[];
+  image: string;
+  featured: boolean;
+  created_at: string;
+  updated_at: string;
+  // Additional fields from the actual API response
+  category_id?: number;
+  status?: string;
+  meta_data?: {
+    tags: string[];
+  };
+  slug?: string;
+  featured_image?: string;
+  featured_image_url?: string;
+  published_at?: string;
+}
+
+export interface BlogComment {
+  id: number;
+  post_id: number;
+  author_name: string;
+  author_email: string;
+  content: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GalleryImage {
+  id: number;
+  title: string;
+  description: string;
+  file_path: string;
+  album_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GalleryAlbum {
+  id: number;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'unread' | 'read' | 'replied';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface LoginResponse {
   status: string;
   message: string;
@@ -775,6 +842,121 @@ class ApiClient {
     return this.request<{ message: string }>('/subscribe', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  }
+
+  // Add Blog Management endpoints
+  async getAllBlogPosts(): Promise<{ data: BlogPostItem[] }> {
+    return this.request<{ data: BlogPostItem[] }>('/blog/posts');
+  }
+
+  async getBlogPost(id: number): Promise<{ data: BlogPostItem }> {
+    return this.request<{ data: BlogPostItem }>(`/blog/posts/${id}`);
+  }
+
+  async getBlogPostComments(postId: number): Promise<{ data: BlogComment[] }> {
+    return this.request<{ data: BlogComment[] }>(`/blog/posts/${postId}/comments`);
+  }
+
+  async createBlogComment(postId: number, data: Partial<BlogComment>): Promise<{ data: BlogComment }> {
+    return this.request<{ data: BlogComment }>(`/blog/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getBlogCategories(): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>('/blog/categories');
+  }
+
+  // Add Gallery Management endpoints
+  async getGalleryAlbums(): Promise<{ data: GalleryAlbum[] }> {
+    return this.request<{ data: GalleryAlbum[] }>('/gallery/albums');
+  }
+
+  async getAllGalleryImages(): Promise<{ data: GalleryImage[] }> {
+    // This would fetch all gallery images, possibly by getting images from all albums
+    // For now, we'll implement a basic version that fetches images
+    return this.request<{ data: GalleryImage[] }>('/gallery/images');
+  }
+
+  async getGalleryImagesByAlbum(albumId: number): Promise<{ data: GalleryImage[] }> {
+    return this.request<{ data: GalleryImage[] }>(`/gallery/albums/${albumId}/images`);
+  }
+
+  // Add Event endpoints
+  async getEventParticipants(eventId: number): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>(`/volunteer/events/${eventId}/participants`);
+  }
+
+  async getEventGallery(eventId: number): Promise<{ data: GalleryImage[] }> {
+    return this.request<{ data: GalleryImage[] }>(`/volunteer/events/${eventId}/gallery`);
+  }
+
+  async submitEventFeedback(eventId: number, data: any): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/events/${eventId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Add Profile endpoints
+  async updateProfileImage(file: File): Promise<{ data: { profile_image: string } }> {
+    const formData = new FormData();
+    formData.append('profile_image', file);
+
+    return this.request<{ data: { profile_image: string } }>('/volunteer/profile/image', {
+      method: 'PUT',
+      body: formData,
+      headers: {}, // Let browser set Content-Type for FormData
+    });
+  }
+
+  async getVolunteerHistory(): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>('/volunteer/history');
+  }
+
+  // Add Notification endpoints
+  async getNotifications(): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>('/volunteer/notifications');
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/volunteer/notifications/${notificationId}/read`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteNotification(notificationId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/volunteer/notifications/${notificationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markAllNotificationsAsRead(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/volunteer/notifications/mark-all-read', {
+      method: 'POST',
+    });
+  }
+
+  async getUnreadNotificationsCount(): Promise<{ data: { count: number } }> {
+    return this.request<{ data: { count: number } }>('/volunteer/notifications/unread-count');
+  }
+
+  // Add Contact endpoints
+  async getContactInfo(): Promise<{ data: any }> {
+    return this.request<{ data: any }>('/contact/info');
+  }
+
+  // Add Batch Certificate Generation endpoint
+  async batchGenerateCertificates(data: {
+    volunteer_ids: number[];
+    certificate_type: string;
+    event_id?: number;
+  }): Promise<{ data: any }> {
+    return this.request<{ data: any }>('/admin/certificates/batch', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 }

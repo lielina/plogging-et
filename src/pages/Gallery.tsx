@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,130 +9,64 @@ import '@/styles/gallery.css';
 // Define types for gallery items
 interface GalleryItem {
   id: number;
-  src: string;
-  alt: string;
   title: string;
   description: string;
-  date: string;
-  location: string;
-  category: string;
-  likes: number;
+  file_path: string;
+  album_id: number | null;
+  created_at: string;
+  updated_at: string;
+  album?: {
+    id: number;
+    name: string;
+  };
 }
 
 const Gallery: React.FC = () => {
-  // Sample gallery data - in a real app, this would come from an API
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([
-    {
-      id: 1,
-      src: '/story-1.png',
-      alt: 'Plogging event at Entoto Park',
-      title: 'Community Cleanup at Entoto Park',
-      description: 'Volunteers collecting litter during our monthly cleanup event',
-      date: '2024-05-15',
-      location: 'Entoto Park, Addis Ababa',
-      category: 'Events',
-      likes: 24
-    },
-    {
-      id: 2,
-      src: '/story-2.png',
-      alt: 'Plogging team in action',
-      title: 'Team Plogging Action',
-      description: 'Our dedicated volunteers in action during the morning cleanup',
-      date: '2024-05-10',
-      location: 'Bole Road, Addis Ababa',
-      category: 'Activities',
-      likes: 18
-    },
-    {
-      id: 3,
-      src: '/story-3.png',
-      alt: 'Plogging group photo',
-      title: 'Volunteer Group Photo',
-      description: 'Celebrating our successful cleanup with a group photo',
-      date: '2024-04-28',
-      location: 'Unity Park, Addis Ababa',
-      category: 'Events',
-      likes: 32
-    },
-    {
-      id: 4,
-      src: '/story-4.png',
-      alt: 'Before and after cleanup',
-      title: 'Before and After Transformation',
-      description: 'Amazing transformation after our cleanup efforts',
-      date: '2024-04-22',
-      location: 'Meskel Square, Addis Ababa',
-      category: 'Impact',
-      likes: 41
-    },
-    {
-      id: 5,
-      src: '/about-5.png',
-      alt: 'Youth participation in plogging',
-      title: 'Youth Engagement',
-      description: 'Young volunteers making a difference in their community',
-      date: '2024-04-15',
-      location: 'Addis Ababa University',
-      category: 'Youth',
-      likes: 29
-    },
-    {
-      id: 6,
-      src: '/about-6.png',
-      alt: 'Plogging equipment',
-      title: 'Essential Plogging Gear',
-      description: 'Our volunteers equipped with gloves and bags for cleanup',
-      date: '2024-04-08',
-      location: 'Plogging Ethiopia HQ',
-      category: 'Preparation',
-      likes: 15
-    },
-    {
-      id: 7,
-      src: '/founder-photo.png',
-      alt: 'Founder Firew Kefyalew',
-      title: 'Founder Firew Kefyalew',
-      description: 'Our founder leading by example in environmental conservation',
-      date: '2024-03-30',
-      location: 'Entoto Park',
-      category: 'Leadership',
-      likes: 37
-    },
-    {
-      id: 8,
-      src: '/header-left.png',
-      alt: 'Plogging in action',
-      title: 'Plogging in Action',
-      description: 'Volunteers jogging while collecting litter in the neighborhood',
-      date: '2024-03-22',
-      location: 'Bole Subcity',
-      category: 'Activities',
-      likes: 26
-    }
-  ]);
-
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<GalleryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Get unique categories
-  const categories = ['All', ...Array.from(new Set(galleryItems.map(item => item.category)))];
+  // Fetch gallery items from API
+  useEffect(() => {
+    const fetchGalleryItems = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.getAllGalleryImages();
+        // Handle the response structure correctly
+        // The response format is { data: [...] }
+        const imagesData = Array.isArray(response.data) ? response.data : [];
+        setGalleryItems(imagesData);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching gallery items:', err);
+        setError(err.message || 'Failed to fetch gallery items');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGalleryItems();
+  }, []);
+
+  // Get unique categories (albums)
+  const categories = ['All', ...Array.from(new Set(galleryItems.map(item => item.album?.name || 'Uncategorized')))];
 
   // Filter items based on category and search query
   useEffect(() => {
     let result = galleryItems;
     
     if (selectedCategory !== 'All') {
-      result = result.filter(item => item.category === selectedCategory);
+      result = result.filter(item => (item.album?.name || 'Uncategorized') === selectedCategory);
     }
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(item => 
         item.title.toLowerCase().includes(query) ||
-        item.description.toLowerCase().includes(query) ||
-        item.location.toLowerCase().includes(query)
+        item.description.toLowerCase().includes(query)
       );
     }
     
@@ -139,12 +74,34 @@ const Gallery: React.FC = () => {
   }, [selectedCategory, searchQuery, galleryItems]);
 
   const handleLike = (id: number) => {
-    setGalleryItems(prevItems => 
-      prevItems.map(item => 
-        item.id === id ? { ...item, likes: item.likes + 1 } : item
-      )
-    );
+    // In a real implementation, this would send a request to the backend
+    console.log(`Liked image with ID: ${id}`);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center gallery-container">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading gallery...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center gallery-container">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center max-w-md">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Gallery</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 py-8 gallery-container">
@@ -194,13 +151,15 @@ const Gallery: React.FC = () => {
               <Card key={item.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-300 gallery-card">
                 <div className="relative">
                   <img 
-                    src={item.src} 
-                    alt={item.alt} 
+                    src={item.file_path} 
+                    alt={item.title} 
                     className="w-full h-48 object-cover gallery-image"
                   />
-                  <Badge className="absolute top-2 right-2 bg-green-600 gallery-badge">
-                    {item.category}
-                  </Badge>
+                  {item.album && (
+                    <Badge className="absolute top-2 right-2 bg-green-600 gallery-badge">
+                      {item.album.name}
+                    </Badge>
+                  )}
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-bold text-lg mb-2 text-green-800">{item.title}</h3>
@@ -208,12 +167,7 @@ const Gallery: React.FC = () => {
                   
                   <div className="flex items-center text-gray-500 text-xs mb-2">
                     <Calendar className="h-3 w-3 mr-1" />
-                    <span>{new Date(item.date).toLocaleDateString()}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-gray-500 text-xs mb-3">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    <span>{item.location}</span>
+                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">
@@ -223,7 +177,7 @@ const Gallery: React.FC = () => {
                       className="text-green-600 border-green-600 hover:bg-green-50"
                       onClick={() => handleLike(item.id)}
                     >
-                      ❤️ Like ({item.likes})
+                      ❤️ Like
                     </Button>
                     <Button variant="outline" size="sm">
                       View Details

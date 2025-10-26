@@ -162,7 +162,8 @@ export default function Profile() {
     try {
       setIsUploadingImage(true)
       console.log('Starting profile image upload...');
-      const response = await apiClient.uploadProfileImage(file)
+      // Use the new endpoint for profile image upload
+      const response = await apiClient.updateProfileImage(file)
       console.log('Profile image upload response:', response);
       
       // Update the profile with the new image URL
@@ -202,6 +203,7 @@ export default function Profile() {
   const handleImageDelete = async () => {
     try {
       setIsUploadingImage(true)
+      // Use the new endpoint for profile image deletion
       await apiClient.deleteProfileImage()
       
       // Update the profile to remove the image URL
