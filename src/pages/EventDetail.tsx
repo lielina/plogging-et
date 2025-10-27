@@ -153,6 +153,13 @@ export default function EventDetail() {
         const response = await apiClient.getEventDetails(parseInt(eventId))
         setEvent(response.data as EventDetailData)
         
+        // Log the event data for debugging
+        console.log('Event data:', response.data);
+        if (response.data.image_path) {
+          console.log('Image path:', response.data.image_path);
+          console.log('Image path starts with http:', response.data.image_path.startsWith('http'));
+        }
+        
         // Generate QR code for the event using the same URL format as the share link
         const qrData = `https://ploggingethiopia.org/events/${eventId}`
         const qrCodeUrl = await QRCode.toDataURL(qrData, {
@@ -825,6 +832,31 @@ ${description}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Event Details */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Event Image */}
+            {event.image_path && (
+              <Card className="shadow-sm border-0 bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-semibold text-gray-900">Event Image</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-center">
+                    <img 
+                      src={event.image_path.startsWith('http') ? event.image_path : `https://ploggingapi.pixeladdis.com/${event.image_path.startsWith('/') ? event.image_path.slice(1) : event.image_path}`}
+                      alt={`${event.event_name} - Event Image`}
+                      className="max-w-full h-auto rounded-lg shadow-md object-cover"
+                      style={{ maxHeight: '400px' }}
+                      onError={(e) => {
+                        // Handle image loading errors
+                        console.log('Image failed to load:', event.image_path);
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Description */}
             <Card className="shadow-sm border-0 bg-white">
               <CardHeader className="pb-4">

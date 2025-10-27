@@ -122,6 +122,7 @@ export interface Event {
   max_volunteers: number;
   status: string;
   qr_code_path?: string;
+  image_path?: string; // Add image_path field
   // Enrollment information that may be returned for volunteers
   is_enrolled?: boolean;
   enrollment_status?: string;
@@ -502,7 +503,16 @@ class ApiClient {
   }
 
   async getEventDetails(eventId: number): Promise<{ data: Event }> {
-    return this.request<{ data: Event }>(`/volunteer/events/${eventId}`);
+    const response = await this.request<{ data: Event }>(`/volunteer/events/${eventId}`);
+
+    // Ensure the image_path is properly formatted in the response
+    if (response.data && response.data.image_path && !response.data.image_path.startsWith('http')) {
+      // If the image_path is relative, make it absolute and ensure it has a leading slash
+      const imagePath = response.data.image_path.startsWith('/') ? response.data.image_path.slice(1) : response.data.image_path;
+      response.data.image_path = `https://ploggingapi.pixeladdis.com/${imagePath}`;
+    }
+
+    return response;
   }
 
   async getEventQRCode(eventId: number): Promise<{ data: { qr_code_path: string } }> {
