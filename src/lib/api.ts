@@ -155,6 +155,8 @@ export interface BlogPostItem {
   content: string;
   excerpt: string;
   status?: string;
+  // Tags can be at the top level (as per API requirements) or in meta_data
+  tags?: string[];
   meta_data?: {
     tags: string[];
     author?: string;
