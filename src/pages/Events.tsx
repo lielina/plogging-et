@@ -354,7 +354,9 @@ export default function Events() {
     if (event.can_enroll === false) {
       return {
         disabled: true,
-        text: event.status === 'completed' ? 'Event Ended' : 'Not Available',
+        text: event.status === 'completed' ? 'Event Ended' : 
+              event.status === 'active' ? 'Event In Progress' : 
+              'Not Available',
         variant: 'secondary' as const,
         icon: null,
         showDetails: false
@@ -362,13 +364,36 @@ export default function Events() {
     }
     
     // Fallback to basic status check
-    if (event.status && (event.status.toLowerCase() === 'completed' || event.status.toLowerCase() === 'cancelled')) {
-      return {
-        disabled: true,
-        text: 'Event Ended',
-        variant: 'secondary' as const,
-        icon: null,
-        showDetails: false
+    if (event.status) {
+      const status = event.status.toLowerCase();
+      if (status === 'completed' || status === 'cancelled') {
+        return {
+          disabled: true,
+          text: 'Event Ended',
+          variant: 'secondary' as const,
+          icon: null,
+          showDetails: false
+        }
+      }
+      // Check if event is active (in progress)
+      if (status === 'active') {
+        return {
+          disabled: true,
+          text: 'Event In Progress',
+          variant: 'secondary' as const,
+          icon: null,
+          showDetails: false
+        }
+      }
+      // Only allow enrollment in upcoming events
+      if (status !== 'upcoming') {
+        return {
+          disabled: true,
+          text: 'Not Available',
+          variant: 'secondary' as const,
+          icon: null,
+          showDetails: false
+        }
       }
     }
     
@@ -515,6 +540,36 @@ export default function Events() {
                           <Users className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">Max {event.max_volunteers}</span>
                         </div>
+                      </div>
+
+                      {/* Event Status Indicator */}
+                      <div className="flex items-center justify-between pt-2">
+                        <Badge 
+                          variant={
+                            event.status === 'upcoming' ? 'default' : 
+                            event.status === 'active' ? 'destructive' : 
+                            'secondary'
+                          }
+                          className="text-xs px-2 py-1"
+                        >
+                          {event.status === 'upcoming' ? 'Upcoming' : 
+                           event.status === 'active' ? 'In Progress' : 
+                           event.status === 'completed' ? 'Completed' : 
+                           'Not Available'}
+                        </Badge>
+                        
+                        {/* Enrollment Status */}
+                        {(() => {
+                          const buttonState = getButtonState(event);
+                          if (buttonState.showDetails && buttonState.status) {
+                            return (
+                              <Badge variant="outline" className="text-xs px-2 py-1 text-green-700 border-green-300">
+                                Enrolled
+                              </Badge>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {/* Enrollment Status (if enrolled) */}

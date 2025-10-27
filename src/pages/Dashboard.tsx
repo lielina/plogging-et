@@ -99,18 +99,28 @@ export default function Dashboard() {
             
             // Validate stored enrollments by checking with backend
             // This helps synchronize local storage with actual backend state
+            // Only remove enrollments if we're certain they don't exist or are explicitly not enrolled
             const validatedEnrollments = []
             for (const eventId of storedEnrollments) {
               const event = response.data.find(e => e.event_id === eventId)
-              // If event exists and is enrolled according to backend, keep it
-              if (event && (event.is_enrolled === true || 
-                           event.enrollment_status === 'confirmed' || 
-                           event.enrollment_status === 'attended')) {
+              // Keep enrollment if event exists and is not explicitly marked as not enrolled
+              // or if we can't determine the status (to avoid false negatives)
+              if (!event || 
+                  event.is_enrolled === true || 
+                  event.enrollment_status === 'confirmed' || 
+                  event.enrollment_status === 'attended' ||
+                  event.enrollment_status === 'Enrolled' ||
+                  event.enrollment_status === 'Signed Up' ||
+                  event.can_enroll === false ||
+                  // If we can't determine status, keep it to avoid false negatives
+                  (event.is_enrolled !== false && 
+                   event.enrollment_status !== 'cancelled' &&
+                   event.enrollment_status !== 'missed')) {
                 validatedEnrollments.push(eventId)
               }
             }
             
-            // Update localStorage with validated enrollments
+            // Update localStorage with validated enrollments only if we removed some
             if (validatedEnrollments.length !== storedEnrollments.length) {
               localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
               storedEnrollments = validatedEnrollments
@@ -123,12 +133,14 @@ export default function Dashboard() {
               const isBackendEnrolled = event.is_enrolled === true || 
                                     event.enrollment_status === 'confirmed' || 
                                     event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false; // If can't enroll, might mean already enrolled
-            
-            console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-            
-            return isStoredEnrolled || isBackendEnrolled
-          });
+                                    event.can_enroll === false || // If can't enroll, might mean already enrolled
+                                    event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
+                                    event.enrollment_status === 'Signed Up' // Also check for 'Signed Up' status
+              
+              console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+              
+              return isStoredEnrolled || isBackendEnrolled
+            })
           
           console.log('Enrolled events:', enrolledEvents)
           setRecentEvents(enrolledEvents.slice(0, 3));
@@ -218,18 +230,28 @@ useEffect(() => {
             
             // Validate stored enrollments by checking with backend
             // This helps synchronize local storage with actual backend state
+            // Only remove enrollments if we're certain they don't exist or are explicitly not enrolled
             const validatedEnrollments = []
             for (const eventId of storedEnrollments) {
               const event = response.data.find(e => e.event_id === eventId)
-              // If event exists and is enrolled according to backend, keep it
-              if (event && (event.is_enrolled === true || 
-                           event.enrollment_status === 'confirmed' || 
-                           event.enrollment_status === 'attended')) {
+              // Keep enrollment if event exists and is not explicitly marked as not enrolled
+              // or if we can't determine the status (to avoid false negatives)
+              if (!event || 
+                  event.is_enrolled === true || 
+                  event.enrollment_status === 'confirmed' || 
+                  event.enrollment_status === 'attended' ||
+                  event.enrollment_status === 'Enrolled' ||
+                  event.enrollment_status === 'Signed Up' ||
+                  event.can_enroll === false ||
+                  // If we can't determine status, keep it to avoid false negatives
+                  (event.is_enrolled !== false && 
+                   event.enrollment_status !== 'cancelled' &&
+                   event.enrollment_status !== 'missed')) {
                 validatedEnrollments.push(eventId)
               }
             }
             
-            // Update localStorage with validated enrollments
+            // Update localStorage with validated enrollments only if we removed some
             if (validatedEnrollments.length !== storedEnrollments.length) {
               localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
               storedEnrollments = validatedEnrollments
@@ -242,7 +264,9 @@ useEffect(() => {
               const isBackendEnrolled = event.is_enrolled === true || 
                                     event.enrollment_status === 'confirmed' || 
                                     event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false; // If can't enroll, might mean already enrolled
+                                    event.can_enroll === false || // If can't enroll, might mean already enrolled
+                                    event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
+                                    event.enrollment_status === 'Signed Up'; // Also check for 'Signed Up' status
             
             console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
             
