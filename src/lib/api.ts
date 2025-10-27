@@ -173,6 +173,7 @@ export interface BlogPostItem {
 export interface BlogComment {
   id: number;
   post_id: number;
+  blog_post_id?: number; // Add this field to match backend response
   author_name: string;
   author_email: string;
   content: string;

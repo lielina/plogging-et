@@ -87,17 +87,27 @@ const BlogPostPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      // Note: In a real implementation, you would submit the comment to the backend
-      // For now, we'll just add it to the local state to simulate the behavior
+      
+      // Submit the comment to the backend API
+      const response = await apiClient.createBlogComment(
+        parseInt(postId || '0'), 
+        {
+          author_name: newComment.author_name,
+          author_email: newComment.author_email,
+          content: newComment.content
+        }
+      );
+      
+      // Add the new comment to the local state
       const newCommentObj: BlogComment = {
-        id: Date.now(), // Temporary ID
-        post_id: parseInt(postId || '0'),
-        author_name: newComment.author_name,
-        author_email: newComment.author_email,
-        content: newComment.content,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        id: response.data.id,
+        post_id: response.data.blog_post_id || response.data.post_id || parseInt(postId || '0'),
+        author_name: response.data.author_name,
+        author_email: response.data.author_email,
+        content: response.data.content,
+        status: response.data.status as 'pending' | 'approved' | 'rejected',
+        created_at: response.data.created_at,
+        updated_at: response.data.updated_at
       };
       
       setComments([...comments, newCommentObj]);
@@ -109,7 +119,7 @@ const BlogPostPage: React.FC = () => {
       
       toast({
         title: "Success",
-        description: "Comment submitted successfully. It will be visible after moderation.",
+        description: "Comment submitted successfully and is pending approval.",
       });
     } catch (err: any) {
       console.error('Error submitting comment:', err);
