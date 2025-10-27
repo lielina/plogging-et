@@ -154,25 +154,18 @@ export interface BlogPostItem {
   title: string;
   content: string;
   excerpt: string;
-  author: string;
-  date: string;
-  readTime: string;
-  category: string;
-  tags: string[];
-  image: string;
-  featured: boolean;
-  created_at: string;
-  updated_at: string;
-  // Additional fields from the actual API response
-  category_id?: number;
   status?: string;
   meta_data?: {
     tags: string[];
+    author?: string;
+    read_time?: string;
   };
   slug?: string;
   featured_image?: string;
   featured_image_url?: string;
-  published_at?: string;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BlogComment {

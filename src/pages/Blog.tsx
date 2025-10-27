@@ -21,13 +21,17 @@ interface BlogPost {
   id: number;
   title: string;
   excerpt: string;
-  author: string;
-  date: string;
-  readTime: string;
-  category: string;
-  tags: string[];
-  image: string;
-  featured: boolean;
+  featured?: boolean;
+  status?: string;
+  meta_data?: {
+    tags: string[];
+    author?: string;
+    read_time?: string;
+  };
+  slug?: string;
+  featured_image?: string;
+  featured_image_url?: string;
+  published_at: string;
   created_at: string;
   updated_at: string;
 }
@@ -87,42 +91,28 @@ const Blog: React.FC = () => {
   }, []);
 
   // Get unique categories
-  const categories = ['All', ...Array.from(new Set(blogPosts.map(post => {
-    if (typeof post.category === 'object' && post.category !== null) {
-      return (post.category as any).name || (post.category as any).id;
-    }
-    return post.category;
-  })))];
+  const categories = ['All'];
 
   // Get all tags
   const allTags = Array.from(new Set(blogPosts.flatMap(post => 
-    post.tags && Array.isArray(post.tags) ? post.tags : []
+    post.meta_data?.tags && Array.isArray(post.meta_data.tags) ? post.meta_data.tags : []
   )));
 
   // Filter posts based on category and search query
   useEffect(() => {
     let result = blogPosts;
     
-    if (selectedCategory !== 'All') {
-      result = result.filter(post => {
-        if (typeof post.category === 'object' && post.category !== null) {
-          return ((post.category as any).name || (post.category as any).id) === selectedCategory;
-        }
-        return post.category === selectedCategory;
-      });
-    }
-    
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(post => 
         post.title.toLowerCase().includes(query) ||
         post.excerpt.toLowerCase().includes(query) ||
-        (post.tags && Array.isArray(post.tags) && post.tags.some(tag => tag.toLowerCase().includes(query)))
+        (post.meta_data?.tags && Array.isArray(post.meta_data.tags) && post.meta_data.tags.some(tag => tag.toLowerCase().includes(query)))
       );
     }
     
     setFilteredPosts(result);
-  }, [selectedCategory, searchQuery, blogPosts]);
+  }, [searchQuery, blogPosts]); // Remove selectedCategory from dependencies
 
   // Handle scroll to show/hide scroll to top button
   useEffect(() => {
@@ -193,19 +183,6 @@ const Blog: React.FC = () => {
                 />
               </div>
               
-              <div className="flex flex-wrap gap-2">
-                <Tag className="text-green-600 h-5 w-5" />
-                {categories.map(category => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    className={selectedCategory === category ? "bg-green-600 hover:bg-green-700" : ""}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -226,7 +203,7 @@ const Blog: React.FC = () => {
                   <div className="md:flex">
                     <div className="md:w-2/5">
                       <img 
-                        src={post.image} 
+                        src={post.featured_image_url || ''} 
                         alt={post.title} 
                         className="w-full h-48 md:h-full object-cover"
                       />
@@ -234,19 +211,19 @@ const Blog: React.FC = () => {
                     <div className="md:w-3/5">
                       <CardContent className="p-6">
                         <Badge className="mb-2 bg-green-600">
-                          {typeof post.category === 'object' && post.category !== null 
-                            ? (post.category as any).name || (post.category as any).id 
-                            : post.category}
+                          Uncategorized
                         </Badge>
                         <h3 className="text-xl font-bold mb-2 text-green-800">{post.title}</h3>
                         <p className="text-gray-600 mb-4">{post.excerpt}</p>
                         <div className="flex items-center text-sm text-gray-500">
                           <User className="h-4 w-4 mr-1" />
-                          <span className="mr-4">{post.author}</span>
+                          <span className="mr-4">{post.meta_data?.author || ''}</span>
                           <Calendar className="h-4 w-4 mr-1" />
-                          <span className="mr-4">{new Date(post.date).toLocaleDateString()}</span>
+                          <span className="mr-4">
+                            {post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}
+                          </span>
                           <Clock className="h-4 w-4 mr-1" />
-                          <span>{post.readTime}</span>
+                          <span>{post.meta_data?.read_time || ''}</span>
                         </div>
                         <div className="mt-4">
                           <Link to={`/blog/${post.id}`}>
@@ -279,14 +256,12 @@ const Blog: React.FC = () => {
                 >
                   <div className="relative">
                     <img 
-                      src={post.image} 
+                      src={post.featured_image_url || ''} 
                       alt={post.title} 
                       className="w-full h-48 object-cover"
                     />
                     <Badge className="absolute top-2 right-2 bg-green-600">
-                      {typeof post.category === 'object' && post.category !== null 
-                        ? (post.category as any).name || (post.category as any).id 
-                        : post.category}
+                      Uncategorized
                     </Badge>
                   </div>
                   <CardContent className="p-4">
@@ -295,13 +270,15 @@ const Blog: React.FC = () => {
                     
                     <div className="flex items-center text-gray-500 text-xs mb-3">
                       <User className="h-3 w-3 mr-1" />
-                      <span className="mr-3">{post.author}</span>
+                      <span className="mr-3">{post.meta_data?.author || ''}</span>
                       <Calendar className="h-3 w-3 mr-1" />
-                      <span>{new Date(post.date).toLocaleDateString()}</span>
+                      <span>
+                        {post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}
+                      </span>
                     </div>
                     
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {post.tags && Array.isArray(post.tags) ? post.tags.slice(0, 3).map((tag: string) => (
+                      {post.meta_data?.tags && Array.isArray(post.meta_data.tags) ? post.meta_data.tags.slice(0, 3).map((tag: string) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
@@ -311,7 +288,7 @@ const Blog: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500 flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
-                        {post.readTime}
+                        {post.meta_data?.read_time || ''}
                       </span>
                       <Link to={`/blog/${post.id}`}>
                         <Button variant="link" size="sm" className="text-green-600 p-0 h-auto">
