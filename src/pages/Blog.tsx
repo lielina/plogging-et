@@ -210,9 +210,7 @@ const Blog: React.FC = () => {
                     </div>
                     <div className="md:w-3/5">
                       <CardContent className="p-6">
-                        <Badge className="mb-2 bg-green-600">
-                          Uncategorized
-                        </Badge>
+                        
                         <h3 className="text-xl font-bold mb-2 text-green-800">{post.title}</h3>
                         <p className="text-gray-600 mb-4">{post.excerpt}</p>
                         <div className="flex items-center text-sm text-gray-500">
@@ -260,9 +258,7 @@ const Blog: React.FC = () => {
                       alt={post.title} 
                       className="w-full h-48 object-cover"
                     />
-                    <Badge className="absolute top-2 right-2 bg-green-600">
-                      Uncategorized
-                    </Badge>
+                    
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-bold text-lg mb-2 text-green-800">{post.title}</h3>
