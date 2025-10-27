@@ -123,7 +123,7 @@ const BatchCertificateGenerator: React.FC<BatchCertificateGeneratorProps> = ({
           volunteerName: `${job.volunteer.first_name} ${job.volunteer.last_name}`,
           eventName: job.event?.event_name || 'Community Service',
           eventDate: job.event?.event_date || formatDate(new Date()),
-          hoursContributed: job.event?.estimated_duration_hours || job.milestoneHours || 4,
+          hoursContributed: Number(job.event?.estimated_duration_hours || job.milestoneHours || 4),
           location: batchConfig.location,
           organizerName: batchConfig.organizerName,
           certificateId: generateCertificateId(),

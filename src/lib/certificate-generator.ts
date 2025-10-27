@@ -211,7 +211,7 @@ export class CertificateGenerator {
 
   private drawPremiumGoldPattern() {
     // Elegant gold pattern with stars and circles
-    this.pdf.setFillColor(this.template.secondaryColor, 0.3)
+    this.pdf.setFillColor(this.template.secondaryColor)
 
     // Top decorative elements
     for (let i = 0; i < 10; i++) {
@@ -237,7 +237,7 @@ export class CertificateGenerator {
 
   private drawNaturePattern() {
     // Nature-inspired pattern with leaves and waves
-    this.pdf.setFillColor(this.template.secondaryColor, 0.2)
+    this.pdf.setFillColor(this.template.secondaryColor)
 
     // Top wave pattern
     for (let i = 0; i < 12; i++) {
@@ -285,7 +285,7 @@ export class CertificateGenerator {
 
   private drawVibrantPattern() {
     // Vibrant community pattern with hearts and stars
-    this.pdf.setFillColor(this.template.secondaryColor, 0.3)
+    this.pdf.setFillColor(this.template.secondaryColor)
 
     // Top vibrant elements
     for (let i = 0; i < 10; i++) {
@@ -403,14 +403,14 @@ export class CertificateGenerator {
     // Organization name with enhanced styling
     this.pdf.setTextColor(this.template.primaryColor)
     this.pdf.setFontSize(16)
-    this.pdf.setFont(undefined, 'bold')
+    this.pdf.setFont('helvetica', 'bold')
     this.pdf.text("PLOGGING ETHIOPIA", logoX, logoY + 35, {
       align: "center",
     })
 
     // Subtitle with decorative lines
     this.pdf.setFontSize(10)
-    this.pdf.setFont(undefined, 'normal')
+    this.pdf.setFont('helvetica', 'normal')
     this.pdf.text(
       "Environmental Care + Community Wellness",
       logoX,
@@ -432,7 +432,7 @@ export class CertificateGenerator {
     // Enhanced title with decorative elements
     this.pdf.setTextColor(this.template.primaryColor)
     this.pdf.setFontSize(28)
-    this.pdf.setFont(undefined, 'bold')
+    this.pdf.setFont('helvetica', 'bold')
 
     // Main title
     this.pdf.text(
@@ -478,7 +478,7 @@ export class CertificateGenerator {
     // Main content with enhanced styling
     this.pdf.setTextColor(51, 51, 51)
     this.pdf.setFontSize(14)
-    this.pdf.setFont(undefined, 'normal')
+    this.pdf.setFont('helvetica', 'normal')
 
     const presentedText = "This certificate is proudly presented to"
     this.pdf.text(presentedText, centerX, startY, { align: "center" })
@@ -490,18 +490,18 @@ export class CertificateGenerator {
     this.pdf.line(centerX + 20, startY - 3, centerX + 60, startY - 3)
 
     // Volunteer name (highlighted with decorative background)
-    this.pdf.setFillColor(this.template.primaryColor, 0.1)
+    this.pdf.setFillColor(this.template.primaryColor)
     this.pdf.roundedRect(centerX - 80, startY + 5, 160, 25, 3, 3, "F")
 
     this.pdf.setTextColor(this.template.primaryColor)
     this.pdf.setFontSize(22)
-    this.pdf.setFont(undefined, 'bold')
+    this.pdf.setFont('helvetica', 'bold')
     this.pdf.text(data.volunteerName.toUpperCase(), centerX, startY + 20, { align: "center" })
 
     // Achievement description with enhanced styling
     this.pdf.setTextColor(51, 51, 51)
     this.pdf.setFontSize(13)
-    this.pdf.setFont(undefined, 'normal')
+    this.pdf.setFont('helvetica', 'normal')
 
     let achievementText = ""
     switch (this.template.type) {
@@ -540,7 +540,7 @@ export class CertificateGenerator {
     // Recognition message with enhanced styling
     this.pdf.setFontSize(11)
     this.pdf.setTextColor(this.template.secondaryColor)
-    this.pdf.setFont(undefined, 'italic')
+    this.pdf.setFont('helvetica', 'italic')
     const recognitionText = "In recognition of your commitment to environmental stewardship and community wellness"
     this.pdf.text(recognitionText, centerX, startY + 75, { align: "center" })
 
@@ -573,10 +573,10 @@ export class CertificateGenerator {
 
     this.pdf.setTextColor(51, 51, 51)
     this.pdf.setFontSize(11)
-    this.pdf.setFont(undefined, 'bold')
+    this.pdf.setFont('helvetica', 'bold')
     this.pdf.text(data.organizerName, 90, signatureY + 8, { align: "center" })
     this.pdf.setFontSize(9)
-    this.pdf.setFont(undefined, 'normal')
+    this.pdf.setFont('helvetica', 'normal')
     this.pdf.text("Event Organizer", 90, signatureY + 15, { align: "center" })
 
     // Center seal/emblem
@@ -602,10 +602,10 @@ export class CertificateGenerator {
 
     this.pdf.setTextColor(51, 51, 51)
     this.pdf.setFontSize(11)
-    this.pdf.setFont(undefined, 'bold')
+    this.pdf.setFont('helvetica', 'bold')
     this.pdf.text("Plogging Ethiopia Team", 207, signatureY + 8, { align: "center" })
     this.pdf.setFontSize(9)
-    this.pdf.setFont(undefined, 'normal')
+    this.pdf.setFont('helvetica', 'normal')
     this.pdf.text("Program Director", 207, signatureY + 15, { align: "center" })
 
     // Add decorative elements between signatures
@@ -619,16 +619,16 @@ export class CertificateGenerator {
     const footerY = 185
 
     // Add decorative background for footer
-    this.pdf.setFillColor(this.template.primaryColor, 0.1)
+    this.pdf.setFillColor(this.template.primaryColor)
     this.pdf.rect(0, footerY - 5, 297, 25, "F")
 
     // Certificate ID and issue date with enhanced styling
     this.pdf.setTextColor(this.template.secondaryColor)
     this.pdf.setFontSize(9)
-    this.pdf.setFont(undefined, 'bold')
+    this.pdf.setFont('helvetica', 'bold')
     this.pdf.text(`Certificate ID: ${data.certificateId}`, 20, footerY)
     this.pdf.setFontSize(8)
-    this.pdf.setFont(undefined, 'normal')
+    this.pdf.setFont('helvetica', 'normal')
     this.pdf.text(`Issued on: ${data.issueDate}`, 20, footerY + 5)
 
     // Verification URL with icon
@@ -637,7 +637,7 @@ export class CertificateGenerator {
 
     // Powered by with enhanced styling
     this.pdf.setFontSize(8)
-    this.pdf.setFont(undefined, 'italic')
+    this.pdf.setFont('helvetica', 'italic')
     this.pdf.text("Powered by Pixel Addis Solutions PLC", 277, footerY + 5, { align: "right" })
 
     // Enhanced QR Code placeholder with decorative border

@@ -81,7 +81,7 @@ export default function Profile() {
   const handleProfileUpdate = async () => {
     if (!profile) return;
     
-    setIsSaving(true);
+    setSaving(true);
     try {
       // Send the phone number in +251 format to the API
       const updateData = {
@@ -106,7 +106,7 @@ export default function Profile() {
         variant: "destructive"
       });
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   }
 

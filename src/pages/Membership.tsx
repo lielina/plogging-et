@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Leaf, Users, Eye, EyeOff, Mail, Phone, User } from 'lucide-react';
-import story1 from "/story-1.png";
+const story1 = "/story-1.png";
 import { formatEthiopianPhoneNumber } from '@/utils/phoneFormatter';
 
 const faqs = [

@@ -3,7 +3,7 @@
  * This script demonstrates how to use the downloadCertificate method
  */
 
-import { CertificateData } from './lib/api';
+import { CertificateData } from './lib/certificate-generator';
 import { downloadCertificate } from './lib/certificate-generator';
 
 // Example usage of the downloadCertificate method
