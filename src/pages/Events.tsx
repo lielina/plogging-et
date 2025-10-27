@@ -470,6 +470,22 @@ export default function Events() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
+                      {/* Event Image Preview */}
+                      {event.image_path && (
+                        <div className="rounded-md overflow-hidden border h-32 flex items-center justify-center bg-gray-50">
+                          <img 
+                            src={event.image_path.startsWith('http') ? event.image_path : `https://ploggingapi.pixeladdis.com/${event.image_path.startsWith('/') ? event.image_path.slice(1) : event.image_path}`}
+                            alt={`${event.event_name} preview`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Handle image loading errors
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+
                       {/* Date and Time */}
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="h-4 w-4 flex-shrink-0" />
