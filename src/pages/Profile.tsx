@@ -183,8 +183,8 @@ export default function Profile() {
       setIsUploadingImage(true)
       console.log('Starting profile image upload...');
       // Use the new endpoint for profile image upload
-      const response = await apiClient.updateProfileImage(file)
-      console.log('Profile image upload response:', response);
+      const response = await apiClient.uploadProfileImage(file);
+      console.log("Profile image upload response:", response);
       
       // Update the profile with the new image URL
       if (profile) {
@@ -207,7 +207,8 @@ export default function Profile() {
       toast({
         title: "Profile Picture Updated",
         description: "Your profile picture has been successfully updated.",
-      })
+        variant: "success",
+      });
     } catch (error: any) {
       console.error('Error uploading image:', error)
       toast({
@@ -308,7 +309,7 @@ export default function Profile() {
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
                 <ImageUpload
-                  currentImageUrl={profile.profile_image}
+                  currentImageUrl={profile.profile_image_url}
                   onImageUpload={handleImageUpload}
                   onImageDelete={profile.profile_image ? handleImageDelete : undefined}
                   isUploading={isUploadingImage}
