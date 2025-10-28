@@ -106,8 +106,10 @@ const Layout = () => {
                   </Link>
                 </div>
 
-                {/* Desktop Navigation */}
-                <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12 mr-6 lg:mr-10">
+                {/* Right side - Desktop Navigation + Mobile Menu Button */}
+                <div className="flex items-center">
+                  {/* Desktop Navigation */}
+                  <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12 mr-6 lg:mr-10">
                   {[
                     { name: "Home", to: "/" },
                     { name: "About", to: "/#aboutus" },
@@ -215,16 +217,17 @@ const Layout = () => {
                       Login
                     </NavLink>
                   )}
-                </nav>
+                  </nav>
 
-                {/* Mobile Menu Button */}
-                <button
-                  className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  aria-label="Toggle menu"
-                >
-                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                </button>
+                  {/* Mobile Menu Button */}
+                  <button
+                    className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    aria-label="Toggle menu"
+                  >
+                    <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </button>
+                </div>
               </div>
 
               {/* Mobile Navigation */}
