@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import QRCode from 'qrcode'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiClient, Volunteer, ChangePasswordRequest } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +24,7 @@ export default function Profile() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
   
   // Form states
   const [profileForm, setProfileForm] = useState({
@@ -60,6 +62,24 @@ export default function Profile() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    const generateQr = async () => {
+      try {
+        if (!profile?.volunteer_id) return
+        const qrData = `volunteer:${profile.volunteer_id}`
+        const url = await QRCode.toDataURL(qrData, {
+          width: 200,
+          margin: 1,
+          color: { dark: '#000000', light: '#FFFFFF' },
+        })
+        setQrCodeDataUrl(url)
+      } catch (e) {
+        // ignore QR errors silently on profile
+      }
+    }
+    generateQr()
+  }, [profile?.volunteer_id])
 
   // Format phone number for display
   const displayPhoneNumber = profile?.phone_number 
@@ -303,16 +323,20 @@ export default function Profile() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-gray-600">Volunteer ID</span>
-                  <Badge variant="outline" className="text-xs sm:text-sm">{profile.volunteer_id}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-xs sm:text-sm text-gray-600">Total Hours</span>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 text-green-600" />
                     <span className="font-semibold">{profile.total_hours_contributed}h</span>
                   </div>
                 </div>
+                {qrCodeDataUrl && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2 text-center">Your Check-in QR</p>
+                    <div className="flex justify-center">
+                      <img src={qrCodeDataUrl} alt="Volunteer QR Code" className="w-36 h-36" />
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

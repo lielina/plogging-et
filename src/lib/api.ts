@@ -1,3 +1,7 @@
+// Frontend URL configuration
+export const FRONTEND_URL = 'https://plogging-user-wyci.vercel.app';
+
+// API Base URL configuration
 const BASE_URL = 'https://ploggingapi.pixeladdis.com/api/v1';
 
 // Additional Types from Postman Collection
@@ -185,11 +189,38 @@ export interface BlogComment {
 export interface GalleryImage {
   id: number;
   title: string;
-  description: string;
-  file_path: string;
+  description: string | null;
+  image_path?: string; // raw backend field
+  thumbnail_path?: string; // raw backend field
+  image_url?: string; // full URL from backend
+  thumbnail_url?: string; // full URL from backend
   album_id: number | null;
+  event_id?: number | null;
+  sort_order?: string | number;
   created_at: string;
   updated_at: string;
+  album?: { id: number; name: string } | null;
+  event?: any | null;
+}
+
+export interface PaginatedResponse<T> {
+  status?: string;
+  data: {
+    current_page: number;
+    data: T[];
+    first_page_url?: string;
+    last_page: number;
+    last_page_url?: string;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+    per_page: number;
+    to?: number;
+    total: number;
+    path?: string;
+    from?: number;
+    links?: Array<{ url: string | null; label: string; active: boolean }>;
+  };
+  message?: string;
 }
 
 export interface GalleryAlbum {
@@ -880,10 +911,8 @@ class ApiClient {
     return this.request<{ data: GalleryAlbum[] }>('/gallery/albums');
   }
 
-  async getAllGalleryImages(): Promise<{ data: GalleryImage[] }> {
-    // This would fetch all gallery images, possibly by getting images from all albums
-    // For now, we'll implement a basic version that fetches images
-    return this.request<{ data: GalleryImage[] }>('/gallery/images');
+  async getAllGalleryImages(page: number = 1): Promise<PaginatedResponse<GalleryImage>> {
+    return this.request<PaginatedResponse<GalleryImage>>(`/gallery/images?page=${page}`);
   }
 
   async getGalleryImagesByAlbum(albumId: number): Promise<{ data: GalleryImage[] }> {

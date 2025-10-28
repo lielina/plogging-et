@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { apiClient, Event } from '@/lib/api'
+import { apiClient, Event, FRONTEND_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -194,7 +194,7 @@ export default function EventDetail() {
         }
         
         // Generate QR code for the event using the same URL format as the share link
-        const qrData = `https://ploggingethiopia.org/events/${eventId}`
+        const qrData = `${FRONTEND_URL}/events/${eventId}`
         const qrCodeUrl = await QRCode.toDataURL(qrData, {
           width: 200,
           margin: 2,
@@ -366,7 +366,7 @@ export default function EventDetail() {
   // Social Media Sharing Functions
   const getShareUrl = () => {
     // Use the public/user-side URL
-    return generateEventShareLink(parseInt(eventId!));
+    return `${FRONTEND_URL}/events/${eventId}`;
   }
 
   const getShareText = () => {
@@ -433,8 +433,8 @@ ${description}
 
   const handleVolunteerScan = async (qrData: string) => {
     try {
-      // Parse QR data (format: https://ploggingethiopia.org/events/eventId)
-      if (qrData.startsWith('https://ploggingethiopia.org/events/')) {
+      // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
+      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
         const urlParts = qrData.split('/')
         const scannedEventId = parseInt(urlParts[urlParts.length - 1])
         
@@ -519,10 +519,10 @@ ${description}
   // User Check-in Function
   const handleUserCheckIn = async (qrData: string) => {
     try {
-      // Parse QR data (format: https://ploggingethiopia.org/events/eventId)
+      // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
       let scannedEventId: number | null = null;
       
-      if (qrData.startsWith('https://ploggingethiopia.org/events/')) {
+      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
         const urlParts = qrData.split('/')
         scannedEventId = parseInt(urlParts[urlParts.length - 1])
       } else {
@@ -574,10 +574,10 @@ ${description}
   // User Check-out Function
   const handleUserCheckOut = async (qrData: string) => {
     try {
-      // Parse QR data (format: https://ploggingethiopia.org/events/eventId)
+      // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
       let scannedEventId: number | null = null;
       
-      if (qrData.startsWith('https://ploggingethiopia.org/events/')) {
+      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
         const urlParts = qrData.split('/')
         scannedEventId = parseInt(urlParts[urlParts.length - 1])
       } else {
@@ -939,7 +939,7 @@ ${description}
                     </p>
                     <div className="inline-block px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 rounded-full">
                       <p className="text-[10px] sm:text-xs text-gray-600 font-mono">
-                        QR Data: https://ploggingethiopia.org/events/{event.event_id}
+                        QR Data: {FRONTEND_URL}/events/{event.event_id}
                       </p>
                     </div>
                   </div>

@@ -1,4 +1,5 @@
 import jsPDF from "jspdf"
+import { FRONTEND_URL } from './api'
 
 export interface CertificateData {
   volunteerName: string
@@ -247,7 +248,7 @@ export class CertificateGenerator {
     this.pdf.text(`Issued on: ${data.issueDate}`, 20, footerY + 5)
 
     // Verification URL
-    this.pdf.text("Verify at: ploggingethiopia.org/verify", 20, footerY + 10)
+    this.pdf.text(`Verify at: ${FRONTEND_URL}/verify`, 20, footerY + 10)
 
     // Powered by
     this.pdf.text("Powered by Pixel Addis Solutions PLC", 277, footerY + 10, { align: "right" })

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, Calendar, Award, RefreshCw, Search } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { downloadCertificate, CertificateGenerator } from '@/lib/certificate-generator'
+import { downloadCertificate, CertificateGenerator, defaultTemplates } from '@/lib/certificate-generator'
 
 // Extend the VolunteerCertificate interface to include download state
 interface ExtendedVolunteerCertificate extends VolunteerCertificate {
@@ -154,7 +154,10 @@ export default function VolunteerCertificates() {
         
         // Generate and download locally using the new utility function
         try {
-          downloadCertificate(certificateData, `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`);
+          // Use the appreciation certificate template
+          const template = defaultTemplates.find(t => t.id === 'appreciation-certificate') || defaultTemplates[0];
+          const generator = new CertificateGenerator(template);
+          generator.downloadCertificate(certificateData, `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`);
         } catch (localError) {
           console.error('Error generating local certificate with utility function:', localError);
           throw localError;
