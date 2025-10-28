@@ -136,19 +136,6 @@ export default function Leaderboard() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading leaderboard...</p>
-            <button 
-              onClick={async () => {
-                try {
-                  const response = await apiClient.getPublicTopVolunteersReport();
-                  console.log('Direct API call response:', response);
-                } catch (error) {
-                  console.error('Direct API call error:', error);
-                }
-              }}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Test API Call
-            </button>
           </div>
         </div>
       </div>

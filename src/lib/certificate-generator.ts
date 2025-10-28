@@ -1,4 +1,5 @@
 import jsPDF from "jspdf"
+import { FRONTEND_URL } from './api'
 
 export interface CertificateData {
   volunteerName: string
@@ -633,7 +634,7 @@ export class CertificateGenerator {
 
     // Verification URL with icon
     this.pdf.setFontSize(8)
-    this.pdf.text("🔗 Verify at: ploggingethiopia.org/verify", 20, footerY + 10)
+    this.pdf.text(`🔗 Verify at: ${FRONTEND_URL}/verify`, 20, footerY + 10)
 
     // Powered by with enhanced styling
     this.pdf.setFontSize(8)

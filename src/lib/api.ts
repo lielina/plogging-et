@@ -1,3 +1,7 @@
+// Frontend URL configuration
+export const FRONTEND_URL = 'https://plogging-user-wyci.vercel.app';
+
+// API Base URL configuration
 const BASE_URL = 'https://ploggingapi.pixeladdis.com/api/v1';
 
 // Additional Types from Postman Collection
