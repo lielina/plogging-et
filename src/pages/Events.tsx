@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { getEventStatus } from '../utils/eventUtils';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([])
@@ -338,6 +339,13 @@ export default function Events() {
       }
     }
     
+    // Use our utility function to determine event status
+    const eventStatusInfo = getEventStatus(
+      event.event_date,
+      event.start_time,
+      event.end_time
+    );
+    
     // Use backend enrollment status if available
     if (event.is_enrolled === true) {
       return {
@@ -350,8 +358,23 @@ export default function Events() {
       }
     }
     
-    // Use backend availability status if available
+    // Use backend availability status if available, but override with our logic
     if (event.can_enroll === false) {
+      // Check if it's a date/time related issue
+      const eventDate = new Date(event.event_date);
+      const now = new Date();
+      
+      // If event is in the future but can't enroll, it might be a timing issue
+      if (eventDate > now) {
+        return {
+          disabled: false, // Allow enrollment for future events
+          text: 'Enroll Now',
+          variant: 'default' as const,
+          icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+          showDetails: false
+        }
+      }
+      
       return {
         disabled: true,
         text: event.status === 'completed' ? 'Event Ended' : 
@@ -359,6 +382,28 @@ export default function Events() {
               'Not Available',
         variant: 'secondary' as const,
         icon: null,
+        showDetails: false
+      }
+    }
+    
+    // If our utility says enrollment should be allowed, override backend
+    if (eventStatusInfo.canEnroll) {
+      return {
+        disabled: false,
+        text: 'Enroll Now',
+        variant: 'default' as const,
+        icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+        showDetails: false
+      }
+    }
+    
+    // Use our utility function to determine if enrollment should be allowed
+    if (eventStatusInfo.canEnroll) {
+      return {
+        disabled: false,
+        text: 'Enroll Now',
+        variant: 'default' as const,
+        icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
         showDetails: false
       }
     }
@@ -387,6 +432,17 @@ export default function Events() {
       }
       // Only allow enrollment in upcoming events
       if (status !== 'upcoming') {
+        // If our utility says enrollment should be allowed, override status
+        if (eventStatusInfo.canEnroll) {
+          return {
+            disabled: false,
+            text: 'Enroll Now',
+            variant: 'default' as const,
+            icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+            showDetails: false
+          }
+        }
+        
         return {
           disabled: true,
           text: 'Not Available',
@@ -397,12 +453,12 @@ export default function Events() {
       }
     }
     
-    // Default enrollable state
+    // Default enrollable state based on our utility
     return {
-      disabled: false,
-      text: 'Enroll Now',
-      variant: 'default' as const,
-      icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+      disabled: !eventStatusInfo.canEnroll,
+      text: eventStatusInfo.canEnroll ? 'Enroll Now' : 'Not Available',
+      variant: eventStatusInfo.canEnroll ? 'default' as const : 'secondary' as const,
+      icon: eventStatusInfo.canEnroll ? <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" /> : null,
       showDetails: false
     }
   }

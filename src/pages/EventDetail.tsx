@@ -14,6 +14,7 @@ import QRScanner from '@/components/ui/qr-scanner'
 import ManualEnrollmentDialog from '@/components/ui/manual-enrollment-dialog'
 import Map from '@/components/ui/map'
 import { toast } from '@/hooks/use-toast'
+import { getEventStatus } from '../utils/eventUtils';
 
 interface Enrollment {
   enrollment_id: number;
