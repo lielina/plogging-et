@@ -15,8 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { getEventStatus, generateEventShareLink, copyToClipboard } from '../utils/eventUtils';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([])
@@ -338,6 +339,13 @@ export default function Events() {
       }
     }
     
+    // Use our utility function to determine event status
+    const eventStatusInfo = getEventStatus(
+      event.event_date,
+      event.start_time,
+      event.end_time
+    );
+    
     // Use backend enrollment status if available
     if (event.is_enrolled === true) {
       return {
@@ -350,8 +358,23 @@ export default function Events() {
       }
     }
     
-    // Use backend availability status if available
+    // Use backend availability status if available, but override with our logic
     if (event.can_enroll === false) {
+      // Check if it's a date/time related issue
+      const eventDate = new Date(event.event_date);
+      const now = new Date();
+      
+      // If event is in the future but can't enroll, it might be a timing issue
+      if (eventDate > now) {
+        return {
+          disabled: false, // Allow enrollment for future events
+          text: 'Enroll Now',
+          variant: 'default' as const,
+          icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+          showDetails: false
+        }
+      }
+      
       return {
         disabled: true,
         text: event.status === 'completed' ? 'Event Ended' : 
@@ -359,6 +382,28 @@ export default function Events() {
               'Not Available',
         variant: 'secondary' as const,
         icon: null,
+        showDetails: false
+      }
+    }
+    
+    // If our utility says enrollment should be allowed, override backend
+    if (eventStatusInfo.canEnroll) {
+      return {
+        disabled: false,
+        text: 'Enroll Now',
+        variant: 'default' as const,
+        icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+        showDetails: false
+      }
+    }
+    
+    // Use our utility function to determine if enrollment should be allowed
+    if (eventStatusInfo.canEnroll) {
+      return {
+        disabled: false,
+        text: 'Enroll Now',
+        variant: 'default' as const,
+        icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
         showDetails: false
       }
     }
@@ -387,6 +432,17 @@ export default function Events() {
       }
       // Only allow enrollment in upcoming events
       if (status !== 'upcoming') {
+        // If our utility says enrollment should be allowed, override status
+        if (eventStatusInfo.canEnroll) {
+          return {
+            disabled: false,
+            text: 'Enroll Now',
+            variant: 'default' as const,
+            icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+            showDetails: false
+          }
+        }
+        
         return {
           disabled: true,
           text: 'Not Available',
@@ -397,12 +453,12 @@ export default function Events() {
       }
     }
     
-    // Default enrollable state
+    // Default enrollable state based on our utility
     return {
-      disabled: false,
-      text: 'Enroll Now',
-      variant: 'default' as const,
-      icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
+      disabled: !eventStatusInfo.canEnroll,
+      text: eventStatusInfo.canEnroll ? 'Enroll Now' : 'Not Available',
+      variant: eventStatusInfo.canEnroll ? 'default' as const : 'secondary' as const,
+      icon: eventStatusInfo.canEnroll ? <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" /> : null,
       showDetails: false
     }
   }
@@ -459,15 +515,25 @@ export default function Events() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8">
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-          Plogging Events
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Join upcoming plogging events and make a difference in your community.
-        </p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Events</h1>
+        <p className="text-gray-600">Join upcoming plogging events in your community</p>
+      </div>
+
+      {/* Share Event Instructions */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start gap-3">
+          <Share2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-medium text-blue-800">Share Events with Volunteers</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              To share an event with volunteers, click the "Share" button on any event card. 
+              Copy the event link and send it to volunteers so they can enroll themselves.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Events Grid */}
@@ -596,30 +662,57 @@ export default function Events() {
                       {(() => {
                         const buttonState = getButtonState(event)
                         return (
-                          <Button 
-                            className="w-full mt-4 text-sm sm:text-base" 
-                            variant={buttonState.variant}
-                            disabled={buttonState.disabled}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (!buttonState.disabled) {
-                                // If it's an enroll button, check authentication and show confirmation dialog
-                                if (buttonState.text === 'Enroll Now') {
-                                  handleEnrollClick(event.event_id);
-                                } else {
-                                  // For other actions, just handle enrollment directly (if user is authenticated)
-                                  if (isAuthenticated) {
-                                    handleEnroll(event.event_id);
+                          <div className="flex gap-2">
+                            <Button 
+                              className="flex-1 text-sm sm:text-base" 
+                              variant={buttonState.variant}
+                              disabled={buttonState.disabled}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (!buttonState.disabled) {
+                                  // If it's an enroll button, check authentication and show confirmation dialog
+                                  if (buttonState.text === 'Enroll Now') {
+                                    handleEnrollClick(event.event_id);
                                   } else {
-                                    navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                    // For other actions, just handle enrollment directly (if user is authenticated)
+                                    if (isAuthenticated) {
+                                      handleEnroll(event.event_id);
+                                    } else {
+                                      navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                    }
                                   }
                                 }
-                              }
-                            }}
-                          >
-                            <span>{buttonState.text}</span>
-                            {buttonState.icon}
-                          </Button>
+                              }}
+                            >
+                              <span>{buttonState.text}</span>
+                              {buttonState.icon}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                // Copy event link to clipboard
+                                const eventUrl = generateEventShareLink(event.event_id);
+                                const success = await copyToClipboard(eventUrl);
+                                if (success) {
+                                  toast({
+                                    title: "Link Copied",
+                                    description: "Event link has been copied to clipboard. Share it with volunteers for self-enrollment.",
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Copy Failed",
+                                    description: "Failed to copy link. Please try again.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              className="shrink-0"
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )
                       })()}
                     </div>

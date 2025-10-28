@@ -14,6 +14,7 @@ import QRScanner from '@/components/ui/qr-scanner'
 import ManualEnrollmentDialog from '@/components/ui/manual-enrollment-dialog'
 import Map from '@/components/ui/map'
 import { toast } from '@/hooks/use-toast'
+import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '../utils/eventUtils';
 
 interface Enrollment {
   enrollment_id: number;
@@ -132,11 +133,43 @@ export default function EventDetail() {
         description: "You have been successfully enrolled in this event.",
       })
     } catch (error: any) {
-      toast({
-        title: "Enrollment Failed",
-        description: error.message || "Failed to enroll in event. Please try again.",
-        variant: "destructive",
-      })
+      // Check if it's a timing issue with event status
+      if (error.message && error.message.includes('Cannot enroll in non-upcoming events')) {
+        // Use our utility to check if event should be upcoming
+        if (event) {
+          const eventStatusInfo = getEventStatus(
+            event.event_date,
+            event.start_time,
+            event.end_time
+          );
+          
+          if (eventStatusInfo.canEnroll) {
+            toast({
+              title: "Timing Issue",
+              description: "This event should be available for enrollment. There might be a synchronization issue. Please try again in a few minutes.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Enrollment Not Available",
+              description: eventStatusInfo.message,
+              variant: "destructive",
+            });
+          }
+        } else {
+          toast({
+            title: "Enrollment Failed",
+            description: "Cannot enroll in non-upcoming events. Please check if the event date is in the future.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Enrollment Failed",
+          description: error.message || "Failed to enroll in event. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsEnrollDialogOpen(false)
     }
@@ -376,15 +409,19 @@ ${description}
     window.open(`https://wa.me/?text=${text}`, '_blank')
   }
 
-  const copyToClipboard = async () => {
+  const copyShareLinkToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(getShareUrl())
-      setCopied(true)
-      toast({
-        title: "Link copied!",
-        description: "Event link has been copied to clipboard.",
-      })
-      setTimeout(() => setCopied(false), 2000)
+      const success = await copyToClipboardUtil(getShareUrl())
+      if (success) {
+        setCopied(true)
+        toast({
+          title: "Link copied!",
+          description: "Event link has been copied to clipboard.",
+        })
+        setTimeout(() => setCopied(false), 2000)
+      } else {
+        throw new Error('Failed to copy')
+      }
     } catch (err) {
       toast({
         title: "Failed to copy",
@@ -461,21 +498,21 @@ ${description}
     }
   }
 
+  // Manual Enrollment Handler
   const handleManualEnrollment = async (volunteerId: number) => {
     try {
-      // Check if volunteer is already enrolled
-      const isEnrolled = event?.enrollments.some(enrollment => 
-        enrollment.volunteer.volunteer_id === volunteerId
-      )
-      
-      if (isEnrolled) {
-        throw new Error('This volunteer is already enrolled in the event')
+      // Check if user is admin
+      if (isAdmin) {
+        // For admins, we still can't directly enroll volunteers due to system limitations
+        // But admins can search for volunteers, so we provide different instructions
+        throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.');
+      } else {
+        // For regular users, provide standard instructions
+        throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.');
       }
-      
-      // Show a user-friendly message instead of trying to enroll directly
-      throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.')
     } catch (err: any) {
-      throw err
+      console.error('Manual enrollment error:', err);
+      throw err;
     }
   }
 
@@ -1248,7 +1285,7 @@ ${description}
                   className="text-sm"
                 />
                 <Button 
-                  onClick={copyToClipboard}
+                  onClick={copyShareLinkToClipboard}
                   variant="outline"
                   size="sm"
                   className="whitespace-nowrap"

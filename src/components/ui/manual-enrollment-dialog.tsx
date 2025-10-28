@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { User, Plus, AlertCircle, CheckCircle, Search, Mail, Phone, Info } from 'lucide-react'
+import { User, AlertCircle, CheckCircle, Search, Mail, Phone, Info } from 'lucide-react'
 import { apiClient, Volunteer } from '@/lib/api'
 
 interface ManualEnrollmentDialogProps {
@@ -63,15 +63,13 @@ export default function ManualEnrollmentDialog({
       setError('')
       setSuccess('')
       
-      await onEnroll(id)
-      setSuccess('Volunteer enrolled successfully!')
-      
-      // Clear form and close after success
+      // Instead of enrolling directly, we'll show instructions
+      setSuccess('Please share the event link with the selected volunteer so they can enroll through their dashboard.')
       setTimeout(() => {
         setVolunteerId('')
         setSuccess('')
         onClose()
-      }, 2000)
+      }, 3000)
     } catch (err: any) {
       // Handle specific error messages without exposing volunteer IDs
       let errorMessage = err.message || 'Failed to enroll volunteer';
@@ -103,10 +101,19 @@ export default function ManualEnrollmentDialog({
       setIsSearching(true)
       setSearchError('')
       
+      // Note: This will only work if the user has admin privileges
+      // The volunteer API doesn't have access to search volunteers
       const response = await apiClient.getAllVolunteers(1, 15, query)
-      setSearchResults(response.data)
+      // Handle the nested data structure: response.data.data contains the volunteers array
+      const volunteersData = (response.data as any)?.data || response.data;
+      setSearchResults(Array.isArray(volunteersData) ? volunteersData : [])
     } catch (err: any) {
-      setSearchError(err.message || 'Failed to search volunteers')
+      // Provide a clearer error message
+      if (err.message && (err.message.includes('401') || err.message.includes('403') || err.message.includes('Unauthorized'))) {
+        setSearchError('Volunteer search is only available to administrators. Please use the admin dashboard to search for volunteers.')
+      } else {
+        setSearchError(err.message || 'Failed to search volunteers. Please try again.')
+      }
       setSearchResults([])
     } finally {
       setIsSearching(false)
@@ -149,7 +156,7 @@ export default function ManualEnrollmentDialog({
             <div>
               <p className="text-sm text-blue-800 font-medium">System Limitation</p>
               <p className="text-xs text-blue-700 mt-1">
-                Volunteers must enroll themselves through their dashboard. You can only search and select volunteers here.
+                Volunteers must enroll themselves through their dashboard. You can only provide instructions here.
               </p>
             </div>
           </div>
@@ -170,6 +177,14 @@ export default function ManualEnrollmentDialog({
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                 Searching...
+              </div>
+            )}
+            
+            {/* Search Error Message */}
+            {searchError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <span className="text-sm text-red-600">{searchError}</span>
               </div>
             )}
           </div>
@@ -212,15 +227,17 @@ export default function ManualEnrollmentDialog({
             </div>
           )}
 
-
-
-          {/* Search Error Message */}
-          {searchError && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <span className="text-sm text-red-600">{searchError}</span>
-            </div>
-          )}
+          {/* Volunteer ID Input */}
+          <div className="space-y-2">
+            <Label htmlFor="volunteer-id">Volunteer ID</Label>
+            <Input
+              id="volunteer-id"
+              type="number"
+              placeholder="Enter volunteer ID"
+              value={volunteerId}
+              onChange={(e) => setVolunteerId(e.target.value)}
+            />
+          </div>
 
           {/* Error Message */}
           {error && (
@@ -241,7 +258,8 @@ export default function ManualEnrollmentDialog({
           <div className="text-xs text-gray-500">
             <p>• Search for volunteers by name, email, or phone number</p>
             <p>• Click on a search result to select the volunteer</p>
-            <p>• Volunteers must enroll themselves through their dashboard</p>
+            <p>• Enter the volunteer's ID to generate enrollment instructions</p>
+            <p>• The volunteer must enroll themselves through their dashboard</p>
           </div>
         </div>
 
@@ -250,19 +268,7 @@ export default function ManualEnrollmentDialog({
             Cancel
           </Button>
           <Button 
-            onClick={() => {
-              // Instead of enrolling directly, we'll show instructions
-              if (volunteerId) {
-                setSuccess('Please share the event link with the selected volunteer so they can enroll through their dashboard.')
-                setTimeout(() => {
-                  setVolunteerId('')
-                  setSuccess('')
-                  onClose()
-                }, 3000)
-              } else {
-                setError('Please select a volunteer first')
-              }
-            }} 
+            onClick={handleEnroll}
             disabled={isLoading || !volunteerId}
           >
             {isLoading ? (
