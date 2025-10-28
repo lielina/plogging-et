@@ -522,19 +522,6 @@ export default function Events() {
         <p className="text-gray-600">Join upcoming plogging events in your community</p>
       </div>
 
-      {/* Share Event Instructions */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-start gap-3">
-          <Share2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-medium text-blue-800">Share Events with Volunteers</h3>
-            <p className="text-sm text-blue-700 mt-1">
-              To share an event with volunteers, click the "Share" button on any event card. 
-              Copy the event link and send it to volunteers so they can enroll themselves.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Events Grid */}
       {events.length > 0 ? (
