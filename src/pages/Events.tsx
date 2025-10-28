@@ -15,9 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getEventStatus } from '../utils/eventUtils';
+import { getEventStatus, generateEventShareLink, copyToClipboard } from '../utils/eventUtils';
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([])
@@ -515,15 +515,25 @@ export default function Events() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8">
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-          Plogging Events
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Join upcoming plogging events and make a difference in your community.
-        </p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Events</h1>
+        <p className="text-gray-600">Join upcoming plogging events in your community</p>
+      </div>
+
+      {/* Share Event Instructions */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start gap-3">
+          <Share2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-medium text-blue-800">Share Events with Volunteers</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              To share an event with volunteers, click the "Share" button on any event card. 
+              Copy the event link and send it to volunteers so they can enroll themselves.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Events Grid */}
@@ -652,30 +662,57 @@ export default function Events() {
                       {(() => {
                         const buttonState = getButtonState(event)
                         return (
-                          <Button 
-                            className="w-full mt-4 text-sm sm:text-base" 
-                            variant={buttonState.variant}
-                            disabled={buttonState.disabled}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (!buttonState.disabled) {
-                                // If it's an enroll button, check authentication and show confirmation dialog
-                                if (buttonState.text === 'Enroll Now') {
-                                  handleEnrollClick(event.event_id);
-                                } else {
-                                  // For other actions, just handle enrollment directly (if user is authenticated)
-                                  if (isAuthenticated) {
-                                    handleEnroll(event.event_id);
+                          <div className="flex gap-2">
+                            <Button 
+                              className="flex-1 text-sm sm:text-base" 
+                              variant={buttonState.variant}
+                              disabled={buttonState.disabled}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (!buttonState.disabled) {
+                                  // If it's an enroll button, check authentication and show confirmation dialog
+                                  if (buttonState.text === 'Enroll Now') {
+                                    handleEnrollClick(event.event_id);
                                   } else {
-                                    navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                    // For other actions, just handle enrollment directly (if user is authenticated)
+                                    if (isAuthenticated) {
+                                      handleEnroll(event.event_id);
+                                    } else {
+                                      navigate('/login', { state: { from: `/events/${event.event_id}` } });
+                                    }
                                   }
                                 }
-                              }
-                            }}
-                          >
-                            <span>{buttonState.text}</span>
-                            {buttonState.icon}
-                          </Button>
+                              }}
+                            >
+                              <span>{buttonState.text}</span>
+                              {buttonState.icon}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                // Copy event link to clipboard
+                                const eventUrl = generateEventShareLink(event.event_id);
+                                const success = await copyToClipboard(eventUrl);
+                                if (success) {
+                                  toast({
+                                    title: "Link Copied",
+                                    description: "Event link has been copied to clipboard. Share it with volunteers for self-enrollment.",
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Copy Failed",
+                                    description: "Failed to copy link. Please try again.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              className="shrink-0"
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )
                       })()}
                     </div>
