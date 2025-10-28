@@ -24,10 +24,21 @@ export interface CertificateTemplate {
   secondaryColor: string
   logoPosition: { x: number; y: number }
   titlePosition: { x: number; y: number }
-  contentLayout: "standard" | "modern" | "elegant"
+  contentLayout: "standard" | "modern" | "elegant" | "appreciation"
 }
 
 export const defaultTemplates: CertificateTemplate[] = [
+  {
+    id: "appreciation-certificate",
+    name: "Certificate of Appreciation",
+    type: "participation",
+    backgroundColor: "#ffffff",
+    primaryColor: "#16a34a",
+    secondaryColor: "#15803d",
+    logoPosition: { x: 105, y: 20 },
+    titlePosition: { x: 105, y: 60 },
+    contentLayout: "appreciation",
+  },
   {
     id: "standard-participation",
     name: "Standard Participation",
@@ -140,6 +151,12 @@ export class CertificateGenerator {
     this.pdf.setFillColor(255, 255, 255, 0.1)
     this.pdf.rect(0, 0, 297, 210, "F")
 
+    // Handle appreciation layout differently
+    if (this.template.contentLayout === "appreciation") {
+      this.drawAppreciationBackground()
+      return
+    }
+
     // Add decorative border with enhanced design
     this.pdf.setDrawColor(this.template.primaryColor)
     this.pdf.setLineWidth(3)
@@ -155,6 +172,28 @@ export class CertificateGenerator {
 
     // Add corner decorations
     this.drawCornerDecorations()
+  }
+
+  private drawAppreciationBackground() {
+    // Green border
+    this.pdf.setDrawColor(this.template.primaryColor)
+    this.pdf.setLineWidth(4)
+    this.pdf.rect(10, 10, 277, 190)
+
+    // Rounded corner decorations
+    this.pdf.setFillColor(this.template.primaryColor)
+    
+    // Top-left corner
+    this.pdf.roundedRect(10, 10, 20, 20, 10, 10, "F")
+    
+    // Top-right corner
+    this.pdf.roundedRect(267, 10, 20, 20, 10, 10, "F")
+    
+    // Bottom-left corner
+    this.pdf.roundedRect(10, 180, 20, 20, 10, 10, "F")
+    
+    // Bottom-right corner
+    this.pdf.roundedRect(267, 180, 20, 20, 10, 10, "F")
   }
 
   private drawDecorativePattern() {
@@ -430,6 +469,12 @@ export class CertificateGenerator {
     const titleX = this.template.titlePosition.x
     const titleY = this.template.titlePosition.y
 
+    // Handle appreciation layout differently
+    if (this.template.contentLayout === "appreciation") {
+      this.drawAppreciationTitle(titleX, titleY)
+      return
+    }
+
     // Enhanced title with decorative elements
     this.pdf.setTextColor(this.template.primaryColor)
     this.pdf.setFontSize(28)
@@ -468,9 +513,29 @@ export class CertificateGenerator {
     this.pdf.text("★", 232, titleY + 8)
   }
 
+  private drawAppreciationTitle(titleX: number, titleY: number) {
+    // "CERTIFICATE" in large bold letters
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(32)
+    this.pdf.setFont('helvetica', 'bold')
+    this.pdf.text("CERTIFICATE", titleX, titleY, { align: "center" })
+
+    // "Of Appreciation" in green italic
+    this.pdf.setTextColor(this.template.primaryColor)
+    this.pdf.setFontSize(16)
+    this.pdf.setFont('helvetica', 'italic')
+    this.pdf.text("Of Appreciation", titleX, titleY + 12, { align: "center" })
+  }
+
   private drawContent(data: CertificateData) {
     const startY = this.template.titlePosition.y + 35
     const centerX = 148.5
+
+    // Handle appreciation layout differently
+    if (this.template.contentLayout === "appreciation") {
+      this.drawAppreciationContent(data, startY, centerX)
+      return
+    }
 
     // Add decorative background for content area
     this.pdf.setFillColor(255, 255, 255, 0.3)
@@ -554,9 +619,63 @@ export class CertificateGenerator {
     this.pdf.text("★", centerX + 40, startY + 85)
   }
 
+  private drawAppreciationContent(data: CertificateData, startY: number, centerX: number) {
+    // "This certificate is presented to" text
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(12)
+    this.pdf.setFont('helvetica', 'italic')
+    this.pdf.text("This certificate is presented to", centerX, startY, { align: "center" })
+
+    // Volunteer name in elegant script style
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(24)
+    this.pdf.setFont('helvetica', 'italic')
+    this.pdf.text(data.volunteerName.toLowerCase(), centerX, startY + 20, { align: "center" })
+
+    // Main achievement text
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(11)
+    this.pdf.setFont('helvetica', 'normal')
+    
+    const achievementText = `For outstanding dedication and commitment to environmental conservation through active participation in the "${data.eventName}" event on ${data.eventDate}. Your efforts have made a significant impact on our community and the environment.`
+    
+    // Split text into lines for better formatting
+    const words = achievementText.split(' ')
+    const lines = []
+    let currentLine = ''
+    
+    for (const word of words) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + word
+      if (this.pdf.getTextWidth(testLine) > 200) {
+        if (currentLine) {
+          lines.push(currentLine)
+          currentLine = word
+        } else {
+          lines.push(word)
+        }
+      } else {
+        currentLine = testLine
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine)
+    }
+
+    // Draw each line
+    lines.forEach((line, index) => {
+      this.pdf.text(line, centerX, startY + 45 + (index * 8), { align: "center" })
+    })
+  }
+
   private drawSignatures(data: CertificateData) {
     const signatureY = 160
     const centerX = 148.5
+
+    // Handle appreciation layout differently
+    if (this.template.contentLayout === "appreciation") {
+      this.drawAppreciationSignatures(signatureY, centerX)
+      return
+    }
 
     // Add decorative background for signatures
     this.pdf.setFillColor(255, 255, 255, 0.2)
@@ -614,6 +733,43 @@ export class CertificateGenerator {
     this.pdf.setFontSize(8)
     this.pdf.text("★", centerX - 25, signatureY + 5)
     this.pdf.text("★", centerX + 25, signatureY + 5)
+  }
+
+  private drawAppreciationSignatures(signatureY: number, centerX: number) {
+    // Left signature - Admin User
+    this.pdf.setDrawColor(51, 51, 51)
+    this.pdf.setLineWidth(1)
+    this.pdf.line(50, signatureY, 110, signatureY)
+
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(10)
+    this.pdf.setFont('helvetica', 'bold')
+    this.pdf.text("Admin User", 80, signatureY + 8, { align: "center" })
+    this.pdf.setFontSize(8)
+    this.pdf.setFont('helvetica', 'normal')
+    this.pdf.text("REPRESENTATIVES", 80, signatureY + 15, { align: "center" })
+
+    // Center - PLOGGING ETHIOPIA badge
+    this.pdf.setFillColor(this.template.primaryColor)
+    this.pdf.circle(centerX, signatureY - 5, 20, "F")
+    this.pdf.setTextColor(255, 255, 255)
+    this.pdf.setFontSize(8)
+    this.pdf.setFont('helvetica', 'bold')
+    this.pdf.text("PLOGGING", centerX, signatureY - 8, { align: "center" })
+    this.pdf.text("ETHIOPIA", centerX, signatureY - 2, { align: "center" })
+
+    // Right signature - Event Coordinator
+    this.pdf.setDrawColor(51, 51, 51)
+    this.pdf.setLineWidth(1)
+    this.pdf.line(187, signatureY, 247, signatureY)
+
+    this.pdf.setTextColor(51, 51, 51)
+    this.pdf.setFontSize(10)
+    this.pdf.setFont('helvetica', 'bold')
+    this.pdf.text("Event Coordinator", 217, signatureY + 8, { align: "center" })
+    this.pdf.setFontSize(8)
+    this.pdf.setFont('helvetica', 'normal')
+    this.pdf.text("REPRESENTATIVES", 217, signatureY + 15, { align: "center" })
   }
 
   private drawFooter(data: CertificateData) {
