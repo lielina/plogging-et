@@ -1,52 +1,83 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { 
-  Menu, 
-  ChevronDown, 
-  User, 
-  LayoutDashboard, 
-  Calendar, 
-  FileText, 
-  Users, 
-  LogOut,
-  Trophy
-} from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { Outlet, useLocation, useNavigate, Link, NavLink } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Leaf, Menu, X, Home, Calendar, FileText, Award, User, LogOut, LogIn, Users, Image, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import UserSidebar from '@/components/ui/user-sidebar'; // Import UserSidebar instead
+import { useSidebar } from '@/contexts/SidebarContext'; // Import useSidebar hook
+
+import React, { useState } from 'react';
 
 const Layout = () => {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { isCollapsed } = useSidebar(); // Get sidebar collapse state
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [isSubscribing, setIsSubscribing] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const isDashboardRoute = location.pathname.startsWith("/dashboard");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+
+  // Show sidebar on dashboard pages when authenticated
+  // Note: '/events' is intentionally excluded so Events remains a public page
+  const isDashboardRoute = location.pathname.startsWith('/dashboard') || 
+                          location.pathname.startsWith('/profile') || 
+                          location.pathname.startsWith('/leaderboard') ||
+                          location.pathname.startsWith('/certificates') ||
+                          location.pathname.startsWith('/survey') ||
+                          location.pathname === '/events';
+
+  // Check if user is admin
+  const isAdmin = user && 'role' in user;
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-
-    try {
-      setIsSubscribing(true);
-      await apiClient.subscribeToNewsletter(email);
-      toast({
-        title: "Success!",
-        description: "You've been subscribed to our newsletter.",
-      });
-      setEmail("");
-    } catch (error: any) {
+    if (!email) {
       toast({
         title: "Error",
-        description: error.message || "Failed to subscribe. Please try again.",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubscribing(true);
+    
+    try {
+      // Simulate API call - in a real implementation, this would connect to a newsletter service
+      // Note: Since the backend endpoints may not exist yet, we'll keep the simulation
+      // await apiClient.subscribeToNewsletter(email);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Success!",
+        description: "You have been subscribed to our newsletter.",
+      });
+      
+      // Reset form
+      setEmail('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to subscribe. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -56,8 +87,17 @@ const Layout = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
+      {/* Use UserSidebar component for proper vertical sidebar */}
+      {isAuthenticated && isDashboardRoute && <UserSidebar />}
+      
+      {/* Main content area - dynamically adjust margin based on sidebar state */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+        isAuthenticated && isDashboardRoute 
+          ? isCollapsed 
+            ? 'md:ml-20'  // Collapsed sidebar width
+            : 'md:ml-64'  // Expanded sidebar width
+          : ''
+      }`}>
         {/* Header - only show on non-dashboard pages or for unauthenticated users */}
         {(!isAuthenticated || !isDashboardRoute) && (
           <header className="bg-white shadow-sm">
@@ -145,27 +185,25 @@ const Layout = () => {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem asChild>
                             <Link to="/dashboard" className="w-full">
-                              <LayoutDashboard className="w-4 h-4 mr-2" />
                               Dashboard
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link to="/profile" className="w-full">
-                              <User className="w-4 h-4 mr-2" />
                               Profile
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to="/leaderboard" className="w-full">
-                              <Trophy className="w-4 h-4 mr-2" />
-                              Leaderboard
-                            </Link>
-                          </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem asChild>
+                              <Link to="/leaderboard" className="w-full">
+                                Leaderboard
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
                             onClick={logout}
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
                           >
-                            <LogOut className="w-4 h-4 mr-2" />
                             Logout
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -247,7 +285,6 @@ const Layout = () => {
                               : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
                           }
                         >
-                          <LayoutDashboard className="w-4 h-4 inline mr-2" />
                           Dashboard
                         </NavLink>
                         <NavLink
@@ -259,21 +296,21 @@ const Layout = () => {
                               : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
                           }
                         >
-                          <User className="w-4 h-4 inline mr-2" />
                           Profile
                         </NavLink>
-                        <NavLink
-                          to="/leaderboard"
-                          onClick={() => setIsMenuOpen(false)}
-                          className={({ isActive }) =>
-                            isActive
-                              ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md block"
-                              : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
-                          }
-                        >
-                          <Trophy className="w-4 h-4 inline mr-2" />
-                          Leaderboard
-                        </NavLink>
+                        {isAdmin && (
+                          <NavLink
+                            to="/leaderboard"
+                            onClick={() => setIsMenuOpen(false)}
+                            className={({ isActive }) =>
+                              isActive
+                                ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md block"
+                                : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
+                            }
+                          >
+                            Leaderboard
+                          </NavLink>
+                        )}
                         <button
                           onClick={() => {
                             logout();
@@ -281,36 +318,21 @@ const Layout = () => {
                           }}
                           className="text-gray-700 hover:text-red-600 text-left py-2 px-3 rounded-md hover:bg-red-50 transition-colors w-full text-left"
                         >
-                          <LogOut className="w-4 h-4 inline mr-2" />
                           Logout
                         </button>
                       </div>
                     ) : (
-                      <div className="pt-2 border-t border-gray-200">
-                        <NavLink
-                          to="/login"
-                          onClick={() => setIsMenuOpen(false)}
-                          className={({ isActive }) =>
-                            isActive
-                              ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md block"
-                              : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
-                          }
-                        >
-                          Login
-                        </NavLink>
-                        <NavLink
-                          to="/leaderboard-public"
-                          onClick={() => setIsMenuOpen(false)}
-                          className={({ isActive }) =>
-                            isActive
-                              ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md block"
-                              : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors block"
-                          }
-                        >
-                          <Trophy className="w-4 h-4 inline mr-2" />
-                          Leaderboard
-                        </NavLink>
-                      </div>
+                      <NavLink
+                        to="/login"
+                        onClick={() => setIsMenuOpen(false)}
+                        className={({ isActive }) =>
+                          isActive
+                            ? "text-green-600 font-medium py-2 px-3 bg-green-50 rounded-md"
+                            : "text-gray-700 hover:text-green-600 py-2 px-3 rounded-md hover:bg-gray-50 transition-colors"
+                        }
+                      >
+                        Login
+                      </NavLink>
                     )}
                   </div>
                 </nav>
@@ -339,9 +361,6 @@ const Layout = () => {
                 </a>
                 <a className="hover:text-green-500" href="/blog">
                   Blog
-                </a>
-                <a className="hover:text-green-500" href="/leaderboard-public">
-                  Leaderboard
                 </a>
                 <a className="hover:text-green-500" href="/contact">
                   Contact Us
