@@ -603,6 +603,14 @@ class ApiClient {
     });
   }
 
+  // New manual enrollment method
+  async manualEnrollVolunteer(volunteerId: number, eventId: number): Promise<{ data: any }> {
+    return this.request<{ data: any }>('/admin/enrollments/register', {
+      method: 'POST',
+      body: JSON.stringify({ volunteer_id: volunteerId, event_id: eventId }),
+    });
+  }
+
   async getVolunteerBadges(): Promise<{ data: VolunteerBadge[] }> {
     try {
       const response = await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');

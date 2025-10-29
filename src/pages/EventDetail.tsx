@@ -505,15 +505,28 @@ ${description}
     try {
       // Check if user is admin
       if (isAdmin) {
-        // For admins, we still can't directly enroll volunteers due to system limitations
-        // But admins can search for volunteers, so we provide different instructions
-        throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.');
+        // For admins, use the new manual enrollment API
+        await apiClient.manualEnrollVolunteer(volunteerId, parseInt(eventId!))
+        
+        // Refresh event data to show updated enrollment
+        const response = await apiClient.getEventDetails(parseInt(eventId!))
+        setEvent(response.data as EventDetailData)
+        
+        toast({
+          title: "Enrollment Successful",
+          description: `Volunteer ${volunteerId} has been enrolled in this event.`,
+        })
       } else {
         // For regular users, provide standard instructions
         throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.');
       }
     } catch (err: any) {
       console.error('Manual enrollment error:', err);
+      toast({
+        title: "Enrollment Failed",
+        description: err.message || "Failed to enroll the volunteer.",
+        variant: "destructive",
+      });
       throw err;
     }
   }
