@@ -9,7 +9,9 @@ import {
   Leaf,
   ImageIcon,
   Calendar,
-  Clock
+  Clock,
+  Trophy,
+  Users
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -32,9 +34,10 @@ export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(11).fill(null));  // Updated to 11 sections
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null));  // Updated to 12 sections
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [topVolunteers, setTopVolunteers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const faqItems = [
@@ -119,6 +122,22 @@ export default function LandingPage() {
           }
         }
         setBlogPosts(blogData.slice(0, 3));
+        
+        // Fetch top volunteers for leaderboard preview
+        const leaderboardResponse = await apiClient.getPublicTopVolunteersReport();
+        let leaderboardData = [];
+        if (leaderboardResponse.data.volunteers) {
+          leaderboardData = leaderboardResponse.data.volunteers;
+        } else if (Array.isArray(leaderboardResponse.data)) {
+          leaderboardData = leaderboardResponse.data;
+        } else if (leaderboardResponse.data && typeof leaderboardResponse.data === 'object' && !Array.isArray(leaderboardResponse.data)) {
+          if (Array.isArray(leaderboardResponse.data.data)) {
+            leaderboardData = leaderboardResponse.data.data;
+          } else {
+            leaderboardData = [leaderboardResponse.data];
+          }
+        }
+        setTopVolunteers(leaderboardData.slice(0, 3));
       } catch (error) {
         console.error("Error fetching data:", error);
         // Use static data as fallback
@@ -154,6 +173,32 @@ export default function LandingPage() {
             featured_image_url: "/story-3.png",
             published_at: "2024-05-05",
             meta_data: { read_time: "3 min read" }
+          }
+        ]);
+        setTopVolunteers([
+          {
+            volunteer_id: 1,
+            first_name: "Sarah",
+            last_name: "Johnson",
+            total_hours_contributed: "45.5",
+            events_attended: 12,
+            badges_earned: 3
+          },
+          {
+            volunteer_id: 2,
+            first_name: "Michael",
+            last_name: "Smith",
+            total_hours_contributed: "38.2",
+            events_attended: 10,
+            badges_earned: 2
+          },
+          {
+            volunteer_id: 3,
+            first_name: "Emma",
+            last_name: "Williams",
+            total_hours_contributed: "32.7",
+            events_attended: 8,
+            badges_earned: 4
           }
         ]);
       } finally {
@@ -656,11 +701,86 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Leaderboard Preview Section */}
+      <section
+        ref={el => sectionRefs.current[10] = el as HTMLDivElement | null}
+        className={`py-12 md:py-16 px-4 bg-green-50 w-full transition-all duration-700 transform ${
+          visibleSections.has(10) 
+            ? 'translate-y-0 opacity-100' 
+            : 'translate-y-10 opacity-0'
+        }`}
+      >
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-4">
+              <Trophy className="h-8 w-8 text-green-600 mr-2" />
+              <h2 className="text-3xl md:text-4xl font-bold text-green-800">
+                Community Leaders
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Meet our top volunteers who are making a difference in our community
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {topVolunteers.map((volunteer, index) => (
+              <div key={volunteer.volunteer_id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                        <span className="text-green-800 font-bold text-lg">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-green-800">
+                          {volunteer.first_name} {volunteer.last_name}
+                        </h3>
+                      </div>
+                    </div>
+                    {index === 0 && (
+                      <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
+                        TOP
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center text-gray-600">
+                      <Clock className="h-4 w-4 mr-2" />
+                      <span className="font-semibold">{volunteer.total_hours_contributed} hours</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      <span>{volunteer.events_attended} events</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <Users className="h-4 w-4 mr-2" />
+                      <span>{volunteer.badges_earned} badges</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/leaderboard-public">
+              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
+                View Full Leaderboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section with transition */}
       <section
-        ref={el => sectionRefs.current[9] = el as HTMLDivElement | null}
+        ref={el => sectionRefs.current[11] = el as HTMLDivElement | null}
         className={`w-full flex flex-col items-center mt-12 md:mt-20 transition-all duration-700 delay-700 transform ${
-          visibleSections.has(9)
+          visibleSections.has(11)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}
