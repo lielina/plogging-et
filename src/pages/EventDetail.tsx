@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { apiClient, Event, FRONTEND_URL } from '@/lib/api'
+import { apiClient, Event, Section, FRONTEND_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -69,6 +69,7 @@ interface AttendanceRecord {
 interface EventDetailData extends Event {
   enrollments: Enrollment[];
   attendance_records: AttendanceRecord[];
+  sections?: Section[]; // Add sections property
 }
 
 export default function EventDetail() {
@@ -88,6 +89,7 @@ export default function EventDetail() {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
   const [copied, setCopied] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
+  const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
 
   // Check if current user is enrolled in this event
   const isUserEnrolled = () => {
@@ -546,6 +548,12 @@ ${description}
           throw new Error('User not authenticated')
         }
         
+        // If event has sections, open section selection dialog
+        if (event?.sections && event.sections.length > 0) {
+          setIsSectionCheckInDialogOpen(true)
+          return
+        }
+        
         // Perform check-in for the current user
         await apiClient.checkIn(scannedEventId, userId)
         setScanResult('Check-in successful!')
@@ -566,6 +574,34 @@ ${description}
       toast({
         title: "Check-in Failed",
         description: err.message || "Failed to check in to the event.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // New section-based check-in handler
+  const handleSectionCheckIn = async (sectionId: number) => {
+    if (!user || !('volunteer_id' in user)) return
+    
+    try {
+      // Call the section-based check-in API
+      await apiClient.checkInSection(user.volunteer_id, parseInt(eventId!), sectionId)
+      setScanResult('Check-in to section successful!')
+      setIsSectionCheckInDialogOpen(false)
+      
+      // Refresh event data to show updated attendance
+      const response = await apiClient.getEventDetails(parseInt(eventId!))
+      setEvent(response.data as EventDetailData)
+      
+      toast({
+        title: "Check-in Successful",
+        description: "You have been successfully checked in to the section.",
+      })
+    } catch (err: any) {
+      setScanResult(err.message || 'Section check-in failed')
+      toast({
+        title: "Check-in Failed",
+        description: err.message || "Failed to check in to the section.",
         variant: "destructive",
       })
     }
@@ -871,6 +907,45 @@ ${description}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Event Sections */}
+            {event.sections && event.sections.length > 0 && (
+              <Card className="shadow-sm border-0 bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-semibold text-gray-900">Event Sections</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    {event.sections.map((section, index) => (
+                      <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                          <h3 className="font-semibold text-gray-900">{section.section_name}</h3>
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                            Section {index + 1}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="flex items-center gap-2 p-2 bg-white rounded">
+                            <Clock className="h-4 w-4 text-blue-600" />
+                            <div>
+                              <p className="text-xs text-gray-500">Time</p>
+                              <p className="text-sm font-medium">{formatTime(section.start_time)} - {formatTime(section.end_time)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 p-2 bg-white rounded">
+                            <MapPin className="h-4 w-4 text-green-600" />
+                            <div>
+                              <p className="text-xs text-gray-500">Distance</p>
+                              <p className="text-sm font-medium">{section.distance_km} km</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Duration & Capacity */}
             <Card className="shadow-sm border-0 bg-white">
@@ -1224,7 +1299,53 @@ ${description}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Section Check-in Dialog */}
+      <Dialog open={isSectionCheckInDialogOpen} onOpenChange={setIsSectionCheckInDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Section</DialogTitle>
+            <DialogDescription>
+              Select which section you want to check into.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {event?.sections && event.sections.length > 0 && (
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {event.sections.map((section, index) => (
+                <div 
+                  key={index}
+                  className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => handleSectionCheckIn(index + 1)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium text-gray-900">{section.section_name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {formatTime(section.start_time)} - {formatTime(section.end_time)}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {section.distance_km} km
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsSectionCheckInDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   </div>
 )
-} 
+
+}
