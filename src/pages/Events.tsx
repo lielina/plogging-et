@@ -346,8 +346,20 @@ export default function Events() {
       event.end_time
     );
     
-    // Use backend enrollment status if available
-    if (event.is_enrolled === true) {
+    console.log('Event status info for event', event.event_id, ':', eventStatusInfo);
+    console.log('Event data:', {
+      event_date: event.event_date,
+      start_time: event.start_time,
+      end_time: event.end_time
+    });
+    
+    // Check if user is enrolled (prioritize local storage for immediate feedback)
+    const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+    const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
+    const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+    
+    // If enrolled, show enrolled status
+    if (isEnrolled) {
       return {
         disabled: true,
         text: 'Enrolled',
@@ -358,36 +370,30 @@ export default function Events() {
       }
     }
     
-    // Use backend availability status if available, but override with our logic
-    if (event.can_enroll === false) {
-      // Check if it's a date/time related issue
-      const eventDate = new Date(event.event_date);
-      const now = new Date();
-      
-      // If event is in the future but can't enroll, it might be a timing issue
-      if (eventDate > now) {
-        return {
-          disabled: false, // Allow enrollment for future events
-          text: 'Enroll Now',
-          variant: 'default' as const,
-          icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
-          showDetails: false
-        }
-      }
-      
+    // If event is active (in progress), show appropriate status
+    if (eventStatusInfo.status === 'active') {
       return {
         disabled: true,
-        text: event.status === 'completed' ? 'Event Ended' : 
-              event.status === 'active' ? 'Event In Progress' : 
-              'Not Available',
+        text: 'Event In Progress',
         variant: 'secondary' as const,
         icon: null,
         showDetails: false
       }
     }
     
-    // If our utility says enrollment should be allowed, override backend
-    if (eventStatusInfo.canEnroll) {
+    // If event is completed, show appropriate status
+    if (eventStatusInfo.status === 'completed') {
+      return {
+        disabled: true,
+        text: 'Event Ended',
+        variant: 'secondary' as const,
+        icon: null,
+        showDetails: false
+      }
+    }
+    
+    // If event is upcoming and can be enrolled, show enroll button
+    if (eventStatusInfo.status === 'upcoming' && eventStatusInfo.canEnroll) {
       return {
         disabled: false,
         text: 'Enroll Now',
@@ -397,68 +403,12 @@ export default function Events() {
       }
     }
     
-    // Use our utility function to determine if enrollment should be allowed
-    if (eventStatusInfo.canEnroll) {
-      return {
-        disabled: false,
-        text: 'Enroll Now',
-        variant: 'default' as const,
-        icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
-        showDetails: false
-      }
-    }
-    
-    // Fallback to basic status check
-    if (event.status) {
-      const status = event.status.toLowerCase();
-      if (status === 'completed' || status === 'cancelled') {
-        return {
-          disabled: true,
-          text: 'Event Ended',
-          variant: 'secondary' as const,
-          icon: null,
-          showDetails: false
-        }
-      }
-      // Check if event is active (in progress)
-      if (status === 'active') {
-        return {
-          disabled: true,
-          text: 'Event In Progress',
-          variant: 'secondary' as const,
-          icon: null,
-          showDetails: false
-        }
-      }
-      // Only allow enrollment in upcoming events
-      if (status !== 'upcoming') {
-        // If our utility says enrollment should be allowed, override status
-        if (eventStatusInfo.canEnroll) {
-          return {
-            disabled: false,
-            text: 'Enroll Now',
-            variant: 'default' as const,
-            icon: <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" />,
-            showDetails: false
-          }
-        }
-        
-        return {
-          disabled: true,
-          text: 'Not Available',
-          variant: 'secondary' as const,
-          icon: null,
-          showDetails: false
-        }
-      }
-    }
-    
-    // Default enrollable state based on our utility
+    // Default case - not available for enrollment
     return {
-      disabled: !eventStatusInfo.canEnroll,
-      text: eventStatusInfo.canEnroll ? 'Enroll Now' : 'Not Available',
-      variant: eventStatusInfo.canEnroll ? 'default' as const : 'secondary' as const,
-      icon: eventStatusInfo.canEnroll ? <ArrowRight className="h-4 w-4 ml-2 flex-shrink-0" /> : null,
+      disabled: true,
+      text: 'Not Available',
+      variant: 'secondary' as const,
+      icon: null,
       showDetails: false
     }
   }
@@ -538,12 +488,27 @@ export default function Events() {
                           {event.description}
                         </CardDescription>
                       </div>
-                      <Badge 
-                        variant={event.status === 'Active' ? 'default' : 'secondary'}
-                        className="ml-2 flex-shrink-0 text-xs px-2 py-0.5"
-                      >
-                        {event.status}
-                      </Badge>
+                      {(() => {
+                        // Use our utility function to determine event status for the badge
+                        const eventStatusInfo = getEventStatus(
+                          event.event_date,
+                          event.start_time,
+                          event.end_time
+                        );
+                        
+                        return (
+                          <Badge 
+                            variant={eventStatusInfo.status === 'upcoming' ? 'default' : 
+                                    eventStatusInfo.status === 'active' ? 'destructive' : 
+                                    'secondary'}
+                            className="ml-2 flex-shrink-0 text-xs px-2 py-0.5"
+                          >
+                            {eventStatusInfo.status === 'upcoming' ? 'Upcoming' : 
+                             eventStatusInfo.status === 'active' ? 'Active' : 
+                             'Completed'}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -597,24 +562,42 @@ export default function Events() {
 
                       {/* Event Status Indicator */}
                       <div className="flex items-center justify-between pt-2">
-                        <Badge 
-                          variant={
-                            event.status === 'upcoming' ? 'default' : 
-                            event.status === 'active' ? 'destructive' : 
-                            'secondary'
-                          }
-                          className="text-xs px-2 py-1"
-                        >
-                          {event.status === 'upcoming' ? 'Upcoming' : 
-                           event.status === 'active' ? 'In Progress' : 
-                           event.status === 'completed' ? 'Completed' : 
-                           'Not Available'}
-                        </Badge>
+                        {(() => {
+                          // Use our utility function to determine event status
+                          const eventStatusInfo = getEventStatus(
+                            event.event_date,
+                            event.start_time,
+                            event.end_time
+                          );
+                          
+                          console.log('Event badge status for event', event.event_id, ':', eventStatusInfo);
+                          
+                          return (
+                            <Badge 
+                              variant={
+                                eventStatusInfo.status === 'upcoming' ? 'default' : 
+                                eventStatusInfo.status === 'active' ? 'destructive' : 
+                                'secondary'
+                              }
+                              className="text-xs px-2 py-1"
+                            >
+                              {eventStatusInfo.status === 'upcoming' ? 'Upcoming' : 
+                               eventStatusInfo.status === 'active' ? 'In Progress' : 
+                               eventStatusInfo.status === 'completed' ? 'Completed' : 
+                               'Not Available'}
+                            </Badge>
+                          );
+                        })()}
                         
                         {/* Enrollment Status */}
                         {(() => {
                           const buttonState = getButtonState(event);
-                          if (buttonState.showDetails && buttonState.status) {
+                          // Show enrolled badge if user is enrolled
+                          const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+                          const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
+                          const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+                          
+                          if (isEnrolled) {
                             return (
                               <Badge variant="outline" className="text-xs px-2 py-1 text-green-700 border-green-300">
                                 Enrolled
@@ -628,14 +611,18 @@ export default function Events() {
                       {/* Enrollment Status (if enrolled) */}
                       {(() => {
                         const buttonState = getButtonState(event)
-                        if (buttonState.showDetails && buttonState.status) {
+                        // Show enrollment details if user is enrolled
+                        const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
+                        const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
+                        const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+                        
+                        if (isEnrolled) {
                           return (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                               <div className="flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                <span className="text-sm font-medium text-green-800">Enrollment Status</span>
+                                <span className="text-sm font-medium text-green-800">Enrolled</span>
                               </div>
-                              <p className="text-sm text-green-700 mt-1">{buttonState.status}</p>
                               <p className="text-xs text-green-600 mt-1">
                                 Check your dashboard for more details and event updates.
                               </p>
