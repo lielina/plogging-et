@@ -45,7 +45,8 @@ export interface Volunteer {
   phone_number: string;
   qr_code_path: string;
   total_hours_contributed: number;
-  profile_image?: string; // Profile image URL
+  profile_image?: string;
+  profile_image_url?: string; // Profile image URL
 }
 
 export interface DetailedVolunteer extends Volunteer {
@@ -491,8 +492,10 @@ class ApiClient {
 
     try {
       // Use PUT request to /volunteer/profile with FormData to update profile image
-      const response = await this.request<{ data: { profile_image: string } }>('/volunteer/profile', {
-        method: 'PUT',
+      const response = await this.request<{ data: { profile_image: string } }>(
+        "/volunteer/profile?_method=PUT",
+        {
+          method: "POST",
         body: formData,
         headers: {}, // Let the browser set Content-Type for FormData
       });
@@ -507,9 +510,11 @@ class ApiClient {
 
   async deleteProfileImage(): Promise<{ message: string }> {
     // To delete profile image, send PUT request with null profile_image
-    console.log('Deleting profile image by setting profile_image to null');
-    const response = await this.request<{ message: string }>('/volunteer/profile', {
-      method: 'PUT',
+    console.log("Deleting profile image by setting profile_image to null");
+    const response = await this.request<{ message: string }>(
+      "/volunteer/profile",
+      {
+        method: "POST",
       body: JSON.stringify({ profile_image: null }),
     });
     console.log('Profile image delete response:', response);
