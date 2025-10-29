@@ -83,7 +83,7 @@ export default function EventDetail() {
   const [isManualEnrollmentOpen, setIsManualEnrollmentOpen] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
-  const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false)
+  // const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false) // Removed as per requirement - only check-in is needed
   const [scanResult, setScanResult] = useState('')
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
   const [copied, setCopied] = useState(false)
@@ -571,60 +571,7 @@ ${description}
     }
   }
 
-  // User Check-out Function
-  const handleUserCheckOut = async (qrData: string) => {
-    try {
-      // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
-      let scannedEventId: number | null = null;
-      
-      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
-        const urlParts = qrData.split('/')
-        scannedEventId = parseInt(urlParts[urlParts.length - 1])
-      } else {
-        // Handle old format for backward compatibility
-        const parts = qrData.split(':')
-        if (parts.length === 2 && parts[0] === 'event') {
-          scannedEventId = parseInt(parts[1])
-        }
-      }
-      
-      if (scannedEventId && scannedEventId === parseInt(eventId!)) {
-        // Get user ID based on user type
-        let userId = ''
-        if (user && 'volunteer_id' in user) {
-          userId = `volunteer:${user.volunteer_id}`
-        } else if (user && 'admin_id' in user) {
-          userId = `admin:${user.admin_id}`
-        }
-        
-        if (!userId) {
-          throw new Error('User not authenticated')
-        }
-        
-        // Perform check-out for the current user
-        await apiClient.checkOut(scannedEventId, userId)
-        setScanResult('Check-out successful!')
-        
-        // Refresh event data to show updated attendance
-        const response = await apiClient.getEventDetails(parseInt(eventId!))
-        setEvent(response.data as EventDetailData)
-        
-        toast({
-          title: "Check-out Successful",
-          description: "You have been successfully checked out from this event.",
-        })
-      } else {
-        setScanResult('Invalid event QR code')
-      }
-    } catch (err: any) {
-      setScanResult(err.message || 'Check-out failed')
-      toast({
-        title: "Check-out Failed",
-        description: err.message || "Failed to check out from the event.",
-        variant: "destructive",
-      })
-    }
-  }
+  // User Check-out Function removed as per requirement - only check-in is needed
 
   // Admin Check-in Function
   const handleAdminCheckIn = async (qrData: string) => {
@@ -668,47 +615,7 @@ ${description}
     }
   }
 
-  // Admin Check-out Function
-  const handleAdminCheckOut = async (qrData: string) => {
-    try {
-      // Parse QR data (format: volunteer:volunteerId)
-      const parts = qrData.split(':')
-      if (parts.length === 2 && parts[0] === 'volunteer') {
-        const volunteerId = parseInt(parts[1])
-        
-        // Check if volunteer is enrolled in the event
-        const isEnrolled = event?.enrollments.some(enrollment => 
-          enrollment.volunteer.volunteer_id === volunteerId
-        )
-        
-        if (isEnrolled) {
-          // Perform check-out for the volunteer
-          await apiClient.checkOut(parseInt(eventId!), qrData)
-          setScanResult(`Volunteer ${volunteerId} checked out successfully!`)
-          
-          // Refresh event data to show updated attendance
-          const response = await apiClient.getEventDetails(parseInt(eventId!))
-          setEvent(response.data as EventDetailData)
-          
-          toast({
-            title: "Check-out Successful",
-            description: `Volunteer has been successfully checked out from this event.`,
-          })
-        } else {
-          setScanResult(`Volunteer ${volunteerId} is not enrolled in this event`)
-        }
-      } else {
-        setScanResult('Invalid volunteer badge QR code')
-      }
-    } catch (err: any) {
-      setScanResult(err.message || 'Check-out failed')
-      toast({
-        title: "Check-out Failed",
-        description: err.message || "Failed to check out the volunteer.",
-        variant: "destructive",
-      })
-    }
-  }
+  // Admin Check-out Function removed as per requirement - only check-in is needed
 
   if (isLoading) {
     return (
@@ -811,15 +718,6 @@ ${description}
                     >
                       <Scan className="h-4 w-4 mr-2" />
                       <span className="whitespace-nowrap">Check In</span>
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setIsCheckOutScannerOpen(true)}
-                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
-                      disabled={!isUserEnrolled()}
-                    >
-                      <Scan className="h-4 w-4 mr-2" />
-                      <span className="whitespace-nowrap">Check Out</span>
                     </Button>
                   </>
                 ) : (
@@ -1182,14 +1080,7 @@ ${description}
         description="Scan the event QR code to check in"
       />
 
-      {/* User Check-out QR Scanner */}
-      <QRScanner
-        isOpen={isCheckOutScannerOpen}
-        onClose={() => setIsCheckOutScannerOpen(false)}
-        onScan={handleUserCheckOut}
-        title="Event Check-out"
-        description="Scan the event QR code to check out"
-      />
+      {/* User Check-out QR Scanner removed as per requirement - only check-in is needed */}
 
       {/* Volunteer QR Scanner */}
       <QRScanner
