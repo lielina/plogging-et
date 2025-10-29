@@ -11,11 +11,13 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import UserSidebar from '@/components/ui/user-sidebar'; // Import UserSidebar instead
+import { useSidebar } from '@/contexts/SidebarContext'; // Import useSidebar hook
 
 import React, { useState } from 'react';
 
 const Layout = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { isCollapsed } = useSidebar(); // Get sidebar collapse state
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -88,8 +90,14 @@ const Layout = () => {
       {/* Use UserSidebar component for proper vertical sidebar */}
       {isAuthenticated && isDashboardRoute && <UserSidebar />}
       
-      {/* Main content area */}
-      <div className={`flex-1 flex flex-col ${isAuthenticated && isDashboardRoute ? 'ml-0 md:ml-64' : ''}`}>
+      {/* Main content area - dynamically adjust margin based on sidebar state */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+        isAuthenticated && isDashboardRoute 
+          ? isCollapsed 
+            ? 'md:ml-20'  // Collapsed sidebar width
+            : 'md:ml-64'  // Expanded sidebar width
+          : ''
+      }`}>
         {/* Header - only show on non-dashboard pages or for unauthenticated users */}
         {(!isAuthenticated || !isDashboardRoute) && (
           <header className="bg-white shadow-sm">
