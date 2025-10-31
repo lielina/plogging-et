@@ -268,13 +268,13 @@ useEffect(() => {
                                     event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
                                     event.enrollment_status === 'Signed Up'; // Also check for 'Signed Up' status
             
-            console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+              
+              return isStoredEnrolled || isBackendEnrolled
+            });
             
-            return isStoredEnrolled || isBackendEnrolled
-          });
-          
-          console.log('Refreshing - Enrolled events:', enrolledEvents)
-          setRecentEvents(enrolledEvents.slice(0, 3));
+            console.log('Refreshing - Enrolled events:', enrolledEvents)
+            setRecentEvents(enrolledEvents.slice(0, 3));
         })
         .catch(error => {
           console.error('Error refreshing events:', error)
