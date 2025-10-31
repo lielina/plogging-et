@@ -10,6 +10,8 @@ import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, Bar
 import { Link, useLocation } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import SurveyModal from '@/components/SurveyModal'
+import VolunteerBadge from '@/components/VolunteerBadge'
+import { VolunteerBadgeData } from '@/lib/badge-generator'
 
 interface DashboardStats {
   total_events_attended: number;
@@ -29,6 +31,7 @@ interface ProgressData {
 export default function Dashboard() {
   const { user } = useAuth()
   const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
+  const navigate = useNavigate()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<any[]>([])
   const [badges, setBadges] = useState<any[]>([])
@@ -151,7 +154,7 @@ export default function Dashboard() {
         }),
       
       // Fetch badges with proper error handling
-      apiClient.getVolunteerBadges()
+      user && 'volunteer_id' in user ? apiClient.getVolunteerBadges(user.volunteer_id)
         .then(response => {
           console.log('Badges response:', response)
           setBadgesError(null)
@@ -173,7 +176,7 @@ export default function Dashboard() {
           }
           // Set badges to empty array so the UI doesn't break
           setBadges([])
-        })
+        }) : Promise.resolve()
     ]
     
     // Wait for all promises to complete (either resolve or reject)
@@ -282,7 +285,7 @@ useEffect(() => {
         }),
       
         // Refresh badges with proper error handling
-        apiClient.getVolunteerBadges()
+        user && 'volunteer_id' in user ? apiClient.getVolunteerBadges(user.volunteer_id)
           .then(response => {
             console.log('Refreshing badges response:', response)
             setBadgesError(null)
@@ -304,7 +307,7 @@ useEffect(() => {
             }
             // Set badges to empty array so the UI doesn't break
             setBadges([])
-          })
+          }) : Promise.resolve()
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -698,6 +701,32 @@ useEffect(() => {
           </Card>
 
           {/* Badges */}
+          {user && 'volunteer_id' in user ? (
+            <Card 
+              className="hover:shadow-lg transition-shadow duration-300 ease-in-out cursor-pointer"
+              onClick={() => navigate('/badges')}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Award className="h-6 w-6 text-green-700" />
+                  Your Badge
+                </CardTitle>
+                <CardDescription>
+                  Your personalized volunteer achievement badge with QR code
+                  <span className="text-green-600 font-medium ml-1">Click to view full badge →</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <VolunteerBadge 
+                  volunteerData={user}
+                  onBadgeGenerated={(data: VolunteerBadgeData) => {
+                    console.log('Badge generated:', data)
+                  }}
+                  hideSocialSharing={true}
+                />
+              </CardContent>
+            </Card>
+          ) : (
           <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">

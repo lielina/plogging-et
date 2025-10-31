@@ -243,6 +243,39 @@ export interface ContactMessage {
   updated_at: string;
 }
 
+export interface EPloggingPost {
+  post_id: number;
+  // For admin endpoints, backend may return 'id' instead of 'post_id'
+  id?: number;
+  volunteer_id: number;
+  quote: string;
+  image_path: string;
+  image_url?: string;
+  location: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  updated_at: string;
+  // Admin endpoints may return these fields
+  title?: string;
+  description?: string;
+  volunteer: {
+    volunteer_id: number;
+    first_name: string;
+    last_name: string;
+    profile_image?: string;
+    profile_image_url?: string;
+  };
+}
+
+export interface EPloggingSubmission {
+  image: File;
+  quote: string;
+  location: string;
+  
+}
+
+
+
 export interface LoginResponse {
   status: string;
   message: string;
@@ -999,6 +1032,112 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Badge-related endpoints
+  async generateVolunteerBadge(volunteerId: number): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/volunteer/${volunteerId}/badge`, {
+      method: "POST",
+    });
+  }
+
+  async getVolunteerBadges(volunteerId: number): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>(`/volunteer/${volunteerId}/badges`);
+  }
+
+  async shareBadge(badgeId: string, platform: string): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/badge/${badgeId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ platform }),
+    });
+  }
+
+ 
+// Get paginated ePlogging posts
+async getEPloggingPosts(page = 1, perPage = 12): Promise<any> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: perPage.toString(),
+  });
+  return this.request(`/volunteer/eplogging?${params.toString()}`);
 }
 
+// Get only my posts
+async getMyEPloggingPosts(page = 1, perPage = 22): Promise<any> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: perPage.toString(),
+  });
+  return this.request(`/volunteer/eplogging/my-posts?${params.toString()}`); 
+}
+
+
+async getEPloggingPost(post_id: number): Promise<any> {
+  return this.request(`/volunteer/eplogging/${post_id}`);
+}
+
+async createEPloggingPost(data: EPloggingSubmission): Promise<any> {
+  const formData = new FormData();
+  formData.append("location", data.location);
+  formData.append("quote", data.quote);
+  formData.append("image", data.image);
+  return this.request("/volunteer/eplogging", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+async updateEPloggingPost(
+  post_id: number,
+  data: Partial<EPloggingSubmission>
+): Promise<any> {
+  const formData = new FormData();
+  if (data.quote) formData.append("quote", data.quote);
+  if (data.location) formData.append("location", data.location);
+  if (data.image) formData.append("image", data.image);
+  // Some backends (e.g., Laravel) require method override for multipart updates
+  formData.append("_method", "PUT");
+
+  return this.request(`/volunteer/eplogging/${post_id}`, {
+    method: "POST",
+    body: formData,
+    headers: {},
+  });
+}
+
+async deleteEPloggingPost(post_id: number): Promise<{ message: string }> {
+  return this.request(`/volunteer/eplogging/${post_id}`, { method: "DELETE" });
+}
+
+// async likeEPloggingPost(
+//   post_id: number
+// ): Promise<{ data: { liked: boolean; likes_count: number } }> {
+//   return this.request(`/volunteer/eplogging/${post_id}/like`, { method: "POST" });
+// }
+
+
+// Admin ePlogging endpoints
+// async moderateEPloggingPost(
+//   post_id: number,
+//   status: "approved" | "rejected"
+// ): Promise<{ data: EPloggingPost }> {
+//   return this.request(`/admin/eplogging/${post_id}/moderate`, {
+//     method: "POST",
+//     body: JSON.stringify({ status }),
+//   });
+// }
+
+async getAllEPloggingPosts(
+  page = 1,
+  perPage = 15,
+  status?: string
+): Promise<any> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: perPage.toString(),
+  });
+  if (status) params.append("status", status);
+
+  return this.request(`/admin/eplogging?${params.toString()}`);
+}
+}
 export const apiClient = new ApiClient(BASE_URL);

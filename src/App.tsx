@@ -18,6 +18,8 @@ import Layout from './pages/Layout'
 import Membership from './pages/Membership'
 import Contact from './pages/Contact'
 import VolunteerCertificates from './pages/VolunteerCertificates'
+import VolunteerBadges from './pages/VolunteerBadges'
+import EPlogging from './pages/EPlogging'
 import Gallery from './pages/Gallery'
 import Blog from './pages/Blog'
 import BlogPostPage from './pages/BlogPost'
@@ -75,6 +77,16 @@ function AppRoutes() {
           <Route path="/certificates" element={
             <ProtectedRoute>
               <VolunteerCertificates />
+            </ProtectedRoute>
+          } />
+          <Route path="/badges" element={
+            <ProtectedRoute>
+              <VolunteerBadges />
+            </ProtectedRoute>
+          } />
+          <Route path="/eplogging" element={
+            <ProtectedRoute>
+              <EPlogging />
             </ProtectedRoute>
           } />
         </Route>
