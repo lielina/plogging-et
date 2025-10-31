@@ -13,6 +13,18 @@ export interface CertificateData {
   badgeType?: string
   totalHours?: number
   rank?: number
+  profileImageUrl?: string
+}
+
+export interface VolunteerBadgeData {
+  volunteerName: string
+  totalHours: number
+  badgeLevel: string
+  profileImageUrl?: string
+  volunteerId: number
+  achievementDate: string
+  badgeId: string
+  qrCode?: string
 }
 
 export interface CertificateTemplate {

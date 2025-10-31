@@ -31,6 +31,8 @@ const Layout = () => {
                           location.pathname.startsWith('/profile') || 
                           location.pathname.startsWith('/leaderboard') ||
                           location.pathname.startsWith('/certificates') ||
+                          location.pathname.startsWith('/badges') ||
+                          location.pathname.startsWith('/eplogging') ||
                           location.pathname.startsWith('/survey') ||
                           location.pathname === '/events';
 
@@ -124,6 +126,7 @@ const Layout = () => {
                     { name: "Blog", to: "/blog" },
                     { name: "Event", to: "/events" },
                     { name: "Contact", to: "/contact" },
+                    { name: "Eplogging", to: "/eplogging" },
                   ].map((link) => {
                     const isHomeActive =
                       location.pathname === "/" && location.hash === "";
@@ -247,6 +250,8 @@ const Layout = () => {
                       { name: "Blog", to: "/blog" },
                       { name: "Event", to: "/events" },
                       { name: "Contact", to: "/contact" },
+                      { name: "Eplogging", to: "/eplogging" },
+                      
                     ].map((link) => {
                       const isHomeActive =
                         location.pathname === "/" && location.hash === "";

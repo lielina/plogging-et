@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Clipboard,
   ScanLine,
+  Award,
+  Camera,
 } from "lucide-react";
 
 const UserSidebar = () => {
@@ -47,8 +49,10 @@ const UserSidebar = () => {
   const navItems = [
     { name: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
     { name: "Events", to: "/events", icon: Calendar },
+    { name: "ePlogging", to: "/eplogging", icon: Camera },
     { name: "Leaderboard", to: "/leaderboard", icon: BarChart3 },
     { name: "Certificates", to: "/certificates", icon: FileText },
+    { name: "My Badge", to: "/badges", icon: Award },
   ];
 
   const handleQRScan = async (result: string) => {
