@@ -124,7 +124,9 @@ export default function EventDetail() {
   // Handle actual enrollment
   const handleEnroll = async () => {
     try {
-      await apiClient.enrollInEvent(parseInt(eventId!))
+      // Extract volunteer_id from user context
+      const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
+      await apiClient.enrollInEvent(parseInt(eventId!), volunteerId)
       
       // Refresh event data to show updated enrollment
       const response = await apiClient.getEventDetails(parseInt(eventId!))

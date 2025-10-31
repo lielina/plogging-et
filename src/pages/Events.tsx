@@ -32,7 +32,7 @@ export default function Events() {
     perPage: 9
   })
   const { toast } = useToast()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
 
   const fetchEvents = async (page: number = 1) => {
@@ -48,15 +48,18 @@ export default function Events() {
       console.log('Events data:', eventsData);
       console.log('Pagination data:', response.pagination);
       
-      // Get stored enrollments from localStorage
-      const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-      
-      // Update events with local enrollment status
+      // Use backend enrollment status directly - don't rely on localStorage
       const updatedEvents = eventsData.map(event => {
-        const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
-        // Prioritize backend enrollment status over local storage
-        const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
-        const canEnroll = event.can_enroll !== false && !isEnrolled
+        // The backend should provide the correct enrollment status
+        // Fix: Ensure we properly check all possible enrollment status indicators
+        const isEnrolled = event.is_enrolled === true || 
+                          event.enrollment_status === 'Enrolled' || 
+                          event.enrollment_status === 'Signed Up' ||
+                          event.enrollment_status === 'confirmed' ||
+                          event.enrollment_status === 'attended' ||
+                          event.can_enroll === false;
+        
+        const canEnroll = event.can_enroll !== false && !isEnrolled;
         
         return {
           ...event,
@@ -126,23 +129,18 @@ export default function Events() {
     setEnrollingEvents(prev => new Set(prev).add(eventId))
 
     try {
-      const response = await apiClient.enrollInEvent(eventId)
+      // Extract volunteer_id from user context if available
+      const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
+      const response = await apiClient.enrollInEvent(eventId, volunteerId)
       
-      // Store successful enrollment in localStorage
-      const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-      if (!storedEnrollments.includes(eventId)) {
-        storedEnrollments.push(eventId)
-        localStorage.setItem('userEnrollments', JSON.stringify(storedEnrollments))
-      }
-      
-      // Update local event status immediately
+      // Update local event status immediately (no localStorage needed)
       setEvents(prev => prev.map(e => 
         e.event_id === eventId 
           ? { 
               ...e, 
               is_enrolled: true, 
               can_enroll: false,
-              enrollment_status: response.data?.enrollment_status || 'Enrolled'
+              enrollment_status: response.data.data?.status || 'Signed Up'
             }
           : e
       ))
@@ -150,7 +148,7 @@ export default function Events() {
       // Show success toast
       toast({
         title: "Enrollment Successful",
-        description: response.data?.message || "You have been successfully enrolled in this event.",
+        description: response.message || "You have been successfully enrolled in this event.",
       })
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
@@ -166,13 +164,6 @@ export default function Events() {
         errorTitle = 'Already Enrolled'
         errorMessage = 'You are already enrolled in this event. Check your dashboard for enrollment details.'
         
-        // Store the enrollment since backend confirms it exists
-        const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-        if (!storedEnrollments.includes(eventId)) {
-          storedEnrollments.push(eventId)
-          localStorage.setItem('userEnrollments', JSON.stringify(storedEnrollments))
-        }
-        
         // Update the event to reflect enrollment status
         setEvents(prev => prev.map(e => 
           e.event_id === eventId 
@@ -180,7 +171,7 @@ export default function Events() {
                 ...e, 
                 is_enrolled: true, 
                 can_enroll: false,
-                enrollment_status: 'Already Enrolled'
+                enrollment_status: 'Enrolled'
               }
             : e
         ))
@@ -353,10 +344,13 @@ export default function Events() {
       end_time: event.end_time
     });
     
-    // Check if user is enrolled (prioritize local storage for immediate feedback)
-    const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-    const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
-    const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+    // Check if user is enrolled (use comprehensive check)
+    const isEnrolled = event.is_enrolled === true || 
+                      event.enrollment_status === 'Enrolled' || 
+                      event.enrollment_status === 'Signed Up' ||
+                      event.enrollment_status === 'confirmed' ||
+                      event.enrollment_status === 'attended' ||
+                      event.can_enroll === false;
     
     // If enrolled, show enrolled status
     if (isEnrolled) {
@@ -592,10 +586,8 @@ export default function Events() {
                         {/* Enrollment Status */}
                         {(() => {
                           const buttonState = getButtonState(event);
-                          // Show enrolled badge if user is enrolled
-                          const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-                          const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
-                          const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+                          // Show enrolled badge if user is enrolled (use backend status only)
+                          const isEnrolled = event.is_enrolled === true;
                           
                           if (isEnrolled) {
                             return (
@@ -611,10 +603,8 @@ export default function Events() {
                       {/* Enrollment Status (if enrolled) */}
                       {(() => {
                         const buttonState = getButtonState(event)
-                        // Show enrollment details if user is enrolled
-                        const storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-                        const isLocallyEnrolled = storedEnrollments.includes(event.event_id)
-                        const isEnrolled = event.is_enrolled === true || isLocallyEnrolled
+                        // Show enrollment details if user is enrolled (use backend status only)
+                        const isEnrolled = event.is_enrolled === true;
                         
                         if (isEnrolled) {
                           return (
