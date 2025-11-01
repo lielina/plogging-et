@@ -86,7 +86,8 @@ export default function EventDetail() {
   const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
   // const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false) // Removed as per requirement - only check-in is needed
   const [scanResult, setScanResult] = useState('')
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('')
+  const [sectionQrCodes, setSectionQrCodes] = useState<Record<number, string>>({})
+
   const [copied, setCopied] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
@@ -197,17 +198,7 @@ export default function EventDetail() {
           console.log('Image path starts with http:', response.data.image_path.startsWith('http'));
         }
         
-        // Generate QR code for the event using the same URL format as the share link
-        const qrData = `${FRONTEND_URL}/events/${eventId}`
-        const qrCodeUrl = await QRCode.toDataURL(qrData, {
-          width: 200,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        })
-        setQrCodeDataUrl(qrCodeUrl)
+
       } catch (err: any) {
         setError(err.message || 'Failed to fetch event details')
       } finally {
@@ -217,6 +208,37 @@ export default function EventDetail() {
 
     fetchEventDetails()
   }, [eventId])
+
+  // Generate QR codes for event sections
+  useEffect(() => {
+    const generateSectionQrCodes = async () => {
+      if (!event?.sections || event.sections.length === 0) return
+      
+      const newQrCodes: Record<number, string> = {}
+      
+      for (let i = 0; i < event.sections.length; i++) {
+        try {
+          // Generate QR code with format: eventId:sectionId
+          const qrData = `${event.event_id}:${i + 1}`
+          const qrCodeUrl = await QRCode.toDataURL(qrData, {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          })
+          newQrCodes[i + 1] = qrCodeUrl
+        } catch (qrError) {
+          console.error(`Failed to generate QR code for section ${i + 1}:`, qrError)
+        }
+      }
+      
+      setSectionQrCodes(newQrCodes)
+    }
+    
+    generateSectionQrCodes()
+  }, [event?.sections, event?.event_id])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -533,57 +555,11 @@ ${description}
     }
   }
 
-  // User Check-in Function
+  // User Check-in Function (removed event QR code check-in)
   const handleUserCheckIn = async (qrData: string) => {
     try {
-      // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
-      let scannedEventId: number | null = null;
-      
-      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
-        const urlParts = qrData.split('/')
-        scannedEventId = parseInt(urlParts[urlParts.length - 1])
-      } else {
-        // Handle old format for backward compatibility
-        const parts = qrData.split(':')
-        if (parts.length === 2 && parts[0] === 'event') {
-          scannedEventId = parseInt(parts[1])
-        }
-      }
-      
-      if (scannedEventId && scannedEventId === parseInt(eventId!)) {
-        // Get user ID based on user type
-        let userId = ''
-        if (user && 'volunteer_id' in user) {
-          userId = `volunteer:${user.volunteer_id}`
-        } else if (user && 'admin_id' in user) {
-          userId = `admin:${user.admin_id}`
-        }
-        
-        if (!userId) {
-          throw new Error('User not authenticated')
-        }
-        
-        // If event has sections, open section selection dialog
-        if (event?.sections && event.sections.length > 0) {
-          setIsSectionCheckInDialogOpen(true)
-          return
-        }
-        
-        // Perform check-in for the current user
-        await apiClient.checkIn(scannedEventId, userId)
-        setScanResult('Check-in successful!')
-        
-        // Refresh event data to show updated attendance
-        const response = await apiClient.getEventDetails(parseInt(eventId!))
-        setEvent(response.data as EventDetailData)
-        
-        toast({
-          title: "Check-in Successful",
-          description: "You have been successfully checked in to this event.",
-        })
-      } else {
-        setScanResult('Invalid event QR code')
-      }
+      // Only allow section-based check-in
+      setScanResult('Please scan a section QR code instead of the event QR code')
     } catch (err: any) {
       setScanResult(err.message || 'Check-in failed')
       toast({
@@ -599,6 +575,17 @@ ${description}
     if (!user || !('volunteer_id' in user)) return
     
     try {
+      // Check if volunteer is enrolled in the event
+      const isEnrolled = event?.enrollments.some(enrollment => 
+        enrollment.volunteer.volunteer_id === user.volunteer_id
+      )
+      
+      if (!isEnrolled) {
+        setScanResult('You are not enrolled in this event')
+        setIsSectionCheckInDialogOpen(false)
+        return
+      }
+      
       // Call the section-based check-in API
       await apiClient.checkInSection(user.volunteer_id, parseInt(eventId!), sectionId)
       setScanResult('Check-in to section successful!')
@@ -638,18 +625,8 @@ ${description}
         )
         
         if (isEnrolled) {
-          // Perform check-in for the volunteer
-          await apiClient.checkIn(parseInt(eventId!), qrData)
-          setScanResult(`Volunteer ${volunteerId} checked in successfully!`)
-          
-          // Refresh event data to show updated attendance
-          const response = await apiClient.getEventDetails(parseInt(eventId!))
-          setEvent(response.data as EventDetailData)
-          
-          toast({
-            title: "Check-in Successful",
-            description: `Volunteer has been successfully checked in to this event.`,
-          })
+          // Only allow section-based check-in
+          setScanResult('Please scan a section QR code instead of checking in directly')
         } else {
           setScanResult(`Volunteer ${volunteerId} is not enrolled in this event`)
         }
@@ -853,48 +830,7 @@ ${description}
               </CardContent>
             </Card>
 
-            {/* Event QR Code */}
-            <Card className="shadow-sm border-0 bg-white">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <QrCode className="h-6 w-6 text-green-600" />
-                  Event QR Code
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center space-y-4">
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6 inline-block">
-                    {qrCodeDataUrl ? (
-                      <div className="w-32 h-32 sm:w-48 sm:h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center p-2 sm:p-4 shadow-sm mx-auto">
-                        <img 
-                          src={qrCodeDataUrl}
-                          alt="Event QR Code"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 sm:w-48 sm:h-48 bg-white border-2 border-green-200 rounded-xl flex items-center justify-center shadow-sm mx-auto">
-                        <div className="text-center">
-                          <QrCode className="h-8 w-8 sm:h-16 sm:w-16 text-green-400 mx-auto mb-2" />
-                          <p className="text-xs sm:text-sm font-mono text-gray-600">Event ID: {event.event_id}</p>
-                          <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Generating QR code...</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600 font-medium">
-                      Volunteers can scan this QR code to check in to the event
-                    </p>
-                    <div className="inline-block px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 rounded-full">
-                      <p className="text-[10px] sm:text-xs text-gray-600 font-mono">
-                        QR Data: {FRONTEND_URL}/events/{event.event_id}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+
 
             {/* Date and Time */}
             <Card className="shadow-sm border-0 bg-white">
@@ -952,6 +888,22 @@ ${description}
                             <div>
                               <p className="text-xs text-gray-500">Distance</p>
                               <p className="text-sm font-medium">{section.distance_km} km</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center p-2 bg-white rounded">
+                            <div className="flex flex-col items-center">
+                              {sectionQrCodes[index + 1] ? (
+                                <img 
+                                  src={sectionQrCodes[index + 1]}
+                                  alt={`Section ${index + 1} QR Code`}
+                                  className="w-16 h-16 object-contain"
+                                />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+                                </div>
+                              )}
+                              <span className="text-xs text-gray-600 mt-2">Scan to Check In</span>
                             </div>
                           </div>
                         </div>
@@ -1166,8 +1118,8 @@ ${description}
         isOpen={isCheckInScannerOpen}
         onClose={() => setIsCheckInScannerOpen(false)}
         onScan={handleUserCheckIn}
-        title="Event Check-in"
-        description="Scan the event QR code to check in"
+        title="Section Check-in"
+        description="Scan a section QR code to check in"
       />
 
       {/* User Check-out QR Scanner removed as per requirement - only check-in is needed */}
@@ -1177,8 +1129,8 @@ ${description}
         isOpen={isVolunteerScannerOpen}
         onClose={() => setIsVolunteerScannerOpen(false)}
         onScan={handleVolunteerScan}
-        title="Event QR Code"
-        description="Scan the event QR code to check in volunteers"
+        title="Section QR Code"
+        description="Scan a section QR code to check in"
       />
 
       {/* Admin Badge Scanner */}
