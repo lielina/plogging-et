@@ -248,7 +248,7 @@ export default function EventDetail() {
 
   const formatTime = (timeString: string) => {
     // Handle case where timeString might be null or undefined
-    if (!timeString) return 'Invalid Time';
+    if (!timeString) return '--:--';
     
     try {
       // Handle the specific datetime format: 2025-09-29T07:00:00.000000Z
