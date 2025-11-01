@@ -153,6 +153,7 @@ export interface Event {
 
 // Add Section interface for event sections
 export interface Section {
+  section_id?: number; // Optional when creating, required when returned from API
   section_name: string;
   start_time: string;
   end_time: string;
