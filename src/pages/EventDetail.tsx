@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, Scan, Plus, User, Share2, Facebook, Twitter, Linkedin, MessageCircle, Copy, Check, Edit, QrCode, X, Clock as ClockIcon } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, Scan, Plus, User, Share2, Facebook, Twitter, Linkedin, MessageCircle, Copy, Check, Edit, QrCode, X, Clock as ClockIcon, Download } from 'lucide-react'
 import QRCode from 'qrcode'
 import QRScanner from '@/components/ui/qr-scanner'
 import ManualEnrollmentDialog from '@/components/ui/manual-enrollment-dialog'
@@ -893,11 +893,42 @@ ${description}
                           <div className="flex flex-col items-center p-2 bg-white rounded">
                             <div className="flex flex-col items-center">
                               {sectionQrCodes[index + 1] ? (
-                                <img 
-                                  src={sectionQrCodes[index + 1]}
-                                  alt={`Section ${index + 1} QR Code`}
-                                  className="w-16 h-16 object-contain"
-                                />
+                                <>
+                                  <img 
+                                    src={sectionQrCodes[index + 1]}
+                                    alt={`Section ${index + 1} QR Code`}
+                                    className="w-16 h-16 object-contain"
+                                  />
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs mt-2"
+                                    onClick={() => {
+                                      // Create a temporary canvas to scale the QR code for download
+                                      const canvas = document.createElement('canvas')
+                                      const ctx = canvas.getContext('2d')
+                                      const img = new Image()
+                                      img.onload = () => {
+                                        canvas.width = img.width * 4
+                                        canvas.height = img.height * 4
+                                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+                                        const dataUrl = canvas.toDataURL('image/png')
+                                        
+                                        // Create download link
+                                        const link = document.createElement('a')
+                                        link.href = dataUrl
+                                        link.download = `section-${index + 1}-${section.section_name.replace(/\s+/g, '-')}-qr-code.png`
+                                        document.body.appendChild(link)
+                                        link.click()
+                                        document.body.removeChild(link)
+                                      }
+                                      img.src = sectionQrCodes[index + 1]
+                                    }}
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Download
+                                  </Button>
+                                </>
                               ) : (
                                 <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
                                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
