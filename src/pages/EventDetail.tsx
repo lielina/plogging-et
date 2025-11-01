@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, Scan, Plus, User, Share2, Facebook, Twitter, Linkedin, MessageCircle, Copy, Check, Edit, QrCode, X, Clock as ClockIcon, Download } from 'lucide-react'
 import QRCode from 'qrcode'
 import QRScanner from '@/components/ui/qr-scanner'
-import ManualEnrollmentDialog from '@/components/ui/manual-enrollment-dialog'
 import Map from '@/components/ui/map'
 import { toast } from '@/hooks/use-toast'
 import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '@/utils/eventUtils';
@@ -75,13 +74,11 @@ interface EventDetailData extends Event {
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const [event, setEvent] = useState<EventDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isVolunteerScannerOpen, setIsVolunteerScannerOpen] = useState(false)
-  const [isAdminScannerOpen, setIsAdminScannerOpen] = useState(false)
-  const [isManualEnrollmentOpen, setIsManualEnrollmentOpen] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
   // const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false) // Removed as per requirement - only check-in is needed
@@ -493,68 +490,6 @@ ${description}
     }
   }
 
-  const handleAdminScan = async (qrData: string) => {
-    try {
-      // Parse QR data (format: volunteer:volunteerId)
-      const parts = qrData.split(':')
-      if (parts.length === 2 && parts[0] === 'volunteer') {
-        const volunteerId = parseInt(parts[1])
-        
-        // Check if volunteer is already enrolled
-        const isEnrolled = event?.enrollments.some(enrollment => 
-          enrollment.volunteer.volunteer_id === volunteerId
-        )
-        
-        if (isEnrolled) {
-          setScanResult('This volunteer is already enrolled in the event')
-        } else {
-          // Enroll the volunteer
-          await apiClient.enrollVolunteerInEvent(parseInt(eventId!), volunteerId)
-          setScanResult('Volunteer enrolled successfully!')
-          
-          // Refresh event data
-          const response = await apiClient.getEventDetails(parseInt(eventId!))
-          setEvent(response.data as EventDetailData)
-        }
-      } else {
-        setScanResult('Invalid volunteer badge QR code')
-      }
-    } catch (err: any) {
-      setScanResult(err.message || 'Enrollment failed')
-    }
-  }
-
-  // Manual Enrollment Handler
-  const handleManualEnrollment = async (volunteerId: number) => {
-    try {
-      // Check if user is admin
-      if (isAdmin) {
-        // For admins, use the new manual enrollment API
-        await apiClient.manualEnrollVolunteer(volunteerId, parseInt(eventId!))
-        
-        // Refresh event data to show updated enrollment
-        const response = await apiClient.getEventDetails(parseInt(eventId!))
-        setEvent(response.data as EventDetailData)
-        
-        toast({
-          title: "Enrollment Successful",
-          description: `Volunteer ${volunteerId} has been enrolled in this event.`,
-        })
-      } else {
-        // For regular users, provide standard instructions
-        throw new Error('System limitation: Only volunteers can enroll themselves in events. Please share the event link with the volunteer so they can enroll through their dashboard.');
-      }
-    } catch (err: any) {
-      console.error('Manual enrollment error:', err);
-      toast({
-        title: "Enrollment Failed",
-        description: err.message || "Failed to enroll the volunteer.",
-        variant: "destructive",
-      });
-      throw err;
-    }
-  }
-
   // User Check-in Function (removed event QR code check-in)
   const handleUserCheckIn = async (qrData: string) => {
     try {
@@ -608,42 +543,6 @@ ${description}
       })
     }
   }
-
-  // User Check-out Function removed as per requirement - only check-in is needed
-
-  // Admin Check-in Function
-  const handleAdminCheckIn = async (qrData: string) => {
-    try {
-      // Parse QR data (format: volunteer:volunteerId)
-      const parts = qrData.split(':')
-      if (parts.length === 2 && parts[0] === 'volunteer') {
-        const volunteerId = parseInt(parts[1])
-        
-        // Check if volunteer is enrolled in the event
-        const isEnrolled = event?.enrollments.some(enrollment => 
-          enrollment.volunteer.volunteer_id === volunteerId
-        )
-        
-        if (isEnrolled) {
-          // Only allow section-based check-in
-          setScanResult('Please scan a section QR code instead of checking in directly')
-        } else {
-          setScanResult(`Volunteer ${volunteerId} is not enrolled in this event`)
-        }
-      } else {
-        setScanResult('Invalid volunteer badge QR code')
-      }
-    } catch (err: any) {
-      setScanResult(err.message || 'Check-in failed')
-      toast({
-        title: "Check-in Failed",
-        description: err.message || "Failed to check in the volunteer.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Admin Check-out Function removed as per requirement - only check-in is needed
 
   if (isLoading) {
     return (
@@ -735,58 +634,35 @@ ${description}
                 <p className="text-gray-600 text-base sm:text-lg">{event.location_name}</p>
               </div>
               <div className="flex flex-wrap gap-3">
-                {!isAdmin ? (
-                  <>
-                    {/* Enrollment button for regular users */}
-                    <Button 
-                      variant="default"
-                      onClick={handleEnrollClick}
-                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                      disabled={isUserEnrolled()}
-                    >
-                      {isUserEnrolled() ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Enrolled
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Enroll Now
-                        </>
-                      )}
-                    </Button>
-                    
-                    <Button 
-                      variant="outline"
-                      onClick={() => setIsCheckInScannerOpen(true)}
-                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
-                      disabled={!isUserEnrolled()}
-                    >
-                      <Scan className="h-4 w-4 mr-2" />
-                      <span className="whitespace-nowrap">Check In</span>
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setIsAdminScannerOpen(true)}
-                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
-                    >
-                      <Scan className="h-4 w-4 mr-2" />
-                      <span className="whitespace-nowrap">Scan Badge</span>
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setIsManualEnrollmentOpen(true)}
-                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
-                    >
+                {/* Enrollment button for regular users */}
+                <Button 
+                  variant="default"
+                  onClick={handleEnrollClick}
+                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                  disabled={isUserEnrolled()}
+                >
+                  {isUserEnrolled() ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Enrolled
+                    </>
+                  ) : (
+                    <>
                       <Plus className="h-4 w-4 mr-2" />
-                      <span className="whitespace-nowrap">Manual Enroll</span>
-                    </Button>
-                  </>
-                )}
+                      Enroll Now
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsCheckInScannerOpen(true)}
+                  className="bg-white hover:bg-gray-50 w-full sm:w-auto"
+                  disabled={!isUserEnrolled()}
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  <span className="whitespace-nowrap">Check In</span>
+                </Button>
                 <Button 
                   variant="outline"
                   onClick={() => setIsShareDialogOpen(true)}
@@ -795,15 +671,6 @@ ${description}
                   <Share2 className="h-4 w-4 mr-2" />
                   <span className="whitespace-nowrap">Share</span>
                 </Button>
-                {isAdmin && (
-                  <Button 
-                    onClick={() => navigate(`/admin/events/${eventId}/edit`)}
-                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    <span className="whitespace-nowrap">Edit Event</span>
-                  </Button>
-                )}
               </div>
             </div>
           </div>
@@ -1181,23 +1048,6 @@ ${description}
         onScan={handleVolunteerScan}
         title="Section QR Code"
         description="Scan a section QR code to check in"
-      />
-
-      {/* Admin Badge Scanner */}
-      <QRScanner
-        isOpen={isAdminScannerOpen}
-        onClose={() => setIsAdminScannerOpen(false)}
-        onScan={handleAdminScan}
-        title="Volunteer Badge Scanner"
-        description="Scan volunteer badges to enroll them"
-      />
-
-      {/* Manual Enrollment Dialog */}
-      <ManualEnrollmentDialog
-        isOpen={isManualEnrollmentOpen}
-        onClose={() => setIsManualEnrollmentOpen(false)}
-        onEnroll={handleManualEnrollment}
-        eventName={event?.event_name || ''}
       />
 
       {/* Share Event Dialog */}
