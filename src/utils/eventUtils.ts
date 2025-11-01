@@ -22,6 +22,7 @@ export function getEventStatus(
     endTime: string
 ): EventStatusInfo {
     try {
+        // Use UTC time for consistent comparison
         const now = new Date();
         console.log('Calculating event status with inputs:', { eventDate, startTime, endTime });
 
@@ -34,6 +35,12 @@ export function getEventStatus(
             // If it's just a date string
             eventDateObj = new Date(eventDate);
         }
+
+        console.log('Parsed event date:', {
+            input: eventDate,
+            parsedDate: eventDateObj.toISOString(),
+            parsedDateTimestamp: eventDateObj.getTime()
+        });
 
         // Handle different time formats for start time
         let formattedStartTime: string;
@@ -84,14 +91,25 @@ export function getEventStatus(
         }
 
         // Create full datetime objects for start and end
-        // Combine date and time properly
-        const eventStartStr = `${eventDateObj.toISOString().split('T')[0]}T${formattedStartTime}`;
-        const eventEndStr = `${eventDateObj.toISOString().split('T')[0]}T${formattedEndTime}`;
+        // Combine date and time properly, ensuring consistent timezone handling
+        const eventDateStr = eventDateObj.toISOString().split('T')[0];
+        const eventStartStr = `${eventDateStr}T${formattedStartTime}`;
+        const eventEndStr = `${eventDateStr}T${formattedEndTime}`;
 
         console.log('Formatted datetime strings:', { eventStartStr, eventEndStr });
 
         const eventStart = new Date(eventStartStr);
         const eventEnd = new Date(eventEndStr);
+
+        // Log the actual values being compared
+        console.log('Time comparison:', {
+            now: now.toISOString(),
+            eventStart: eventStart.toISOString(),
+            eventEnd: eventEnd.toISOString(),
+            nowTimestamp: now.getTime(),
+            eventStartTimestamp: eventStart.getTime(),
+            eventEndTimestamp: eventEnd.getTime()
+        });
 
         // Handle case where end time is next day (e.g., 22:00 to 02:00)
         if (eventEnd < eventStart) {

@@ -14,7 +14,7 @@ import QRScanner from '@/components/ui/qr-scanner'
 import ManualEnrollmentDialog from '@/components/ui/manual-enrollment-dialog'
 import Map from '@/components/ui/map'
 import { toast } from '@/hooks/use-toast'
-import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '../utils/eventUtils';
+import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '@/utils/eventUtils';
 
 interface Enrollment {
   enrollment_id: number;
@@ -706,12 +706,31 @@ ${description}
               <div className="flex-1">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
                   <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{event.event_name}</h1>
-                  <Badge 
-                    variant={event.status === 'Active' ? 'default' : 'secondary'}
-                    className="text-sm px-3 py-1 w-fit"
-                  >
-                    {event.status}
-                  </Badge>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {/* Calculated status based on time */}
+                    {(() => {
+                      console.log('Volunteer Event Data:', { 
+                        event_date: event.event_date, 
+                        start_time: event.start_time, 
+                        end_time: event.end_time 
+                      });
+                      const calculatedStatus = getEventStatus(
+                        event.event_date,
+                        event.start_time,
+                        event.end_time
+                      );
+                      console.log('Volunteer Calculated Status:', calculatedStatus);
+                      
+                      return (
+                        <Badge 
+                          variant={calculatedStatus.status === 'active' ? 'default' : 'secondary'}
+                          className="text-sm px-3 py-1 w-fit"
+                        >
+                          {calculatedStatus.status}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <p className="text-gray-600 text-base sm:text-lg">{event.location_name}</p>
               </div>
@@ -1343,7 +1362,5 @@ ${description}
         </DialogContent>
       </Dialog>
     </div>
-  </div>
-)
-
+  </div>)
 }
