@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3 } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import SurveyModal from '@/components/SurveyModal'
 import VolunteerBadge from '@/components/VolunteerBadge'
@@ -153,8 +153,8 @@ export default function Dashboard() {
           setRecentEvents([])
         }),
       
-      // Fetch badges with proper error handling
-      user && 'volunteer_id' in user ? apiClient.getVolunteerBadges(user.volunteer_id)
+      // Fetch badges with proper error handling (conditionally included)
+      ...(user && 'volunteer_id' in user ? [apiClient.getVolunteerBadges()
         .then(response => {
           console.log('Badges response:', response)
           setBadgesError(null)
@@ -176,7 +176,7 @@ export default function Dashboard() {
           }
           // Set badges to empty array so the UI doesn't break
           setBadges([])
-        }) : Promise.resolve()
+        })] : [])
     ]
     
     // Wait for all promises to complete (either resolve or reject)
@@ -271,21 +271,21 @@ useEffect(() => {
                                     event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
                                     event.enrollment_status === 'Signed Up'; // Also check for 'Signed Up' status
             
-            console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-            
-            return isStoredEnrolled || isBackendEnrolled
-          });
+              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
+              
+              return isStoredEnrolled || isBackendEnrolled
+            });
           
-          console.log('Refreshing - Enrolled events:', enrolledEvents)
-          setRecentEvents(enrolledEvents.slice(0, 3));
+            console.log('Refreshing - Enrolled events:', enrolledEvents)
+            setRecentEvents(enrolledEvents.slice(0, 3));
         })
         .catch(error => {
           console.error('Error refreshing events:', error)
           setRecentEvents([])
         }),
       
-        // Refresh badges with proper error handling
-        user && 'volunteer_id' in user ? apiClient.getVolunteerBadges(user.volunteer_id)
+        // Refresh badges with proper error handling (conditionally included)
+        ...(user && 'volunteer_id' in user ? [apiClient.getVolunteerBadges()
           .then(response => {
             console.log('Refreshing badges response:', response)
             setBadgesError(null)
@@ -307,7 +307,7 @@ useEffect(() => {
             }
             // Set badges to empty array so the UI doesn't break
             setBadges([])
-          }) : Promise.resolve()
+          })] : [])
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -811,6 +811,7 @@ useEffect(() => {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -852,4 +853,4 @@ useEffect(() => {
       </div>
     </div>
   )
-}
+};

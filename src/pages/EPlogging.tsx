@@ -19,15 +19,17 @@ import EPloggingGallery from '@/components/EPloggingGallery'
 
 export default function EPlogging() {
   const { isAuthenticated, user } = useAuth()
-  const [activeTab, setActiveTab] = useState('gallery')
+  const [activeTab, setActiveTab] = useState('my-posts')
   const [showForm, setShowForm] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const { toast } = useToast()
 
   const handleFormSuccess = () => {
     setShowForm(false)
-    setActiveTab('gallery')
+    setActiveTab('my-posts')
+    setRefreshKey(prev => prev + 1) // Force refresh of gallery
     toast({
-      title: "Post Submitted!",
+      title: "Post Submitted Successfully!",
       description: "Your ePlogging post has been submitted for review.",
     })
   }
@@ -95,15 +97,8 @@ export default function EPlogging() {
       {/* Main Content */}
       {!showForm && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="my-posts" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              My Posts
-            </TabsTrigger>
-          </TabsList>
-
           <TabsContent value="my-posts">
-            <EPloggingGallery showMyPosts={true} />
+            <EPloggingGallery key={refreshKey} showMyPosts={true} />
           </TabsContent>
         </Tabs>
       )}

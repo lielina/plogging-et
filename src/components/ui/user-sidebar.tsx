@@ -242,7 +242,7 @@ const UserSidebar = () => {
         </div>
 
         {/* Navigation items */}
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <ul className="space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;

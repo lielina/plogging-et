@@ -17,7 +17,7 @@ import {
   Clock,
   User
 } from 'lucide-react'
-import { VolunteerBadgeGenerator, VolunteerBadgeData, badgeTemplates, generateBadgeId } from '@/lib/badge-generator'
+import { VolunteerBadgeGenerator, VolunteerBadgeData, generateBadgeId } from '@/lib/badge-generator'
 import { SocialSharing } from '@/lib/social-sharing'
 
 interface VolunteerBadgeProps {
@@ -34,8 +34,6 @@ interface VolunteerBadgeProps {
 }
 
 export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSocialSharing = false }: VolunteerBadgeProps) {
-  // Always use environmental-champion template
-  const selectedTemplate = badgeTemplates.find(t => t.id === 'environmental-champion') || badgeTemplates[0]
   const [badgeData, setBadgeData] = useState<VolunteerBadgeData | null>(null)
   const [badgeImageUrl, setBadgeImageUrl] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -55,14 +53,13 @@ export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSo
       const badgeData: VolunteerBadgeData = {
         volunteerName,
         totalHours: volunteerData.total_hours_contributed,
-        badgeLevel: '', // Badge level removed
         profileImageUrl: volunteerData.profile_image_url || volunteerData.profile_image,
         volunteerId: volunteerData.volunteer_id,
         achievementDate: new Date().toISOString(),
         badgeId: generateBadgeId()
       }
 
-      const generator = new VolunteerBadgeGenerator(selectedTemplate)
+      const generator = new VolunteerBadgeGenerator()
       const imageUrl = await generator.getBadgeDataURL(badgeData)
       
       setBadgeData(badgeData)
@@ -87,7 +84,7 @@ export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSo
     if (!badgeData) return
 
     try {
-      const generator = new VolunteerBadgeGenerator(selectedTemplate)
+      const generator = new VolunteerBadgeGenerator()
       generator.downloadBadge(badgeData)
       
       toast({

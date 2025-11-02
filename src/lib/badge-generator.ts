@@ -5,7 +5,6 @@ import { FRONTEND_URL } from './api'
 export interface VolunteerBadgeData {
   volunteerName: string
   totalHours: number
-  badgeLevel: string
   profileImageUrl?: string
   volunteerId: number
   achievementDate: string
@@ -159,11 +158,14 @@ export class VolunteerBadgeGenerator {
 
   private normalizeImageUrl(url: string): string {
     try {
-      const u = new URL(url)
-      // If the image is hosted on the API domain, route through same-origin path
-      if (u.hostname === 'ploggingapi.pixeladdis.com') {
-        const path = u.pathname.startsWith('/uploads') ? u.pathname : `/uploads${u.pathname}`
-        return `${path}`
+      // Ensure we have a valid URL - return as-is if it's already a full URL
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+      // If it's a relative path starting with /uploads, construct full URL
+      if (url.startsWith('/uploads') || url.startsWith('uploads')) {
+        const baseUrl = 'https://ploggingapi.pixeladdis.com'
+        return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`
       }
       return url
     } catch {
@@ -171,6 +173,91 @@ export class VolunteerBadgeGenerator {
     }
   }
 
+
+  private async loadImageWithCORS(url: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      
+      const timeout = setTimeout(() => {
+        reject(new Error('Image load timeout'))
+      }, 10000)
+
+      img.onload = () => {
+        clearTimeout(timeout)
+        resolve(img)
+      }
+      
+      img.onerror = async (error) => {
+        clearTimeout(timeout)
+        console.warn('Direct CORS load failed, trying authenticated fetch as blob:', url)
+        
+        // If CORS fails, try fetching through API with authentication
+        // This creates a blob URL which should not have CORS restrictions
+        try {
+          const token = localStorage.getItem('token')
+          
+          // Try fetching with default mode first (browser will handle CORS)
+          // If that fails due to CORS, the server needs proper CORS headers
+          const fetchOptions: RequestInit = {
+            method: 'GET',
+            credentials: 'omit',
+          }
+          
+          if (token) {
+            fetchOptions.headers = {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+          
+          const response = await fetch(url, fetchOptions)
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+          
+          const blob = await response.blob()
+          const blobUrl = URL.createObjectURL(blob)
+          
+          // Load the blob URL into a new image element
+          // Blob URLs are same-origin so they won't taint the canvas
+          const img2 = new Image()
+          
+          const blobTimeout = setTimeout(() => {
+            URL.revokeObjectURL(blobUrl)
+            reject(new Error('Blob image load timeout'))
+          }, 10000)
+          
+          img2.onload = () => {
+            clearTimeout(blobTimeout)
+            console.log('Profile image loaded successfully via blob URL')
+            URL.revokeObjectURL(blobUrl) // Clean up after loading
+            resolve(img2)
+          }
+          
+          img2.onerror = (blobError) => {
+            clearTimeout(blobTimeout)
+            URL.revokeObjectURL(blobUrl)
+            console.warn('Failed to load blob URL, will use default avatar:', blobError)
+            reject(blobError)
+          }
+          
+          img2.src = blobUrl
+        } catch (fetchError: any) {
+          // CORS errors are expected if server doesn't support it
+          // This is handled gracefully by falling back to default avatar
+          if (fetchError.message && (fetchError.message.includes('CORS') || fetchError.message.includes('Failed to fetch'))) {
+            console.warn('CORS or network error loading image, using default avatar:', url)
+          } else {
+            console.warn('Error fetching image, using default avatar:', fetchError.message || fetchError)
+          }
+          reject(fetchError)
+        }
+      }
+      
+      img.src = url
+    })
+  }
 
   private async drawProfileImage(data: VolunteerBadgeData, centerX: number, centerY: number, radius: number) {
     // Position profile image below organization name
@@ -184,14 +271,12 @@ export class VolunteerBadgeGenerator {
     }
 
     try {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
+      const imageUrl = this.normalizeImageUrl(data.profileImageUrl!)
+      console.log('Loading profile image from URL:', imageUrl)
       
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
-        img.src = this.normalizeImageUrl(data.profileImageUrl!)
-      })
+      // Load image with CORS handling
+      const img = await this.loadImageWithCORS(imageUrl)
+      console.log('Profile image loaded successfully')
 
       // White background circle
       this.ctx.fillStyle = '#ffffff'
@@ -221,8 +306,14 @@ export class VolunteerBadgeGenerator {
       const imgSize = (profileImageRadius - 10) * 2
       this.ctx.drawImage(img, centerX - imgSize / 2, profileImageY - imgSize / 2, imgSize, imgSize)
       this.ctx.restore()
-    } catch (error) {
-      console.error('Error loading profile image:', error)
+    } catch (error: any) {
+      // Error is expected when CORS is not properly configured on server
+      // We gracefully fall back to default avatar with initials
+      if (error?.message?.includes('CORS') || error?.message?.includes('Failed to fetch')) {
+        console.debug('Profile image unavailable (CORS), using default avatar')
+      } else {
+        console.warn('Error loading profile image, using default avatar:', error?.message || error)
+      }
       this.drawDefaultAvatar(centerX, profileImageY, profileImageRadius, data.volunteerName)
     }
   }
@@ -275,9 +366,9 @@ export class VolunteerBadgeGenerator {
   private drawBadgeContent(data: VolunteerBadgeData, centerX: number, centerY: number, radius: number) {
     const { width, height } = this.size
 
-    // Position elements relative to profile image
-    const profileImageY = 130
-    const profileImageRadius = 55
+    // Position elements relative to profile image (must match drawProfileImage)
+    const profileImageY = 150
+    const profileImageRadius = 50
 
     // Draw volunteer name below profile image using secondary color
     this.ctx.fillStyle = this.secondaryColor

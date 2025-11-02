@@ -50,7 +50,6 @@ export default function VolunteerBadges() {
         setBadgeData({
           volunteerName: `${volunteerData.first_name} ${volunteerData.last_name}`,
           totalHours: volunteerData.total_hours_contributed,
-          badgeLevel: '', // Badge level removed
           profileImageUrl: volunteerData.profile_image_url || volunteerData.profile_image,
           volunteerId: volunteerData.volunteer_id,
           achievementDate: new Date().toISOString(),
