@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { apiClient, Event, FRONTEND_URL } from '@/lib/api'
+import { apiClient, Event, FRONTEND_URL, Section } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,12 +68,13 @@ interface AttendanceRecord {
 interface EventDetailData extends Event {
   enrollments: Enrollment[];
   attendance_records: AttendanceRecord[];
+  sections?: Section[];
 }
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [event, setEvent] = useState<EventDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -81,6 +82,9 @@ export default function EventDetail() {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
   const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false)
+  const [isAdminScannerOpen, setIsAdminScannerOpen] = useState(false)
+  const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
+  const [isManualEnrollmentOpen, setIsManualEnrollmentOpen] = useState(false)
   const [scanResult, setScanResult] = useState('')
   const [sectionQrCodes, setSectionQrCodes] = useState<Record<number, string>>({})
 
@@ -853,7 +857,7 @@ ${description}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-4">
-                    {event.sections.map((section, index) => (
+                    {event.sections.map((section: Section, index: number) => (
                       <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                           <h3 className="font-semibold text-gray-900">{section.section_name}</h3>
@@ -1092,13 +1096,13 @@ ${description}
         description="Scan a section QR code to check in"
       />
 
-      {/* User Check-out QR Scanner */}
+      {/* Admin Scanner for Check-in */}
       <QRScanner
-        isOpen={isCheckOutScannerOpen}
-        onClose={() => setIsCheckOutScannerOpen(false)}
-        onScan={handleUserCheckOut}
-        title="Event Check-out"
-        description="Scan the event QR code to check out"
+        isOpen={isAdminScannerOpen}
+        onClose={() => setIsAdminScannerOpen(false)}
+        onScan={handleAdminCheckIn}
+        title="Admin Check-in Scanner"
+        description="Scan volunteer badge QR code to check them in"
       />
 
       {/* Volunteer QR Scanner */}
@@ -1222,6 +1226,57 @@ ${description}
             </Button>
             <Button onClick={handleEnroll} className="bg-green-600 hover:bg-green-700">
               Confirm Enrollment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Section Check-in Dialog */}
+      <Dialog open={isSectionCheckInDialogOpen} onOpenChange={setIsSectionCheckInDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Section to Check In</DialogTitle>
+            <DialogDescription>
+              Please select which section you'd like to check in to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {event?.sections?.map((section: Section, index: number) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => handleSectionCheckIn(index + 1)}
+              >
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold">{section.section_name}</span>
+                  <span className="text-xs text-gray-500">
+                    {formatTime(section.start_time)} - {formatTime(section.end_time)}
+                  </span>
+                </div>
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSectionCheckInDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Enrollment Dialog */}
+      <Dialog open={isManualEnrollmentOpen} onOpenChange={setIsManualEnrollmentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manual Enrollment</DialogTitle>
+            <DialogDescription>
+              This feature will be available soon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualEnrollmentOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
