@@ -268,6 +268,39 @@ export interface ContactMessage {
   updated_at: string;
 }
 
+export interface EPloggingPost {
+  post_id: number;
+  // For admin endpoints, backend may return 'id' instead of 'post_id'
+  id?: number;
+  volunteer_id: number;
+  quote: string;
+  image_path: string;
+  image_url?: string;
+  location: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  updated_at: string;
+  // Admin endpoints may return these fields
+  title?: string;
+  description?: string;
+  volunteer: {
+    volunteer_id: number;
+    first_name: string;
+    last_name: string;
+    profile_image?: string;
+    profile_image_url?: string;
+  };
+}
+
+export interface EPloggingSubmission {
+  image: File;
+  quote: string;
+  location: string;
+  
+}
+
+
+
 export interface LoginResponse {
   status: string;
   message: string;
@@ -377,6 +410,120 @@ class ApiClient {
     // Clear user-specific data on logout
     // Don't remove userEnrollments as we now rely on backend for enrollment status
     localStorage.removeItem('userType');
+  }
+
+  /**
+   * Fetch an image as a blob to avoid CORS issues
+   * For public assets like /uploads/, tries without Authorization header first
+   * since CORS preflight may not allow Authorization header
+   */
+  async fetchImageAsBlob(imageUrl: string): Promise<Blob> {
+    // Always ensure we have the latest token from localStorage
+    this.token = localStorage.getItem('token');
+
+    // Check if the URL is a full URL or a relative path
+    let url: string;
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      // Full URL - extract the path part if it's from the API server
+      const apiBaseMatch = imageUrl.match(/https?:\/\/[^/]+(\/.*)/);
+      if (apiBaseMatch && imageUrl.includes('ploggingapi.pixeladdis.com')) {
+        // Try to fetch through API base URL if it's from the same server
+        const path = apiBaseMatch[1];
+        // Check if path starts with /uploads or /api
+        if (path.startsWith('/uploads')) {
+          // Try fetching directly from the uploads path
+          // The server at this path needs CORS headers configured
+          url = imageUrl; // Use full URL as-is
+        } else {
+          url = imageUrl;
+        }
+      } else {
+        url = imageUrl;
+      }
+    } else {
+      // Relative path - prepend API base URL (without /api/v1 for uploads)
+      if (imageUrl.startsWith('/uploads')) {
+        // Construct full URL for uploads
+        const baseUrl = this.baseURL.replace('/api/v1', '');
+        url = `${baseUrl}${imageUrl}`;
+      } else {
+        url = `${this.baseURL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      }
+    }
+
+    // Check if this is a public asset (uploads) that doesn't require auth
+    const isPublicAsset = url.includes('/uploads/');
+
+    console.log('Fetching image as blob:', url, isPublicAsset ? '(public asset, no auth)' : '(with auth)');
+
+    try {
+      // For public assets, try without Authorization header first to avoid CORS issues
+      if (isPublicAsset) {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit',
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            if (blob.type.startsWith('image/')) {
+              return blob;
+            }
+          }
+          // If 401/403, fall through to try with auth
+          if (response.status === 401 || response.status === 403) {
+            console.log('Public fetch returned 401/403, trying with auth...');
+          }
+        } catch (publicError: any) {
+          // If CORS error on public fetch, it means we can't use Authorization header
+          // Fall through to try Image element method instead
+          if (publicError.message?.includes('CORS') || publicError.message?.includes('blocked')) {
+            throw new Error('CORS_BLOCKED_PUBLIC');
+          }
+          // Other errors, try with auth
+        }
+      }
+
+      // Try with Authorization header (for protected assets or if public failed with 401/403)
+      const headers: Record<string, string> = {};
+      if (this.token && !isPublicAsset) {
+        headers.Authorization = `Bearer ${this.token}`;
+      } else if (this.token && isPublicAsset) {
+        // For uploads, server may block Authorization in CORS, so try without first
+        // But if we're here, public fetch may have failed, so try with auth anyway
+        headers.Authorization = `Bearer ${this.token}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
+        mode: 'cors',
+        credentials: 'omit',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      
+      // Validate it's an image
+      if (!blob.type.startsWith('image/')) {
+        throw new Error(`Invalid image type: ${blob.type}`);
+      }
+
+      return blob;
+    } catch (error: any) {
+      // Provide helpful error message for CORS issues
+      const errorMessage = error.message || String(error);
+      if (errorMessage === 'CORS_BLOCKED_PUBLIC' || errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch') || errorMessage.includes('blocked')) {
+        // Re-throw with a clear message that the image element method should be used
+        throw new Error('CORS_BLOCKED');
+      }
+      throw error;
+    }
   }
 
   // Health Check
@@ -1045,6 +1192,93 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
-}
 
+  // Badge-related endpoints
+  async generateVolunteerBadge(volunteerId: number): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/volunteer/${volunteerId}/badge`, {
+      method: "POST",
+    });
+  }
+
+  async shareBadge(badgeId: string, platform: string): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/badge/${badgeId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ platform }),
+    });
+  }
+
+  async getVolunteerBadgesById(volunteerId: number): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>(`/volunteer/${volunteerId}/badges`);
+  }
+
+  // Get paginated ePlogging posts
+  async getEPloggingPosts(page = 1, perPage = 12): Promise<any> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    return this.request(`/volunteer/eplogging?${params.toString()}`);
+  }
+
+  // Get only my posts
+  async getMyEPloggingPosts(page = 1, perPage = 22): Promise<any> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    return this.request(`/volunteer/eplogging/my-posts?${params.toString()}`); 
+  }
+
+  async getEPloggingPost(post_id: number): Promise<any> {
+    return this.request(`/volunteer/eplogging/${post_id}`);
+  }
+
+  async createEPloggingPost(data: EPloggingSubmission): Promise<any> {
+    const formData = new FormData();
+    formData.append("location", data.location);
+    formData.append("quote", data.quote);
+    formData.append("image", data.image);
+    return this.request("/volunteer/eplogging", {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  async updateEPloggingPost(
+    post_id: number,
+    data: Partial<EPloggingSubmission>
+  ): Promise<any> {
+    const formData = new FormData();
+    if (data.quote) formData.append("quote", data.quote);
+    if (data.location) formData.append("location", data.location);
+    if (data.image) formData.append("image", data.image);
+    // Some backends (e.g., Laravel) require method override for multipart updates
+    formData.append("_method", "PUT");
+
+    return this.request(`/volunteer/eplogging/${post_id}`, {
+      method: "POST",
+      body: formData,
+      headers: {},
+    });
+  }
+
+  async deleteEPloggingPost(post_id: number): Promise<{ message: string }> {
+    return this.request(`/volunteer/eplogging/${post_id}`, { method: "DELETE" });
+  }
+
+  // Admin ePlogging endpoints
+  async getAllEPloggingPosts(
+    page = 1,
+    perPage = 15,
+    status?: string
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    if (status) params.append("status", status);
+
+    return this.request(`/admin/eplogging?${params.toString()}`);
+  }
+}
 export const apiClient = new ApiClient(BASE_URL);
