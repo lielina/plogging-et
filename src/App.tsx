@@ -7,6 +7,7 @@ import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import Events from './pages/Events'
 import Leaderboard from './pages/Leaderboard'
+import PublicLeaderboard from './pages/PublicLeaderboard'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -58,6 +59,7 @@ function AppRoutes() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/leaderboard-public" element={<PublicLeaderboard />} />
           {/* Protected Volunteer Routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
