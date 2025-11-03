@@ -49,6 +49,21 @@ export interface Volunteer {
   profile_image_url?: string; // Profile image URL
 }
 
+export interface EnrollmentResponse {
+  status: string;
+  data: {
+    volunteer_id: number;
+    event_id: number;
+    status: string;
+    updated_at: string;
+    created_at: string;
+    enrollment_id: number;
+    volunteer: Volunteer;
+    event: Event;
+  };
+  message: string;
+}
+
 export interface DetailedVolunteer extends Volunteer {
   registration_date: string;
   last_login: string;
@@ -138,6 +153,7 @@ export interface Event {
 
 // Add Section interface for event sections
 export interface Section {
+  section_id?: number; // Optional when creating, required when returned from API
   section_name: string;
   start_time: string;
   end_time: string;
@@ -359,7 +375,7 @@ class ApiClient {
     this.token = null;
     localStorage.removeItem('token');
     // Clear user-specific data on logout
-    localStorage.removeItem('userEnrollments');
+    // Don't remove userEnrollments as we now rely on backend for enrollment status
     localStorage.removeItem('userType');
   }
 
@@ -560,10 +576,15 @@ class ApiClient {
     return this.request<{ data: { qr_code_path: string } }>(`/admin/events/${eventId}/qr-code`);
   }
 
-  async enrollInEvent(eventId: number): Promise<{ data: any }> {
-    return this.request<{ data: any }>('/volunteer/enrollments', {
+  async enrollInEvent(eventId: number, volunteerId?: number): Promise<{ status: string; data: EnrollmentResponse; message: string }> {
+    // If volunteerId is provided, use it; otherwise, let backend extract from auth token
+    const requestBody = volunteerId
+      ? { event_id: eventId, volunteer_id: volunteerId }
+      : { event_id: eventId };
+
+    return this.request<{ status: string; data: EnrollmentResponse; message: string }>('/volunteer/enrollments', {
       method: 'POST',
-      body: JSON.stringify({ event_id: eventId }),
+      body: JSON.stringify(requestBody),
     });
   }
 
@@ -600,6 +621,14 @@ class ApiClient {
     return this.request<{ data: any }>('/volunteer/attendance/check-in', {
       method: 'POST',
       body: JSON.stringify({ volunteer_id: volunteerId, event_id: eventId, section_id: sectionId }),
+    });
+  }
+
+  // New manual enrollment method
+  async manualEnrollVolunteer(volunteerId: number, eventId: number): Promise<{ data: any }> {
+    return this.request<{ data: any }>('/admin/enrollments/register', {
+      method: 'POST',
+      body: JSON.stringify({ volunteer_id: volunteerId, event_id: eventId }),
     });
   }
 

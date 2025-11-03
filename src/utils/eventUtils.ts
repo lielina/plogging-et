@@ -22,22 +22,105 @@ export function getEventStatus(
     endTime: string
 ): EventStatusInfo {
     try {
+        // Use UTC time for consistent comparison
         const now = new Date();
+        console.log('Calculating event status with inputs:', { eventDate, startTime, endTime });
 
-        // Parse event date and times
-        const eventDateObj = new Date(eventDate);
+        // Parse event date
+        let eventDateObj: Date;
+        if (eventDate.includes('T')) {
+            // If it's already a datetime string, extract just the date part
+            eventDateObj = new Date(eventDate.split('T')[0]);
+        } else {
+            // If it's just a date string
+            eventDateObj = new Date(eventDate);
+        }
+
+        console.log('Parsed event date:', {
+            input: eventDate,
+            parsedDate: eventDateObj.toISOString(),
+            parsedDateTimestamp: eventDateObj.getTime()
+        });
+
+        // Handle different time formats for start time
+        let formattedStartTime: string;
+        if (startTime && startTime.includes('T')) {
+            // ISO format with microseconds and timezone (2025-09-29T17:07:00.000000Z)
+            const timePart = startTime.split('T')[1];
+            if (timePart) {
+                // Remove microseconds but keep seconds and timezone
+                formattedStartTime = timePart.replace(/\.\d+Z$/, 'Z');
+            } else {
+                formattedStartTime = '00:00:00Z';
+            }
+        } else if (startTime && /^\d{1,2}:\d{2}$/.test(startTime)) {
+            // HH:MM format
+            formattedStartTime = `${startTime}:00Z`;
+        } else if (startTime && /^\d{1,2}:\d{2}:\d{2}$/.test(startTime)) {
+            // HH:MM:SS format
+            formattedStartTime = `${startTime}Z`;
+        } else if (startTime && /^\d{1,2}:\d{2}:\d{2}\.\d+Z$/.test(startTime)) {
+            // HH:MM:SS.mmmZ format
+            formattedStartTime = startTime.replace(/\.\d+Z$/, 'Z');
+        } else {
+            formattedStartTime = '00:00:00Z';
+        }
+
+        // Handle different time formats for end time
+        let formattedEndTime: string;
+        if (endTime && endTime.includes('T')) {
+            // ISO format with microseconds and timezone (2025-09-29T17:07:00.000000Z)
+            const timePart = endTime.split('T')[1];
+            if (timePart) {
+                // Remove microseconds but keep seconds and timezone
+                formattedEndTime = timePart.replace(/\.\d+Z$/, 'Z');
+            } else {
+                formattedEndTime = '23:59:59Z';
+            }
+        } else if (endTime && /^\d{1,2}:\d{2}$/.test(endTime)) {
+            // HH:MM format
+            formattedEndTime = `${endTime}:00Z`;
+        } else if (endTime && /^\d{1,2}:\d{2}:\d{2}$/.test(endTime)) {
+            // HH:MM:SS format
+            formattedEndTime = `${endTime}Z`;
+        } else if (endTime && /^\d{1,2}:\d{2}:\d{2}\.\d+Z$/.test(endTime)) {
+            // HH:MM:SS.mmmZ format
+            formattedEndTime = endTime.replace(/\.\d+Z$/, 'Z');
+        } else {
+            formattedEndTime = '23:59:59Z';
+        }
 
         // Create full datetime objects for start and end
-        const eventStartStr = eventDateObj.toISOString().split('T')[0] + 'T' + startTime;
-        const eventEndStr = eventDateObj.toISOString().split('T')[0] + 'T' + endTime;
+        // Combine date and time properly, ensuring consistent timezone handling
+        const eventDateStr = eventDateObj.toISOString().split('T')[0];
+        const eventStartStr = `${eventDateStr}T${formattedStartTime}`;
+        const eventEndStr = `${eventDateStr}T${formattedEndTime}`;
+
+        console.log('Formatted datetime strings:', { eventStartStr, eventEndStr });
 
         const eventStart = new Date(eventStartStr);
         const eventEnd = new Date(eventEndStr);
+
+        // Log the actual values being compared
+        console.log('Time comparison:', {
+            now: now.toISOString(),
+            eventStart: eventStart.toISOString(),
+            eventEnd: eventEnd.toISOString(),
+            nowTimestamp: now.getTime(),
+            eventStartTimestamp: eventStart.getTime(),
+            eventEndTimestamp: eventEnd.getTime()
+        });
 
         // Handle case where end time is next day (e.g., 22:00 to 02:00)
         if (eventEnd < eventStart) {
             eventEnd.setDate(eventEnd.getDate() + 1);
         }
+
+        console.log('Final datetime objects:', {
+            now: now.toISOString(),
+            eventStart: eventStart.toISOString(),
+            eventEnd: eventEnd.toISOString()
+        });
 
         // Determine status based on current time
         if (now < eventStart) {
