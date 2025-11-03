@@ -162,7 +162,6 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
         await SocialSharing.copyToClipboard({
           volunteerName: `${post.volunteer.first_name} ${post.volunteer.last_name}`,
           totalHours: post.hours_spent ?? 0,
-          badgeLevel: 'ePlogging Contributor',
           volunteerId: post.volunteer.volunteer_id,
           achievementDate: post.created_at,
           badgeId: `EPLOGGING-${post.post_id}`

@@ -12,8 +12,7 @@ export class SocialSharing {
   private static readonly DEFAULT_HASHTAGS = ['PloggingEthiopia', 'EnvironmentalAction', 'CommunityService', 'VolunteerBadge']
 
   static generateShareText(data: VolunteerBadgeData): string {
-    const badgeLevelText = data.badgeLevel && data.badgeLevel.trim() ? `${data.badgeLevel} ` : ''
-    return `I'm proud to be a ${badgeLevelText}volunteer with ${data.totalHours} hours of community service! 🌱 Join me in making a difference with Plogging Ethiopia. #PloggingEthiopia #EnvironmentalAction #CommunityService`
+    return `I'm proud to be a volunteer with ${data.totalHours} hours of community service! 🌱 Join me in making a difference with Plogging Ethiopia. #PloggingEthiopia #EnvironmentalAction #CommunityService`
   }
 
   static generateShareUrl(badgeId: string): string {

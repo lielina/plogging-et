@@ -1265,6 +1265,10 @@ class ApiClient {
     return this.request(`/volunteer/eplogging/${post_id}`, { method: "DELETE" });
   }
 
+  async likeEPloggingPost(post_id: number): Promise<any> {
+    return this.request(`/volunteer/eplogging/${post_id}/like`, { method: "POST" });
+  }
+
   // Admin ePlogging endpoints
   async getAllEPloggingPosts(
     page = 1,
