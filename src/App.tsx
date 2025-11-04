@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SurveyProvider } from './contexts/SurveyContext'
-import { SidebarProvider } from './contexts/SidebarContext' // Add this import
 import { Toaster } from './components/ui/toaster'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
@@ -43,72 +42,60 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
   return <>{children}</>;
 };
 
-function AppRoutes() {
-  return (
-    <div className="min-h-screen bg-background">
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/events/:eventId" element={<EventDetail />} />
-          <Route path="/about" element={<div>About Page</div>} />
-          <Route path="/membership" element={<Membership />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:postId" element={<BlogPostPage />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/leaderboard-public" element={<PublicLeaderboard />} />
-          {/* Protected Volunteer Routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/leaderboard" element={
-            <ProtectedRoute>
-              <Leaderboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          <Route path="/certificates" element={
-            <ProtectedRoute>
-              <VolunteerCertificates />
-            </ProtectedRoute>
-          } />
-          <Route path="/badges" element={
-            <ProtectedRoute>
-              <VolunteerBadges />
-            </ProtectedRoute>
-          } />
-          <Route path="/eplogging" element={
-            <ProtectedRoute>
-              <EPlogging />
-            </ProtectedRoute>
-          } />
-        </Route>
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/welcome" element={<Welcome />} />
-      </Routes>
-    </div>
-  )
-}
-
 function App() {
   return (
     <AuthProvider>
-      <SidebarProvider> {/* Wrap with SidebarProvider */}
-        <SurveyProvider>
-          <AppRoutes />
-          <Toaster />
-        </SurveyProvider>
-      </SidebarProvider>
+      <SurveyProvider>
+        <div className="min-h-screen bg-background">
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/events/:eventId" element={<EventDetail />} />
+              <Route path="/about" element={<div>About Page</div>} />
+              <Route path="/membership" element={<Membership />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:postId" element={<BlogPostPage />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/eplogging" element={<EPlogging />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/leaderboard-public" element={<PublicLeaderboard />} />
+              {/* Protected Volunteer Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/leaderboard" element={
+                <ProtectedRoute>
+                  <Leaderboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/certificates" element={
+                <ProtectedRoute>
+                  <VolunteerCertificates />
+                </ProtectedRoute>
+              } />
+              <Route path="/badges" element={
+                <ProtectedRoute>
+                  <VolunteerBadges />
+                </ProtectedRoute>
+              } />
+            </Route>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/welcome" element={<Welcome />} />
+          </Routes>
+        </div>
+        <Toaster />
+      </SurveyProvider>
     </AuthProvider>
   )
 }

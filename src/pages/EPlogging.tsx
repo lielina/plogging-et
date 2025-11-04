@@ -38,20 +38,74 @@ export default function EPlogging() {
     setShowForm(false)
   }
 
+  // Show public gallery for unauthenticated users
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Camera className="w-8 h-8 text-green-600" />
+      <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <Camera className="w-8 h-8 text-green-600" />
+                ePlogging
+              </h1>
+              <p className="text-gray-600">
+                Explore community plogging activities from around the world. Log in to share your own experience.
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">ePlogging</h1>
-          <p className="text-gray-600 mb-6">
-            Share your remote plogging activities with the community. Please log in to participate.
-          </p>
-          <Button asChild>
-            <a href="/login">Login to Continue</a>
-          </Button>
+        </div>
+
+        {/* Public Gallery */}
+        <EPloggingGallery isPublic={true} />
+
+        {/* Information Cards */}
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="bg-green-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="text-green-800 flex items-center gap-2">
+                <Leaf className="w-5 h-5" />
+                What is ePlogging?
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-green-700 text-sm">
+                ePlogging allows you to participate in environmental cleanup activities from anywhere. 
+                Simply share a photo, inspirational quote, and location to inspire others to take action.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-blue-800 flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                Global Impact
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-blue-700 text-sm">
+                Every ePlogging post contributes to our global environmental mission. 
+                Track your impact and see how your actions inspire others worldwide.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-purple-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="text-purple-800 flex items-center gap-2">
+                <Award className="w-5 h-5" />
+                Community Recognition
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-purple-700 text-sm">
+                Get recognition from the community for your environmental efforts. 
+                Your posts help build a culture of environmental responsibility.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -145,7 +199,7 @@ export default function EPlogging() {
             </CardHeader>
             <CardContent>
               <p className="text-purple-700 text-sm">
-                Get likes and recognition from the community for your environmental efforts. 
+                Get recognition from the community for your environmental efforts. 
                 Your posts help build a culture of environmental responsibility.
               </p>
             </CardContent>
