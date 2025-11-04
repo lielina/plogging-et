@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { apiClient, Event, Section, FRONTEND_URL } from '@/lib/api'
+import { apiClient, Event, FRONTEND_URL, Section } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,26 +68,28 @@ interface AttendanceRecord {
 interface EventDetailData extends Event {
   enrollments: Enrollment[];
   attendance_records: AttendanceRecord[];
-  sections?: Section[]; // Add sections property
+  sections?: Section[];
 }
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [event, setEvent] = useState<EventDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isVolunteerScannerOpen, setIsVolunteerScannerOpen] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
-  // const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false) // Removed as per requirement - only check-in is needed
+  const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false)
+  const [isAdminScannerOpen, setIsAdminScannerOpen] = useState(false)
+  const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
+  const [isManualEnrollmentOpen, setIsManualEnrollmentOpen] = useState(false)
   const [scanResult, setScanResult] = useState('')
   const [sectionQrCodes, setSectionQrCodes] = useState<Record<number, string>>({})
 
   const [copied, setCopied] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
-  const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
 
   // Check if current user is enrolled in this event
   const isUserEnrolled = () => {
@@ -493,8 +495,54 @@ ${description}
   // User Check-in Function (removed event QR code check-in)
   const handleUserCheckIn = async (qrData: string) => {
     try {
-      // Only allow section-based check-in
-      setScanResult('Please scan a section QR code instead of the event QR code')
+    // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
+      let scannedEventId: number | null = null;
+      
+      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
+        const urlParts = qrData.split('/')
+        scannedEventId = parseInt(urlParts[urlParts.length - 1])
+      } else {
+        // Handle old format for backward compatibility
+        const parts = qrData.split(':')
+        if (parts.length === 2 && parts[0] === 'event') {
+          scannedEventId = parseInt(parts[1])
+        }
+      }
+      
+      if (scannedEventId && scannedEventId === parseInt(eventId!)) {
+        // Get user ID based on user type
+        let userId = ''
+        if (user && 'volunteer_id' in user) {
+          userId = `volunteer:${user.volunteer_id}`
+        } else if (user && 'admin_id' in user) {
+          userId = `admin:${user.admin_id}`
+        }
+        
+        if (!userId) {
+          throw new Error('User not authenticated')
+        }
+        
+        // If event has sections, open section selection dialog
+        if (event?.sections && event.sections.length > 0) {
+          setIsSectionCheckInDialogOpen(true)
+          return
+        }
+        
+        // Perform check-in for the current user
+        await apiClient.checkIn(scannedEventId, userId)
+        setScanResult('Check-in successful!')
+        
+        // Refresh event data to show updated attendance
+        const response = await apiClient.getEventDetails(parseInt(eventId!))
+        setEvent(response.data as EventDetailData)
+        
+        toast({
+          title: "Check-in Successful",
+          description: "You have been successfully checked in to this event.",
+        })
+      } else {
+        setScanResult('Invalid event QR code')
+      }
     } catch (err: any) {
       setScanResult(err.message || 'Check-in failed')
       toast({
@@ -505,22 +553,11 @@ ${description}
     }
   }
 
-  // New section-based check-in handler
+// New section-based check-in handler
   const handleSectionCheckIn = async (sectionId: number) => {
     if (!user || !('volunteer_id' in user)) return
     
     try {
-      // Check if volunteer is enrolled in the event
-      const isEnrolled = event?.enrollments.some(enrollment => 
-        enrollment.volunteer.volunteer_id === user.volunteer_id
-      )
-      
-      if (!isEnrolled) {
-        setScanResult('You are not enrolled in this event')
-        setIsSectionCheckInDialogOpen(false)
-        return
-      }
-      
       // Call the section-based check-in API
       await apiClient.checkInSection(user.volunteer_id, parseInt(eventId!), sectionId)
       setScanResult('Check-in to section successful!')
@@ -535,14 +572,59 @@ ${description}
         description: "You have been successfully checked in to the section.",
       })
     } catch (err: any) {
-      setScanResult(err.message || 'Section check-in failed')
+      setScanResult(err.message || 'Check-out failed')
       toast({
-        title: "Check-in Failed",
-        description: err.message || "Failed to check in to the section.",
+        title: "Check-out Failed",
+        description: err.message || "Failed to check out from the event.",
         variant: "destructive",
       })
     }
   }
+  // User Check-out Function removed as per requirement - only check-in is needed
+
+  // Admin Check-in Function
+  const handleAdminCheckIn = async (qrData: string) => {
+    try {
+      // Parse QR data (format: volunteer:volunteerId)
+      const parts = qrData.split(':')
+      if (parts.length === 2 && parts[0] === 'volunteer') {
+        const volunteerId = parseInt(parts[1])
+        
+        // Check if volunteer is enrolled in the event
+        const isEnrolled = event?.enrollments.some(enrollment => 
+          enrollment.volunteer.volunteer_id === volunteerId
+        )
+        
+        if (isEnrolled) {
+          // Perform check-in for the volunteer
+          await apiClient.checkIn(parseInt(eventId!), qrData)
+          setScanResult(`Volunteer ${volunteerId} checked in successfully!`)
+          
+          // Refresh event data to show updated attendance
+          const response = await apiClient.getEventDetails(parseInt(eventId!))
+          setEvent(response.data as EventDetailData)
+          
+          toast({
+            title: "Check-in Successful",
+            description: `Volunteer has been successfully checked in to this event.`,
+          })
+        } else {
+          setScanResult(`Volunteer ${volunteerId} is not enrolled in this event`)
+        }
+      } else {
+        setScanResult('Invalid volunteer badge QR code')
+      }
+    } catch (err: any) {
+      setScanResult(err.message || 'Check-in failed')
+      toast({
+        title: "Check-in Failed",
+        description: err.message || "Failed to check in the volunteer.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Admin Check-out Function removed as per requirement - only check-in is needed
 
   if (isLoading) {
     return (
@@ -634,35 +716,58 @@ ${description}
                 <p className="text-gray-600 text-base sm:text-lg">{event.location_name}</p>
               </div>
               <div className="flex flex-wrap gap-3">
-                {/* Enrollment button for regular users */}
-                <Button 
-                  variant="default"
-                  onClick={handleEnrollClick}
-                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                  disabled={isUserEnrolled()}
-                >
-                  {isUserEnrolled() ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Enrolled
-                    </>
-                  ) : (
-                    <>
+              {!isAdmin ? (
+                  <>
+                    {/* Enrollment button for regular users */}
+                    <Button 
+                      variant="default"
+                      onClick={handleEnrollClick}
+                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                      disabled={isUserEnrolled()}
+                    >
+                      {isUserEnrolled() ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Enrolled
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Enroll Now
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsCheckInScannerOpen(true)}
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
+                      disabled={!isUserEnrolled()}
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      <span className="whitespace-nowrap">Check In</span>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsAdminScannerOpen(true)}
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
+                    >
+                      <Scan className="h-4 w-4 mr-2" />
+                      <span className="whitespace-nowrap">Scan Badge</span>
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsManualEnrollmentOpen(true)}
+                      className="bg-white hover:bg-gray-50 w-full sm:w-auto"
+                    >
                       <Plus className="h-4 w-4 mr-2" />
-                      Enroll Now
-                    </>
-                  )}
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  onClick={() => setIsCheckInScannerOpen(true)}
-                  className="bg-white hover:bg-gray-50 w-full sm:w-auto"
-                  disabled={!isUserEnrolled()}
-                >
-                  <Scan className="h-4 w-4 mr-2" />
-                  <span className="whitespace-nowrap">Check In</span>
-                </Button>
+                      <span className="whitespace-nowrap">Manual Enroll</span>
+                    </Button>
+                  </>
+                )}
                 <Button 
                   variant="outline"
                   onClick={() => setIsShareDialogOpen(true)}
@@ -744,7 +849,6 @@ ${description}
                 </div>
               </CardContent>
             </Card>
-
             {/* Event Sections */}
             {event.sections && event.sections.length > 0 && (
               <Card className="shadow-sm border-0 bg-white">
@@ -753,7 +857,7 @@ ${description}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-4">
-                    {event.sections.map((section, index) => (
+                    {event.sections.map((section: Section, index: number) => (
                       <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                           <h3 className="font-semibold text-gray-900">{section.section_name}</h3>
@@ -774,53 +878,6 @@ ${description}
                             <div>
                               <p className="text-xs text-gray-500">Distance</p>
                               <p className="text-sm font-medium">{section.distance_km} km</p>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center p-2 bg-white rounded">
-                            <div className="flex flex-col items-center">
-                              {sectionQrCodes[index + 1] ? (
-                                <>
-                                  <img 
-                                    src={sectionQrCodes[index + 1]}
-                                    alt={`Section ${index + 1} QR Code`}
-                                    className="w-16 h-16 object-contain"
-                                  />
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="text-xs mt-2"
-                                    onClick={() => {
-                                      // Create a temporary canvas to scale the QR code for download
-                                      const canvas = document.createElement('canvas')
-                                      const ctx = canvas.getContext('2d')
-                                      const img = new Image()
-                                      img.onload = () => {
-                                        canvas.width = img.width * 4
-                                        canvas.height = img.height * 4
-                                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
-                                        const dataUrl = canvas.toDataURL('image/png')
-                                        
-                                        // Create download link
-                                        const link = document.createElement('a')
-                                        link.href = dataUrl
-                                        link.download = `section-${index + 1}-${section.section_name.replace(/\s+/g, '-')}-qr-code.png`
-                                        document.body.appendChild(link)
-                                        link.click()
-                                        document.body.removeChild(link)
-                                      }
-                                      img.src = sectionQrCodes[index + 1]
-                                    }}
-                                  >
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Download
-                                  </Button>
-                                </>
-                              ) : (
-                                <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
-                                </div>
-                              )}
-                              <span className="text-xs text-gray-600 mt-2">Scan to Check In</span>
                             </div>
                           </div>
                         </div>
@@ -1039,7 +1096,14 @@ ${description}
         description="Scan a section QR code to check in"
       />
 
-      {/* User Check-out QR Scanner removed as per requirement - only check-in is needed */}
+      {/* Admin Scanner for Check-in */}
+      <QRScanner
+        isOpen={isAdminScannerOpen}
+        onClose={() => setIsAdminScannerOpen(false)}
+        onScan={handleAdminCheckIn}
+        title="Admin Check-in Scanner"
+        description="Scan volunteer badge QR code to check them in"
+      />
 
       {/* Volunteer QR Scanner */}
       <QRScanner
@@ -1169,48 +1233,56 @@ ${description}
 
       {/* Section Check-in Dialog */}
       <Dialog open={isSectionCheckInDialogOpen} onOpenChange={setIsSectionCheckInDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Select Section</DialogTitle>
+            <DialogTitle>Select Section to Check In</DialogTitle>
             <DialogDescription>
-              Select which section you want to check into.
+              Please select which section you'd like to check in to.
             </DialogDescription>
           </DialogHeader>
-          
-          {event?.sections && event.sections.length > 0 && (
-            <div className="space-y-3 max-h-60 overflow-y-auto">
-              {event.sections.map((section, index) => (
-                <div 
-                  key={index}
-                  className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => handleSectionCheckIn(index + 1)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{section.section_name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {formatTime(section.start_time)} - {formatTime(section.end_time)}
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {section.distance_km} km
-                    </Badge>
-                  </div>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {event?.sections?.map((section: Section, index: number) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => handleSectionCheckIn(index + 1)}
+              >
+                <div className="flex flex-col items-start">
+                  <span className="font-semibold">{section.section_name}</span>
+                  <span className="text-xs text-gray-500">
+                    {formatTime(section.start_time)} - {formatTime(section.end_time)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-          
+              </Button>
+            ))}
+          </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsSectionCheckInDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsSectionCheckInDialogOpen(false)}>
               Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manual Enrollment Dialog */}
+      <Dialog open={isManualEnrollmentOpen} onOpenChange={setIsManualEnrollmentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manual Enrollment</DialogTitle>
+            <DialogDescription>
+              This feature will be available soon.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualEnrollmentOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  </div>)
+</div>
+)
+
 }

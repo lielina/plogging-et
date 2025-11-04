@@ -133,9 +133,13 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       if (navigator.share) {
         await navigator.share(shareData)
       } else {
-        // Copy share URL to clipboard
-        const shareText = `Check out this ePlogging post: "${post.quote}" - ${shareData.url}`
-        await navigator.clipboard.writeText(shareText)
+        await SocialSharing.copyToClipboard({
+          volunteerName: `${post.volunteer.first_name} ${post.volunteer.last_name}`,
+          totalHours: post.hours_spent ?? 0,
+          volunteerId: post.volunteer.volunteer_id,
+          achievementDate: post.created_at,
+          badgeId: `EPLOGGING-${post.post_id}`
+        })
         toast({
           title: "Link Copied",
           description: "Post link has been copied to clipboard.",
