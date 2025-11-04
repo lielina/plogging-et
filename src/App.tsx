@@ -116,7 +116,7 @@ function App() {
               <Route path="/eplogging" element={<EPlogging />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/leaderboard-public" element={<PublicLeaderboard />} />
+              <Route path="/leaderboard-public" element={<Leaderboard />} />
               {/* Protected Volunteer Routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>

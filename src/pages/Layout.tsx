@@ -114,22 +114,18 @@ const Layout = () => {
                   <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12 mr-6 lg:mr-10">
                   {[
                     { name: "Home", to: "/" },
-                    { name: "About", to: "/#aboutus" },
+                    { name: "Event", to: "/events" },
+                    { name: "ePlogging", to: "/eplogging" },
                     { name: "Membership", to: "/membership" },
                     { name: "Gallery", to: "/gallery" },
                     { name: "Blog", to: "/blog" },
-                    { name: "Event", to: "/events" },
                     { name: "Contact", to: "/contact" },
-                    { name: "Eplogging", to: "/eplogging" },
                   ].map((link) => {
                     const isHomeActive =
                       location.pathname === "/" && location.hash === "";
-                    const isAboutActive = location.hash === "#aboutus";
                     let isActive = false;
                     if (link.to === "/") {
                       isActive = isHomeActive;
-                    } else if (link.to === "/#aboutus") {
-                      isActive = isAboutActive;
                     } else {
                       isActive = location.pathname === link.to;
                     }
@@ -239,23 +235,19 @@ const Layout = () => {
                   <div className="flex flex-col space-y-3">
                     {[
                       { name: "Home", to: "/" },
-                      { name: "About", to: "/#aboutus" },
+                      { name: "Event", to: "/events" },
+                      { name: "ePlogging", to: "/eplogging" },
                       { name: "Membership", to: "/membership" },
                       { name: "Gallery", to: "/gallery" },
                       { name: "Blog", to: "/blog" },
-                      { name: "Event", to: "/events" },
                       { name: "Contact", to: "/contact" },
-                      { name: "Eplogging", to: "/eplogging" },
                       
                     ].map((link) => {
                       const isHomeActive =
                         location.pathname === "/" && location.hash === "";
-                      const isAboutActive = location.hash === "#aboutus";
                       let isActive = false;
                       if (link.to === "/") {
                         isActive = isHomeActive;
-                      } else if (link.to === "/#aboutus") {
-                        isActive = isAboutActive;
                       } else {
                         isActive = location.pathname === link.to;
                       }

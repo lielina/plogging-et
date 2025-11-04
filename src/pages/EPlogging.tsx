@@ -51,7 +51,7 @@ export default function EPlogging() {
                 ePlogging
               </h1>
               <p className="text-gray-600">
-                Explore community plogging activities from around the world. Log in to share your own experience.
+                Explore community plogging activities. Log in to share your own experience.
               </p>
             </div>
           </div>
