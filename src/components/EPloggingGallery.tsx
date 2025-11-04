@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { apiClient, EPloggingPost } from '@/lib/api'
 import { SocialSharing } from '@/lib/social-sharing'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface EPloggingGalleryProps {
   showMyPosts?: boolean
@@ -31,6 +32,7 @@ interface EPloggingGalleryProps {
 type EPPost = EPloggingPost & { hours_spent?: number }
 
 export default function EPloggingGallery({ showMyPosts = false, isPublic = false, className }: EPloggingGalleryProps) {
+  const { isAuthenticated } = useAuth()
   const [posts, setPosts] = useState<EPPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -79,7 +81,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       setError(null)
 
       const response = isPublic
-        ? await apiClient.getPublicEPloggingPosts(15, 0)  // volunteerId 0 to get all public posts
+        ? await apiClient.getPublicEPloggingPosts(15, undefined)  // Don't send volunteer_id when not authenticated
         : showMyPosts 
           ? await apiClient.getMyEPloggingPosts(currentPage, 22)
           : await apiClient.getEPloggingPosts(currentPage, 22)
