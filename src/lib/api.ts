@@ -667,9 +667,9 @@ class ApiClient {
         "/volunteer/profile?_method=PUT",
         {
           method: "POST",
-        body: formData,
-        headers: {}, // Let the browser set Content-Type for FormData
-      });
+          body: formData,
+          headers: {}, // Let the browser set Content-Type for FormData
+        });
 
       console.log('Profile image upload response:', response);
       return response;
@@ -686,14 +686,21 @@ class ApiClient {
       "/volunteer/profile",
       {
         method: "POST",
-      body: JSON.stringify({ profile_image: null }),
-    });
+        body: JSON.stringify({ profile_image: null }),
+      });
     console.log('Profile image delete response:', response);
     return response;
   }
 
   async getVolunteerStatistics(): Promise<{ data: any }> {
     return this.request<{ data: any }>('/volunteer/statistics');
+  }
+
+  // Add new method for volunteer activity trends
+  async getVolunteerActivityTrends(): Promise<{ data: any[] }> {
+    // Since there's no direct endpoint for volunteer activity trends,
+    // we'll use the volunteer history endpoint and transform the data
+    return this.request<{ data: any[] }>('/volunteer/history');
   }
 
   async getAvailableEvents(page: number = 1, perPage: number = 15): Promise<{ data: Event[], pagination?: any }> {
@@ -1235,23 +1242,23 @@ class ApiClient {
   }
 
   // Get public ePlogging posts (no authentication required)
-// Public ePlogging posts
-async getPublicEPloggingPosts(
-  perPage = 15,
-  volunteerId?: number
-): Promise<any> {
-  const params = new URLSearchParams({
-    per_page: perPage.toString(),
-  });
+  // Public ePlogging posts
+  async getPublicEPloggingPosts(
+    perPage = 15,
+    volunteerId?: number
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      per_page: perPage.toString(),
+    });
 
-  if (volunteerId != null) {
-    params.append('volunteer_id', volunteerId.toString());
+    if (volunteerId != null) {
+      params.append('volunteer_id', volunteerId.toString());
+    }
+    const endpoint = `/eplogging?${params.toString()}`;
+    return this.request(endpoint, {
+      method: 'GET',
+    });
   }
-  const endpoint = `/eplogging?${params.toString()}`;
-  return this.request(endpoint, {
-    method: 'GET',
-  });
-}
 
 
 

@@ -39,6 +39,7 @@ interface DashboardStats {
   certificates_earned: number;
 }
 
+// Update the ProgressData interface to include activity trends data
 interface ProgressData {
   monthlyGoal: number;
   currentProgress: number;
@@ -59,19 +60,12 @@ export default function Dashboard() {
   const [isSurveyOpen, setSurveyOpen] = useState(false)
   const hasCheckedSurvey = useRef(false)
   
-  // Progress tracking data
+  // Progress tracking data - initialize with empty data
   const [progressData, setProgressData] = useState<ProgressData>({
     monthlyGoal: 20, // 20 hours per month goal
     currentProgress: 0,
-    weeklyProgress: [2, 4, 3, 6, 5, 4, 3], // Last 7 days
-    activityData: [
-      { month: 'Jan', events: 2, hours: 8, waste: 15 },
-      { month: 'Feb', events: 3, hours: 12, waste: 22 },
-      { month: 'Mar', events: 1, hours: 4, waste: 8 },
-      { month: 'Apr', events: 4, hours: 16, waste: 28 },
-      { month: 'May', events: 2, hours: 8, waste: 18 },
-      { month: 'Jun', events: 3, hours: 12, waste: 25 },
-    ]
+    weeklyProgress: [],
+    activityData: []
   })
 
   const fetchDashboardData = async () => {
@@ -109,6 +103,40 @@ export default function Dashboard() {
             })
           }),
         
+        // Fetch volunteer activity trends
+        apiClient.getVolunteerActivityTrends()
+          .then(response => {
+            console.log('Volunteer activity trends response:', response);
+            // Transform the data for the chart
+            if (response.data && Array.isArray(response.data)) {
+              const activityData = response.data.map(item => ({
+                month: item.month || item.date || 'Unknown',
+                events: item.events_attended || item.events || 0,
+                hours: item.hours_contributed || item.hours || 0,
+                waste: item.waste_collected || item.waste || 0
+              }));
+              setProgressData(prev => ({
+                ...prev,
+                activityData
+              }));
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching volunteer activity trends:', error)
+            // Use default data if API fails
+            setProgressData(prev => ({
+              ...prev,
+              activityData: [
+                { month: 'Jan', events: 2, hours: 8, waste: 15 },
+                { month: 'Feb', events: 3, hours: 12, waste: 22 },
+                { month: 'Mar', events: 1, hours: 4, waste: 8 },
+                { month: 'Apr', events: 4, hours: 16, waste: 28 },
+                { month: 'May', events: 2, hours: 8, waste: 18 },
+                { month: 'Jun', events: 3, hours: 12, waste: 25 },
+              ]
+            }))
+          }),
+        
         // Fetch events and check for local enrollment tracking
         apiClient.getAvailableEvents()
           .then(response => {
@@ -133,7 +161,7 @@ export default function Dashboard() {
                   event.enrollment_status === 'Enrolled' ||
                   event.enrollment_status === 'Signed Up' ||
                   event.can_enroll === false ||
-                  // If we can't determine status, keep it to avoid false negatives
+                  // If we can't determine the status, keep it to avoid false negatives
                   (event.is_enrolled !== false && 
                    event.enrollment_status !== 'cancelled' &&
                    event.enrollment_status !== 'missed')) {
@@ -218,6 +246,42 @@ useEffect(() => {
             })
           }),
       
+        // Refresh volunteer activity trends
+        apiClient.getVolunteerActivityTrends()
+          .then(response => {
+            console.log('Refreshing - Volunteer activity trends response:', response);
+            // Transform the data for the chart
+            if (response.data && Array.isArray(response.data)) {
+              const activityData = response.data.map(item => ({
+                month: item.month || item.date || 'Unknown',
+                events: item.events_attended || item.events || 0,
+                hours: item.hours_contributed || item.hours || 0,
+                waste: item.waste_collected || item.waste || 0
+              }));
+              setProgressData(prev => ({
+                ...prev,
+                activityData
+              }));
+            }
+          })
+          .catch(error => {
+            console.error('Error refreshing volunteer activity trends:', error)
+            // Keep existing data or use default if none
+            if (progressData.activityData.length === 0) {
+              setProgressData(prev => ({
+                ...prev,
+                activityData: [
+                  { month: 'Jan', events: 2, hours: 8, waste: 15 },
+                  { month: 'Feb', events: 3, hours: 12, waste: 22 },
+                  { month: 'Mar', events: 1, hours: 4, waste: 8 },
+                  { month: 'Apr', events: 4, hours: 16, waste: 28 },
+                  { month: 'May', events: 2, hours: 8, waste: 18 },
+                  { month: 'Jun', events: 3, hours: 12, waste: 25 },
+                ]
+              }))
+            }
+          }),
+      
         // Refresh events and filter for enrolled events
         apiClient.getAvailableEvents()
           .then(async response => {
@@ -242,7 +306,7 @@ useEffect(() => {
                   event.enrollment_status === 'Enrolled' ||
                   event.enrollment_status === 'Signed Up' ||
                   event.can_enroll === false ||
-                  // If we can't determine status, keep it to avoid false negatives
+                  // If we can't determine the status, keep it to avoid false negatives
                   (event.is_enrolled !== false && 
                    event.enrollment_status !== 'cancelled' &&
                    event.enrollment_status !== 'missed')) {

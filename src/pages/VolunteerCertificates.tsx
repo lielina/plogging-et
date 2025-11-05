@@ -434,7 +434,9 @@ export default function VolunteerCertificates() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
-                      <span className="truncate">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate</span>
+                      <span className="truncate">
+                        {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate
+                      </span>
                     </CardTitle>
                     <CardDescription className="mt-1 text-sm">
                       Certificate ID: {certificate.certificate_id}
@@ -452,6 +454,16 @@ export default function VolunteerCertificates() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">Certificate Type</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Award className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                      <p className="text-xs sm:text-sm font-semibold">
+                        {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}
+                      </p>
+                    </div>
+                  </div>
+                  
                   <div>
                     <p className="text-xs sm:text-sm font-medium text-gray-500">Generated Date</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -569,6 +581,9 @@ export default function VolunteerCertificates() {
                 <div>
                   <h3 className="text-lg font-semibold">{previewData.volunteerName}</h3>
                   <p className="text-gray-600">{previewData.eventName}</p>
+                  <p className="text-gray-600">
+                    <span className="font-medium">Type:</span> {previewCertificate?.certificate_type.charAt(0).toUpperCase() + previewCertificate?.certificate_type.slice(1)}
+                  </p>
                 </div>
                 <div className="flex space-x-2">
                   <Button

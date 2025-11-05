@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SurveyProvider } from './contexts/SurveyContext'
+import { BadgeProvider } from './contexts/BadgeContext'
 import { Toaster } from './components/ui/toaster'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
@@ -101,9 +102,10 @@ function App() {
   return (
     <AuthProvider>
       <SurveyProvider>
-        <div className="min-h-screen bg-background">
-          <Routes>
-            <Route element={<Layout />}>
+        <BadgeProvider>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route element={<Layout />}>
               <Route path="/" element={<LandingPage />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/:eventId" element={<EventDetail />} />
@@ -143,13 +145,14 @@ function App() {
                   <VolunteerBadges />
                 </ProtectedRoute>
               } />
-            </Route>
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/welcome" element={<Welcome />} />
-          </Routes>
-        </div>
-        <Toaster />
+              </Route>
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/welcome" element={<Welcome />} />
+            </Routes>
+          </div>
+          <Toaster />
+        </BadgeProvider>
       </SurveyProvider>
     </AuthProvider>
   )

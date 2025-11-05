@@ -129,6 +129,24 @@ export default function Events() {
     setEnrollingEvents(prev => new Set(prev).add(eventId))
 
     try {
+      // Check if user is already enrolled in this event
+      const isAlreadyEnrolled = events.some(event => 
+        event.event_id === eventId && 
+        (event.is_enrolled === true || 
+         event.enrollment_status === 'Signed Up' || 
+         event.enrollment_status === 'Enrolled' || 
+         event.enrollment_status === 'Confirmed')
+      );
+      
+      if (isAlreadyEnrolled) {
+        toast({
+          title: "Already Enrolled",
+          description: "You are already enrolled in this event.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Extract volunteer_id from user context if available
       const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
       const response = await apiClient.enrollInEvent(eventId, volunteerId)
@@ -177,30 +195,7 @@ export default function Events() {
         ))
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
         errorTitle = 'Event Full'
-        errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
-        // Update the event to reflect unavailability
-        setEvents(prev => prev.map(e => 
-          e.event_id === eventId 
-            ? { ...e, can_enroll: false }
-            : e
-        ))
-      } else if (error.message?.includes('not available') || error.message?.includes('not open')) {
-        errorTitle = 'Enrollment Closed'
-        errorMessage = 'Enrollment for this event is currently closed.'
-        setEvents(prev => prev.map(e => 
-          e.event_id === eventId 
-            ? { ...e, can_enroll: false }
-            : e
-        ))
-      } else if (error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
-        errorTitle = 'Server Error'
-        errorMessage = 'There was a server error while processing your enrollment. Please try again later.'
-      } else if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        errorTitle = 'Authentication Required'
-        errorMessage = 'Your session has expired. Please log in again.'
-        // Redirect to login page
-        navigate('/login')
-        return
+        errorMessage = 'This event has reached its maximum capacity. Please check back later or look for other events.'
       } else if (!error.message) {
         // Handle network errors or other issues with no message
         errorTitle = 'Connection Error'
