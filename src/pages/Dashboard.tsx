@@ -143,17 +143,10 @@ export default function Dashboard() {
           })
           .catch(error => {
             console.error('Error fetching volunteer activity trends:', error)
-            // Use default data if API fails
+            // Don't use default data if API fails, keep empty array
             setProgressData(prev => ({
               ...prev,
-              activityData: [
-                { month: 'Jan', events: 2, hours: 8, waste: 15 },
-                { month: 'Feb', events: 3, hours: 12, waste: 22 },
-                { month: 'Mar', events: 1, hours: 4, waste: 8 },
-                { month: 'Apr', events: 4, hours: 16, waste: 28 },
-                { month: 'May', events: 2, hours: 8, waste: 18 },
-                { month: 'Jun', events: 3, hours: 12, waste: 25 },
-              ]
+              activityData: []
             }))
           }),
         
@@ -254,20 +247,8 @@ useEffect(() => {
           })
           .catch(error => {
             console.error('Error refreshing volunteer activity trends:', error)
-            // Keep existing data or use default if none
-            if (progressData.activityData.length === 0) {
-              setProgressData(prev => ({
-                ...prev,
-                activityData: [
-                  { month: 'Jan', events: 2, hours: 8, waste: 15 },
-                  { month: 'Feb', events: 3, hours: 12, waste: 22 },
-                  { month: 'Mar', events: 1, hours: 4, waste: 8 },
-                  { month: 'Apr', events: 4, hours: 16, waste: 28 },
-                  { month: 'May', events: 2, hours: 8, waste: 18 },
-                  { month: 'Jun', events: 3, hours: 12, waste: 25 },
-                ]
-              }))
-            }
+            // Don't use default data if API fails, keep existing data
+            // If there's no existing data, keep the empty array
           }),
       
         // Refresh enrolled events directly
@@ -574,45 +555,55 @@ useEffect(() => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={progressData.activityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e5e7eb', 
-                    borderRadius: '8px' 
-                  }} 
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="events" 
-                  stroke="#10b981" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  name="Events Attended"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="hours" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                  name="Hours Volunteered"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="waste" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                  name="Waste Collected (kg)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {progressData.activityData && progressData.activityData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={progressData.activityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="month" stroke="#666" fontSize={12} />
+                  <YAxis stroke="#666" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e5e7eb', 
+                      borderRadius: '8px' 
+                    }} 
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="events" 
+                    stroke="#10b981" 
+                    strokeWidth={3} 
+                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                    name="Events Attended"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="hours" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3} 
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    name="Hours Volunteered"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="waste" 
+                    stroke="#f59e0b" 
+                    strokeWidth={3} 
+                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
+                    name="Waste Collected (kg)"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                <BarChart3 className="h-16 w-16 mb-4" />
+                <p className="text-lg mb-2">No Activity Data Available</p>
+                <p className="text-sm text-center">
+                  Your activity trends will appear here once you participate in events.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
