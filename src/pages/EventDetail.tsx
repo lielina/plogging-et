@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBadges } from '@/contexts/BadgeContext'
 import { apiClient, Event, Section, FRONTEND_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,8 @@ import QRCode from 'qrcode'
 import QRScanner from '@/components/ui/qr-scanner'
 import Map from '@/components/ui/map'
 import { toast } from '@/hooks/use-toast'
-import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '@/utils/eventUtils';
+import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '@/utils/eventUtils'
+import { getNewlyEarnedBadges } from '@/lib/badge-utils'
 
 interface Enrollment {
   enrollment_id: number;
@@ -75,6 +77,7 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { badges, checkForNewBadges, refreshBadges } = useBadges() // Destructure badge context functions
   const [event, setEvent] = useState<EventDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -521,6 +524,9 @@ ${description}
         return
       }
       
+      // Get current badges before check-in
+      const previousBadges = [...badges]; // Create a copy of current badges
+      
       // Call the section-based check-in API
       await apiClient.checkInSection(user.volunteer_id, parseInt(eventId!), sectionId)
       setScanResult('Check-in to section successful!')
@@ -529,6 +535,20 @@ ${description}
       // Refresh event data to show updated attendance
       const response = await apiClient.getEventDetails(parseInt(eventId!))
       setEvent(response.data as EventDetailData)
+      
+      // After successful check-in, check for any new badges that should be awarded
+      try {
+        // Check for new badges using the badge context
+        const newBadges = await checkForNewBadges(previousBadges);
+        
+        // The badge context will automatically show notifications for new badges
+        console.log('New badges earned:', newBadges);
+      } catch (badgeError) {
+        console.error('Error checking for new badges after check-in:', badgeError)
+      }
+      
+      // Refresh badges in the context
+      await refreshBadges();
       
       toast({
         title: "Check-in Successful",

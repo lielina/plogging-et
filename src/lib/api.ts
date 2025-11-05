@@ -296,7 +296,7 @@ export interface EPloggingSubmission {
   image: File;
   quote: string;
   location: string;
-  
+
 }
 
 
@@ -508,7 +508,7 @@ class ApiClient {
       }
 
       const blob = await response.blob();
-      
+
       // Validate it's an image
       if (!blob.type.startsWith('image/')) {
         throw new Error(`Invalid image type: ${blob.type}`);
@@ -792,6 +792,30 @@ class ApiClient {
       console.error('Error fetching volunteer badges:', error);
       // Return empty array on error to prevent UI breakage
       return { data: [] };
+    }
+  }
+
+  // New method to check for newly earned badges after an action
+  async checkForNewBadges(previousBadges: VolunteerBadge[] = []): Promise<{ data: VolunteerBadge[], newBadges: VolunteerBadge[] }> {
+    try {
+      const response = await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
+      // Ensure we always return an array, even if the response is malformed
+      if (!response.data || !Array.isArray(response.data)) {
+        console.warn('Badges API returned invalid data structure:', response);
+        return { data: [], newBadges: [] };
+      }
+
+      // Filter to find newly earned badges
+      const currentBadges = response.data;
+      const newBadges = currentBadges.filter(currentBadge => {
+        return !previousBadges.some(prevBadge => prevBadge.badge_id === currentBadge.badge_id);
+      });
+
+      return { data: currentBadges, newBadges };
+    } catch (error) {
+      console.error('Error checking for new badges:', error);
+      // Return empty arrays on error
+      return { data: [], newBadges: [] };
     }
   }
 
@@ -1226,7 +1250,7 @@ class ApiClient {
       page: page.toString(),
       per_page: perPage.toString(),
     });
-    return this.request(`/volunteer/eplogging/my-posts?${params.toString()}`); 
+    return this.request(`/volunteer/eplogging/my-posts?${params.toString()}`);
   }
 
   async getEPloggingPost(post_id: number): Promise<any> {

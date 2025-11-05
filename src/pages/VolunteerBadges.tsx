@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBadges } from '@/contexts/BadgeContext'
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,9 +23,10 @@ import { VolunteerBadgeData } from '@/lib/badge-generator'
 export default function VolunteerBadges() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { badges, loading, error, refreshBadges } = useBadges()
   const [badgeData, setBadgeData] = useState<VolunteerBadgeData | null>(null)
+  const [isLoading, setIsLoading] = useState(false) // Add loading state
+  const [localError, setLocalError] = useState<string | null>(null) // Add local error state
   const { toast } = useToast()
 
   useEffect(() => {
@@ -38,29 +40,27 @@ export default function VolunteerBadges() {
 
   const fetchVolunteerData = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true); // Set local loading state
+      setLocalError(null); // Clear local error state
       
-      const response = await apiClient.getVolunteerProfile()
-      console.log('Volunteer profile response:', response)
+      await refreshBadges()
       
       // Set badge data for the volunteer
-      if (response.data) {
-        const volunteerData = response.data
+      if (user && 'volunteer_id' in user) {
         setBadgeData({
-          volunteerName: `${volunteerData.first_name} ${volunteerData.last_name}`,
-          totalHours: volunteerData.total_hours_contributed,
-          profileImageUrl: volunteerData.profile_image_url || volunteerData.profile_image,
-          volunteerId: volunteerData.volunteer_id,
+          volunteerName: `${user.first_name} ${user.last_name}`,
+          totalHours: user.total_hours_contributed,
+          profileImageUrl: user.profile_image_url || user.profile_image,
+          volunteerId: user.volunteer_id,
           achievementDate: new Date().toISOString(),
-          badgeId: `BADGE-${volunteerData.volunteer_id}-${Date.now()}`
+          badgeId: `BADGE-${user.volunteer_id}-${Date.now()}`
         })
       }
     } catch (error: any) {
       console.error('Error fetching volunteer data:', error)
-      setError(error.message || 'Failed to load volunteer data')
+      setLocalError(error.message || 'Failed to load volunteer data') // Use local error state
     } finally {
-      setIsLoading(false)
+      setIsLoading(false); // Clear local loading state
     }
   }
 
@@ -83,7 +83,7 @@ export default function VolunteerBadges() {
     return stats
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
         <div className="flex items-center justify-center min-h-[400px]">

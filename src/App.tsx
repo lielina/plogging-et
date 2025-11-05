@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SurveyProvider } from './contexts/SurveyContext'
-import { SidebarProvider } from './contexts/SidebarContext' // Add this import
+import { SidebarProvider } from './contexts/SidebarContext'
+import { BadgeProvider } from './contexts/BadgeContext'
 import { Toaster } from './components/ui/toaster'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
@@ -103,10 +104,12 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <SidebarProvider> {/* Wrap with SidebarProvider */}
+      <SidebarProvider>
         <SurveyProvider>
-          <AppRoutes />
-          <Toaster />
+          <BadgeProvider>
+            <AppRoutes />
+            <Toaster />
+          </BadgeProvider>
         </SurveyProvider>
       </SidebarProvider>
     </AuthProvider>
