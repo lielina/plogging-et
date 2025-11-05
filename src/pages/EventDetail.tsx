@@ -564,6 +564,9 @@ ${description}
           return
         }
         
+        // Get current badges before check-in
+        const previousBadges = [...badges]; // Create a copy of current badges
+        
         // Perform check-in for the current user
         await apiClient.checkIn(scannedEventId, userId)
         setScanResult('Check-in successful!')
@@ -571,6 +574,20 @@ ${description}
         // Refresh event data to show updated attendance
         const response = await apiClient.getEventDetails(parseInt(eventId!))
         setEvent(response.data as EventDetailData)
+        
+        // After successful check-in, check for any new badges that should be awarded
+        try {
+          // Check for new badges using the badge context
+          const newBadges = await checkForNewBadges(previousBadges);
+          
+          // The badge context will automatically show notifications for new badges
+          console.log('New badges earned:', newBadges);
+        } catch (badgeError) {
+          console.error('Error checking for new badges after check-in:', badgeError)
+        }
+        
+        // Refresh badges in the context
+        await refreshBadges();
         
         toast({
           title: "Check-in Successful",

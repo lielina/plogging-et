@@ -104,17 +104,37 @@ export default function Dashboard() {
           }),
         
         // Fetch volunteer activity trends
-        apiClient.getVolunteerActivityTrends()
+        // Try to use volunteer history endpoint, fallback to generating sample data based on statistics
+        apiClient.getVolunteerHistory()
           .then(response => {
-            console.log('Volunteer activity trends response:', response);
+            console.log('Volunteer history response:', response);
             // Transform the data for the chart
             if (response.data && Array.isArray(response.data)) {
-              const activityData = response.data.map(item => ({
-                month: item.month || item.date || 'Unknown',
-                events: item.events_attended || item.events || 0,
-                hours: item.hours_contributed || item.hours || 0,
-                waste: item.waste_collected || item.waste || 0
+              // Group events by month
+              const monthlyData: Record<string, { events: number; hours: number; waste: number }> = {};
+              
+              response.data.forEach(event => {
+                // Extract month from event date
+                const date = new Date(event.event_date);
+                const month = date.toLocaleString('default', { month: 'short' });
+                
+                if (!monthlyData[month]) {
+                  monthlyData[month] = { events: 0, hours: 0, waste: 0 };
+                }
+                
+                monthlyData[month].events += 1;
+                monthlyData[month].hours += parseFloat(event.hours_contributed) || 0;
+                monthlyData[month].waste += parseFloat(event.waste_collected_kg) || 0;
+              });
+              
+              // Convert to array format for chart
+              const activityData = Object.entries(monthlyData).map(([month, data]) => ({
+                month,
+                events: data.events,
+                hours: data.hours,
+                waste: data.waste
               }));
+              
               setProgressData(prev => ({
                 ...prev,
                 activityData
@@ -247,17 +267,36 @@ useEffect(() => {
           }),
       
         // Refresh volunteer activity trends
-        apiClient.getVolunteerActivityTrends()
+        apiClient.getVolunteerHistory()
           .then(response => {
-            console.log('Refreshing - Volunteer activity trends response:', response);
+            console.log('Refreshing - Volunteer history response:', response);
             // Transform the data for the chart
             if (response.data && Array.isArray(response.data)) {
-              const activityData = response.data.map(item => ({
-                month: item.month || item.date || 'Unknown',
-                events: item.events_attended || item.events || 0,
-                hours: item.hours_contributed || item.hours || 0,
-                waste: item.waste_collected || item.waste || 0
+              // Group events by month
+              const monthlyData: Record<string, { events: number; hours: number; waste: number }> = {};
+              
+              response.data.forEach(event => {
+                // Extract month from event date
+                const date = new Date(event.event_date);
+                const month = date.toLocaleString('default', { month: 'short' });
+                
+                if (!monthlyData[month]) {
+                  monthlyData[month] = { events: 0, hours: 0, waste: 0 };
+                }
+                
+                monthlyData[month].events += 1;
+                monthlyData[month].hours += parseFloat(event.hours_contributed) || 0;
+                monthlyData[month].waste += parseFloat(event.waste_collected_kg) || 0;
+              });
+              
+              // Convert to array format for chart
+              const activityData = Object.entries(monthlyData).map(([month, data]) => ({
+                month,
+                events: data.events,
+                hours: data.hours,
+                waste: data.waste
               }));
+              
               setProgressData(prev => ({
                 ...prev,
                 activityData
