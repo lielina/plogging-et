@@ -9,7 +9,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { 
-  Heart, 
   MapPin, 
   Calendar,
   Search,
@@ -22,22 +21,24 @@ import {
 } from 'lucide-react'
 import { apiClient, EPloggingPost } from '@/lib/api'
 import { SocialSharing } from '@/lib/social-sharing'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface EPloggingGalleryProps {
   showMyPosts?: boolean
+  isPublic?: boolean
   className?: string
 }
 
-type EPPost = EPloggingPost & { likes_count?: number; hours_spent?: number }
+type EPPost = EPloggingPost & { hours_spent?: number }
 
-export default function EPloggingGallery({ showMyPosts = false, className }: EPloggingGalleryProps) {
+export default function EPloggingGallery({ showMyPosts = false, isPublic = false, className }: EPloggingGalleryProps) {
+  const { isAuthenticated } = useAuth()
   const [posts, setPosts] = useState<EPPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set())
   const { toast } = useToast()
 
   // Edit modal state
@@ -72,17 +73,18 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
   useEffect(() => {
     fetchPosts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, showMyPosts])
+  }, [currentPage, showMyPosts, isPublic])
 
   const fetchPosts = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const response = showMyPosts 
-        ? await apiClient.getMyEPloggingPosts(currentPage, 22)
-        : await apiClient.getEPloggingPosts(currentPage, 22)
-
+      const response = isPublic
+        ? await apiClient.getPublicEPloggingPosts(15, undefined)  // Don't send volunteer_id when not authenticated
+        : showMyPosts 
+          ? await apiClient.getMyEPloggingPosts(currentPage, 22)
+          : await apiClient.getEPloggingPosts(currentPage, 22)
       console.log("ePlogging posts response:", response)
       
       // Handle both paginated and non-paginated responses
@@ -122,32 +124,6 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
     }
   }
 
-  const handleLike = async (postId: number) => {
-    try {
-      const response = await apiClient.likeEPloggingPost(postId)
-      setPosts(prev => prev.map(post => 
-        post.post_id === postId 
-          ? { ...post, likes_count: response.data.likes_count }
-          : post
-      ))
-      setLikedPosts(prev => {
-        const newSet = new Set(prev)
-        if (response.data.liked) {
-          newSet.add(postId)
-        } else {
-          newSet.delete(postId)
-        }
-        return newSet
-      })
-    } catch (error: any) {
-      console.error('Error liking post:', error)
-      toast({
-        title: "Like Failed",
-        description: "Failed to like post. Please try again.",
-        variant: "destructive"
-      })
-    }
-  }
 
   const handleShare = async (post: EPPost) => {
     try {
@@ -162,7 +138,6 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
         await SocialSharing.copyToClipboard({
           volunteerName: `${post.volunteer.first_name} ${post.volunteer.last_name}`,
           totalHours: post.hours_spent ?? 0,
-          badgeLevel: 'ePlogging Contributor',
           volunteerId: post.volunteer.volunteer_id,
           achievementDate: post.created_at,
           badgeId: `EPLOGGING-${post.post_id}`
@@ -174,6 +149,21 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
       }
     } catch (error) {
       console.error('Error sharing post:', error)
+      // Fallback: try to copy URL directly
+      try {
+        const shareUrl = `${window.location.origin}/eplogging/${post.post_id}`
+        await navigator.clipboard.writeText(shareUrl)
+        toast({
+          title: "Link Copied",
+          description: "Post link has been copied to clipboard.",
+        })
+      } catch (clipboardError) {
+        toast({
+          title: "Share Failed",
+          description: "Could not copy link. Please try again.",
+          variant: "destructive"
+        })
+      }
     }
   }
 
@@ -336,11 +326,13 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
                     src={post.image_url || post.image_path}
                     className="w-full h-48 object-cover"
                   />
-                  <div className="absolute top-2 right-2">
-                    <Badge className={getStatusColor(post.status)}>
-                      {post.status}
-                    </Badge>
-                  </div>
+                  {!isPublic && (
+                    <div className="absolute top-2 right-2">
+                      <Badge className={getStatusColor(post.status)}>
+                        {post.status}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
                 <CardContent className="p-4">
@@ -369,18 +361,6 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleLike(post.post_id)}
-                          className={`flex items-center gap-1 ${
-                            likedPosts.has(post.post_id) ? 'text-red-500' : 'text-gray-500'
-                          }`}
-                        >
-                          <Heart className={`w-4 h-4 ${likedPosts.has(post.post_id) ? 'fill-current' : ''}`} />
-                          <span>{post.likes_count ?? 0}</span>
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
                           onClick={() => handleShare(post)}
                           className="text-gray-500"
                         >
@@ -388,7 +368,7 @@ export default function EPloggingGallery({ showMyPosts = false, className }: EPl
                         </Button>
                       </div>
                     )}
-                    {showMyPosts && (
+                    {showMyPosts && !isPublic && (
                       <div className="flex items-center gap-1 ml-auto">
                         <Button
                           variant="outline"

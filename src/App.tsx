@@ -1,14 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SurveyProvider } from './contexts/SurveyContext'
-import { SidebarProvider } from './contexts/SidebarContext'
-import { BadgeProvider } from './contexts/BadgeContext'
 import { Toaster } from './components/ui/toaster'
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import Events from './pages/Events'
 import Leaderboard from './pages/Leaderboard'
-import PublicLeaderboard from './pages/PublicLeaderboard'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -60,7 +57,6 @@ function AppRoutes() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/leaderboard-public" element={<PublicLeaderboard />} />
           {/* Protected Volunteer Routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
@@ -104,14 +100,57 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <SidebarProvider>
-        <SurveyProvider>
-          <BadgeProvider>
-            <AppRoutes />
-            <Toaster />
-          </BadgeProvider>
-        </SurveyProvider>
-      </SidebarProvider>
+      <SurveyProvider>
+        <div className="min-h-screen bg-background">
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/events/:eventId" element={<EventDetail />} />
+              <Route path="/about" element={<div>About Page</div>} />
+              <Route path="/membership" element={<Membership />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:postId" element={<BlogPostPage />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/eplogging" element={<EPlogging />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/leaderboard-public" element={<Leaderboard />} />
+              {/* Protected Volunteer Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/leaderboard" element={
+                <ProtectedRoute>
+                  <Leaderboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/certificates" element={
+                <ProtectedRoute>
+                  <VolunteerCertificates />
+                </ProtectedRoute>
+              } />
+              <Route path="/badges" element={
+                <ProtectedRoute>
+                  <VolunteerBadges />
+                </ProtectedRoute>
+              } />
+            </Route>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/welcome" element={<Welcome />} />
+          </Routes>
+        </div>
+        <Toaster />
+      </SurveyProvider>
     </AuthProvider>
   )
 }
