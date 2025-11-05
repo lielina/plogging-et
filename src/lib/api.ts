@@ -1179,6 +1179,11 @@ class ApiClient {
     return this.request<{ data: any[] }>('/volunteer/history');
   }
 
+  // Get enrolled events for the current volunteer
+  async getEnrolledEvents(): Promise<{ data: Event[] }> {
+    return this.request<{ data: Event[] }>('/volunteer/enrollments');
+  }
+
   // Add Notification endpoints
   async getNotifications(): Promise<{ data: any[] }> {
     return this.request<{ data: any[] }>('/volunteer/notifications');

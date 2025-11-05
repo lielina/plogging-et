@@ -157,63 +157,12 @@ export default function Dashboard() {
             }))
           }),
         
-        // Fetch events and check for local enrollment tracking
-        apiClient.getAvailableEvents()
+        // Fetch enrolled events directly
+        apiClient.getEnrolledEvents()
           .then(response => {
-            console.log('All events response:', response);
-            
-            // Get locally stored enrollments from localStorage
-            let storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-            console.log('Stored enrollments:', storedEnrollments)
-            
-            // Validate stored enrollments by checking with backend
-            // This helps synchronize local storage with actual backend state
-            // Only remove enrollments if we're certain they don't exist or are explicitly not enrolled
-            const validatedEnrollments = []
-            for (const eventId of storedEnrollments) {
-              const event = response.data.find(e => e.event_id === eventId)
-              // Keep enrollment if event exists and is not explicitly marked as not enrolled
-              // or if we can't determine the status (to avoid false negatives)
-              if (!event || 
-                  event.is_enrolled === true || 
-                  event.enrollment_status === 'confirmed' || 
-                  event.enrollment_status === 'attended' ||
-                  event.enrollment_status === 'Enrolled' ||
-                  event.enrollment_status === 'Signed Up' ||
-                  event.can_enroll === false ||
-                  // If we can't determine the status, keep it to avoid false negatives
-                  (event.is_enrolled !== false && 
-                   event.enrollment_status !== 'cancelled' &&
-                   event.enrollment_status !== 'missed')) {
-                validatedEnrollments.push(eventId)
-              }
-            }
-            
-            // Update localStorage with validated enrollments only if we removed some
-            if (validatedEnrollments.length !== storedEnrollments.length) {
-              localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
-              storedEnrollments = validatedEnrollments
-            }
-            
-            // Filter events based on stored enrollments or backend enrollment fields
-            const enrolledEvents = response.data.filter(event => {
-              const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-              // Check multiple possible fields for enrollment status
-              const isBackendEnrolled = event.is_enrolled === true || 
-                                    event.enrollment_status === 'confirmed' || 
-                                    event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false || // If can't enroll, might mean already enrolled
-                                    event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
-                                    event.enrollment_status === 'Signed Up' // Also check for 'Signed Up' status
-              
-              console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-              
-              return isStoredEnrolled || isBackendEnrolled
-            })
-          
-          console.log('Enrolled events:', enrolledEvents)
-          setRecentEvents(enrolledEvents.slice(0, 3));
-        })
+            console.log('Enrolled events response:', response);
+            setRecentEvents(response.data.slice(0, 3));
+          })
         .catch(error => {
           console.error('Error fetching events:', error)
           setRecentEvents([])
@@ -321,67 +270,16 @@ useEffect(() => {
             }
           }),
       
-        // Refresh events and filter for enrolled events
-        apiClient.getAvailableEvents()
-          .then(async response => {
-            console.log('Refreshing - All events response:', response);
-            
-            // Get locally stored enrollments from localStorage
-            let storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-            console.log('Refreshing - Stored enrollments:', storedEnrollments)
-            
-            // Validate stored enrollments by checking with backend
-            // This helps synchronize local storage with actual backend state
-            // Only remove enrollments if we're certain they don't exist or are explicitly not enrolled
-            const validatedEnrollments = []
-            for (const eventId of storedEnrollments) {
-              const event = response.data.find(e => e.event_id === eventId)
-              // Keep enrollment if event exists and is not explicitly marked as not enrolled
-              // or if we can't determine the status (to avoid false negatives)
-              if (!event || 
-                  event.is_enrolled === true || 
-                  event.enrollment_status === 'confirmed' || 
-                  event.enrollment_status === 'attended' ||
-                  event.enrollment_status === 'Enrolled' ||
-                  event.enrollment_status === 'Signed Up' ||
-                  event.can_enroll === false ||
-                  // If we can't determine the status, keep it to avoid false negatives
-                  (event.is_enrolled !== false && 
-                   event.enrollment_status !== 'cancelled' &&
-                   event.enrollment_status !== 'missed')) {
-                validatedEnrollments.push(eventId)
-              }
-            }
-            
-            // Update localStorage with validated enrollments only if we removed some
-            if (validatedEnrollments.length !== storedEnrollments.length) {
-              localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
-              storedEnrollments = validatedEnrollments
-            }
-            
-            // Filter events based on stored enrollments or backend enrollment fields
-            const enrolledEvents = response.data.filter(event => {
-              const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-              // Check multiple possible fields for enrollment status
-              const isBackendEnrolled = event.is_enrolled === true || 
-                                    event.enrollment_status === 'confirmed' || 
-                                    event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false || // If can't enroll, might mean already enrolled
-                                    event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
-                                    event.enrollment_status === 'Signed Up'; // Also check for 'Signed Up' status
-            
-              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-              
-              return isStoredEnrolled || isBackendEnrolled
-            });
-          
-            console.log('Refreshing - Enrolled events:', enrolledEvents)
-            setRecentEvents(enrolledEvents.slice(0, 3));
-        })
-        .catch(error => {
-          console.error('Error refreshing events:', error)
-          setRecentEvents([])
-        }),
+        // Refresh enrolled events directly
+        apiClient.getEnrolledEvents()
+          .then(response => {
+            console.log('Refreshing - Enrolled events response:', response);
+            setRecentEvents(response.data.slice(0, 3));
+          })
+          .catch(error => {
+            console.error('Error refreshing enrolled events:', error)
+            setRecentEvents([])
+          }),
       
         // Refresh badges using the badge context
         refreshBadges()
@@ -781,32 +679,6 @@ useEffect(() => {
           </Card>
 
           {/* Badges */}
-          {user && 'volunteer_id' in user ? (
-            <Card 
-              className="hover:shadow-lg transition-shadow duration-300 ease-in-out cursor-pointer"
-              onClick={() => navigate('/badges')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Award className="h-6 w-6 text-green-700" />
-                  Your Badge
-                </CardTitle>
-                <CardDescription>
-                  Your personalized volunteer achievement badge with QR code
-                  <span className="text-green-600 font-medium ml-1">Click to view full badge →</span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <VolunteerBadge 
-                  volunteerData={user}
-                  onBadgeGenerated={(data: VolunteerBadgeData) => {
-                    console.log('Badge generated:', data)
-                  }}
-                  hideSocialSharing={true}
-                />
-              </CardContent>
-            </Card>
-          ) : (
           <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
@@ -895,7 +767,6 @@ useEffect(() => {
               )}
             </CardContent>
           </Card>
-          )}
         </div>
 
         {/* Quick Actions */}
