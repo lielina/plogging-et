@@ -120,14 +120,14 @@ export default function VolunteerCertificates() {
       // Create certificate data for preview
       const certificateData: CertificateData = {
         volunteerName: `${user?.first_name || 'Volunteer'} ${user?.last_name || ''}`,
-        eventName: certificate.event_id ? `Event #${certificate.event_id}` : 'Community Service',
+        eventName: certificate.event_id ? `Event #${certificate.event_id}` : `${certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate`,
         eventDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
         hoursContributed: parseInt(certificate.hours_on_certificate) || 0,
         location: 'Addis Ababa, Ethiopia',
         organizerName: 'Plogging Ethiopia Team',
         certificateId: `PE-${certificate.certificate_id}`,
         issueDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
-        badgeType: 'Volunteer',
+        badgeType: certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1),
         totalHours: parseInt(certificate.hours_on_certificate) || 0,
         rank: 1
       };
@@ -159,14 +159,14 @@ export default function VolunteerCertificates() {
       // Create certificate data
       const certificateData: CertificateData = {
           volunteerName: `${user?.first_name || 'Volunteer'} ${user?.last_name || ''}`,
-          eventName: certificate.event_id ? `Event #${certificate.event_id}` : 'Community Service',
+          eventName: certificate.event_id ? `Event #${certificate.event_id}` : `${certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate`,
         eventDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
           hoursContributed: parseInt(certificate.hours_on_certificate) || 0,
           location: 'Addis Ababa, Ethiopia',
         organizerName: 'Plogging Ethiopia Team',
           certificateId: `PE-${certificate.certificate_id}`,
         issueDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
-          badgeType: 'Volunteer',
+          badgeType: certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1),
           totalHours: parseInt(certificate.hours_on_certificate) || 0,
           rank: 1
         };
@@ -438,6 +438,11 @@ export default function VolunteerCertificates() {
                         {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate
                       </span>
                     </CardTitle>
+                    <div className="mt-2">
+                      <Badge className={`${getCertificateTypeColor(certificate.certificate_type)} text-xs sm:text-sm`}>
+                        {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}
+                      </Badge>
+                    </div>
                     <CardDescription className="mt-1 text-sm">
                       Certificate ID: {certificate.certificate_id}
                     </CardDescription>
@@ -582,7 +587,7 @@ export default function VolunteerCertificates() {
                   <h3 className="text-lg font-semibold">{previewData.volunteerName}</h3>
                   <p className="text-gray-600">{previewData.eventName}</p>
                   <p className="text-gray-600">
-                    <span className="font-medium">Type:</span> {previewCertificate?.certificate_type.charAt(0).toUpperCase() + previewCertificate?.certificate_type.slice(1)}
+                    <span className="font-medium">Type:</span> {previewCertificate && previewCertificate.certificate_type ? previewCertificate.certificate_type.charAt(0).toUpperCase() + previewCertificate.certificate_type.slice(1) : ''}
                   </p>
                 </div>
                 <div className="flex space-x-2">
