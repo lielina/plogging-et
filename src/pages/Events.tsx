@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { apiClient, Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,7 @@ export default function Events() {
   const [error, setError] = useState('')
   const [enrollingEvents, setEnrollingEvents] = useState<Set<number>>(new Set())
   const [confirmEnrollEvent, setConfirmEnrollEvent] = useState<number | null>(null)
+  const [enrolledEventIds, setEnrolledEventIds] = useState<Set<number>>(new Set())
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -34,6 +35,8 @@ export default function Events() {
   const { toast } = useToast()
   const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isInitialMount = useRef(true)
 
   const fetchEvents = async (page: number = 1) => {
     try {
@@ -42,28 +45,103 @@ export default function Events() {
       
       console.log('Fetching events for page:', page);
       
-      const response = await apiClient.getAvailableEvents(page, pagination.perPage)
-      const eventsData = response.data
+      // Fetch both events and enrollments in parallel
+      const [eventsResponse, enrollmentsResponse] = await Promise.allSettled([
+        apiClient.getAvailableEvents(page, pagination.perPage),
+        apiClient.getVolunteerEnrollments().catch(() => ({ data: [] })) // Silently fail if not authenticated
+      ])
+      
+      // Extract events data
+      const eventsData = eventsResponse.status === 'fulfilled' 
+        ? eventsResponse.value.data 
+        : []
+      
+      // Extract enrolled event IDs
+      const enrollments = enrollmentsResponse.status === 'fulfilled' && enrollmentsResponse.value.data
+        ? enrollmentsResponse.value.data
+        : []
+      
+      // Extract enrolled event IDs from enrollment data
+      // Handle different possible structures: e.event_id, e.event?.event_id (string or number)
+      const enrolledIds = new Set(
+        enrollments
+          .map((e: any) => {
+            const eventId = e.event_id || e.event?.event_id;
+            // Convert to number if it's a string
+            const id = typeof eventId === 'string' ? parseInt(eventId) : eventId;
+            return id;
+          })
+          .filter(id => !isNaN(id) && id > 0) // Filter out invalid IDs
+      );
+      setEnrolledEventIds(enrolledIds)
       
       console.log('Events data:', eventsData);
-      console.log('Pagination data:', response.pagination);
+      console.log('Enrollments:', enrollments);
+      console.log('Enrolled event IDs:', enrolledIds);
+      console.log('Pagination data:', eventsResponse.status === 'fulfilled' ? eventsResponse.value.pagination : null);
       
-      // Use backend enrollment status directly - don't rely on localStorage
+      // Map enrollment status - match EventDetail logic
       const updatedEvents = eventsData.map(event => {
-        // The backend should provide the correct enrollment status
-        // Fix: Ensure we properly check all possible enrollment status indicators
-        const isEnrolled = event.is_enrolled === true || 
-                          event.enrollment_status === 'Enrolled' || 
-                          event.enrollment_status === 'Signed Up' ||
-                          event.enrollment_status === 'confirmed' ||
-                          event.enrollment_status === 'attended' ||
-                          event.can_enroll === false;
+        // Check enrollment the same way EventDetail does:
+        // Look for user's volunteer_id in event.enrollments array
+        let isEnrolled = false;
+        let enrollmentStatus: string | undefined = undefined;
+        let enrollment: any = undefined;
+        
+        // First, check if event has enrollments array (like EventDetail does)
+        // Cast to any to access enrollments property which may exist in some responses
+        const eventWithEnrollments = event as any;
+        if (eventWithEnrollments.enrollments && Array.isArray(eventWithEnrollments.enrollments) && user && 'volunteer_id' in user) {
+          enrollment = eventWithEnrollments.enrollments.find((e: any) => 
+            e.volunteer?.volunteer_id === (user as any).volunteer_id ||
+            parseInt(e.volunteer_id) === (user as any).volunteer_id
+          );
+          if (enrollment) {
+            isEnrolled = true;
+            enrollmentStatus = enrollment.status;
+          }
+        }
+        
+        // If not found in event.enrollments, check enrollments list (from getVolunteerEnrollments)
+        if (!isEnrolled) {
+          const isEnrolledFromList = enrolledIds.has(event.event_id);
+          enrollment = enrollments.find((e: any) => {
+            const eid = e.event_id || e.event?.event_id;
+            const id = typeof eid === 'string' ? parseInt(eid) : eid;
+            return id === event.event_id;
+          });
+          
+          if (isEnrolledFromList || enrollment) {
+            isEnrolled = true;
+            enrollmentStatus = enrollment?.status || enrollment?.enrollment_status || 'Signed Up';
+          }
+        }
+        
+        // Fallback: Check backend enrollment status flags
+        if (!isEnrolled) {
+          const isEnrolledFromBackend = event.is_enrolled === true || 
+                            event.enrollment_status === 'Enrolled' || 
+                            event.enrollment_status === 'Signed Up' ||
+                            event.enrollment_status === 'confirmed' ||
+                            event.enrollment_status === 'attended' ||
+                            event.can_enroll === false;
+          if (isEnrolledFromBackend) {
+            isEnrolled = true;
+            enrollmentStatus = event.enrollment_status || 'Signed Up';
+          }
+        }
+        
+        // Set default status if enrolled but no status
+        if (isEnrolled && !enrollmentStatus) {
+          enrollmentStatus = 'Signed Up';
+        }
         
         const canEnroll = event.can_enroll !== false && !isEnrolled;
         
         return {
           ...event,
           is_enrolled: isEnrolled,
+          enrollment_status: enrollmentStatus,
           can_enroll: canEnroll
         }
       })
@@ -71,12 +149,12 @@ export default function Events() {
       setEvents(updatedEvents)
       
       // Handle pagination data if available
-      if (response.pagination) {
+      if (eventsResponse.status === 'fulfilled' && eventsResponse.value.pagination) {
         const newPagination = {
-          currentPage: response.pagination.current_page,
-          totalPages: response.pagination.last_page,
-          totalEvents: response.pagination.total,
-          perPage: response.pagination.per_page
+          currentPage: eventsResponse.value.pagination.current_page,
+          totalPages: eventsResponse.value.pagination.last_page,
+          totalEvents: eventsResponse.value.pagination.total,
+          perPage: eventsResponse.value.pagination.per_page
         };
         
         console.log('Setting pagination:', newPagination);
@@ -100,7 +178,33 @@ export default function Events() {
 
   useEffect(() => {
     fetchEvents(1)
+    isInitialMount.current = false
   }, [])
+
+  // Refresh events when navigating back to this page (to get updated enrollment status)
+  useEffect(() => {
+    if (location.pathname === '/events' && !isInitialMount.current) {
+      // Small delay to ensure we're fully navigated before refreshing
+      const timeoutId = setTimeout(() => {
+        fetchEvents(pagination.currentPage)
+      }, 300)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [location.pathname])
+
+  // Listen for enrollment updates from other pages
+  useEffect(() => {
+    const handleEnrollmentUpdate = (event: CustomEvent) => {
+      // Refresh events list to get updated enrollment status
+      fetchEvents(pagination.currentPage)
+    }
+    
+    window.addEventListener('enrollmentUpdated', handleEnrollmentUpdate as EventListener)
+    
+    return () => {
+      window.removeEventListener('enrollmentUpdated', handleEnrollmentUpdate as EventListener)
+    }
+  }, [pagination.currentPage])
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -129,49 +233,62 @@ export default function Events() {
     setEnrollingEvents(prev => new Set(prev).add(eventId))
 
     try {
-      // Check if user is already enrolled in this event
-      const isAlreadyEnrolled = events.some(event => 
-        event.event_id === eventId && 
-        (event.is_enrolled === true || 
-         event.enrollment_status === 'Signed Up' || 
-         event.enrollment_status === 'Enrolled' || 
-         event.enrollment_status === 'Confirmed')
-      );
-      
-      if (isAlreadyEnrolled) {
-        toast({
-          title: "Already Enrolled",
-          description: "You are already enrolled in this event.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Extract volunteer_id from user context if available
       const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
       const response = await apiClient.enrollInEvent(eventId, volunteerId)
       
-      // Update local event status immediately (no localStorage needed)
+      // Immediately update the event status using the enrollment response
+      // The response includes enrollment data with event_id and status
+      const enrollmentData = response.data.data || response.data;
+      const enrollmentStatus = enrollmentData?.status || 'Signed Up';
+      
+      // Add this event to enrolled event IDs immediately
+      setEnrolledEventIds(prev => new Set([...prev, eventId]))
+      
+      // Immediately update the event in the list to show "Enrolled"
       setEvents(prev => prev.map(e => 
         e.event_id === eventId 
           ? { 
               ...e, 
               is_enrolled: true, 
               can_enroll: false,
-              enrollment_status: response.data.data?.status || 'Signed Up'
+              enrollment_status: enrollmentStatus
             }
           : e
       ))
+      
+      // Also refresh enrollments list to get updated enrollment status (for future refreshes)
+      try {
+        const enrollmentsResponse = await apiClient.getVolunteerEnrollments()
+        // Extract enrolled event IDs with improved logic
+        const enrolledIds = new Set(
+          enrollmentsResponse.data
+            .map((e: any) => {
+              const eventId = e.event_id || e.event?.event_id;
+              const id = typeof eventId === 'string' ? parseInt(eventId) : eventId;
+              return id;
+            })
+            .filter(id => !isNaN(id) && id > 0)
+        );
+        // Add the current event ID to ensure it's included
+        enrolledIds.add(eventId);
+        setEnrolledEventIds(enrolledIds)
+      } catch (error) {
+        console.error('Error fetching enrollments after enrollment:', error)
+      }
+      
+      // Refresh events list to get updated enrollment status from backend
+      // This ensures the status is persisted even after navigation
+      await fetchEvents(pagination.currentPage)
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('enrollmentUpdated', { detail: { eventId } }))
       
       // Show success toast
       toast({
         title: "Enrollment Successful",
         description: response.message || "You have been successfully enrolled in this event.",
       })
-      
-      // Dispatch event to refresh dashboard
-      const event = new CustomEvent('enrollmentUpdated');
-      window.dispatchEvent(event);
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
       
@@ -199,7 +316,30 @@ export default function Events() {
         ))
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
         errorTitle = 'Event Full'
-        errorMessage = 'This event has reached its maximum capacity. Please check back later or look for other events.'
+        errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
+        // Update the event to reflect unavailability
+        setEvents(prev => prev.map(e => 
+          e.event_id === eventId 
+            ? { ...e, can_enroll: false }
+            : e
+        ))
+      } else if (error.message?.includes('not available') || error.message?.includes('not open')) {
+        errorTitle = 'Enrollment Closed'
+        errorMessage = 'Enrollment for this event is currently closed.'
+        setEvents(prev => prev.map(e => 
+          e.event_id === eventId 
+            ? { ...e, can_enroll: false }
+            : e
+        ))
+      } else if (error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
+        errorTitle = 'Server Error'
+        errorMessage = 'There was a server error while processing your enrollment. Please try again later.'
+      } else if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        errorTitle = 'Authentication Required'
+        errorMessage = 'Your session has expired. Please log in again.'
+        // Redirect to login page
+        navigate('/login')
+        return
       } else if (!error.message) {
         // Handle network errors or other issues with no message
         errorTitle = 'Connection Error'
@@ -343,13 +483,29 @@ export default function Events() {
       end_time: event.end_time
     });
     
-    // Check if user is enrolled (use comprehensive check)
-    const isEnrolled = event.is_enrolled === true || 
-                      event.enrollment_status === 'Enrolled' || 
-                      event.enrollment_status === 'Signed Up' ||
-                      event.enrollment_status === 'confirmed' ||
-                      event.enrollment_status === 'attended' ||
-                      event.can_enroll === false;
+    // Check if user is enrolled - prioritize is_enrolled flag set in fetchEvents
+    // This is set based on comprehensive enrollment check in fetchEvents
+    let isEnrolled = event.is_enrolled === true;
+    
+    // If not set, check if event has enrollments array (like EventDetail does for detail page)
+    if (!isEnrolled) {
+      const eventWithEnrollments = event as any;
+      if (eventWithEnrollments.enrollments && Array.isArray(eventWithEnrollments.enrollments) && user && 'volunteer_id' in user) {
+        isEnrolled = eventWithEnrollments.enrollments.some((enrollment: any) => 
+          enrollment.volunteer?.volunteer_id === (user as any).volunteer_id ||
+          parseInt(enrollment.volunteer_id) === (user as any).volunteer_id
+        );
+      }
+    }
+    
+    // Fallback: Check other enrollment status flags
+    if (!isEnrolled) {
+      isEnrolled = event.enrollment_status === 'Enrolled' || 
+                    event.enrollment_status === 'Signed Up' ||
+                    event.enrollment_status === 'confirmed' ||
+                    event.enrollment_status === 'attended' ||
+                    event.can_enroll === false;
+    }
     
     // If enrolled, show enrolled status
     if (isEnrolled) {
@@ -585,10 +741,8 @@ export default function Events() {
                         {/* Enrollment Status */}
                         {(() => {
                           const buttonState = getButtonState(event);
-                          // Show enrolled badge if user is enrolled (use backend status only)
-                          const isEnrolled = event.is_enrolled === true;
-                          
-                          if (isEnrolled) {
+                          // Show enrolled badge if button shows "Enrolled" (getButtonState already checks comprehensively)
+                          if (buttonState.text === 'Enrolled' && buttonState.showDetails === true) {
                             return (
                               <Badge variant="outline" className="text-xs px-2 py-1 text-green-700 border-green-300">
                                 Enrolled
@@ -599,27 +753,7 @@ export default function Events() {
                         })()}
                       </div>
 
-                      {/* Enrollment Status (if enrolled) */}
-                      {(() => {
-                        const buttonState = getButtonState(event)
-                        // Show enrollment details if user is enrolled (use backend status only)
-                        const isEnrolled = event.is_enrolled === true;
-                        
-                        if (isEnrolled) {
-                          return (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                <span className="text-sm font-medium text-green-800">Enrolled</span>
-                              </div>
-                              <p className="text-xs text-green-600 mt-1">
-                                Check your dashboard for more details and event updates.
-                              </p>
-                            </div>
-                          )
-                        }
-                        return null
-                      })()}
+
 
                       {/* Action Button */}
                       {(() => {

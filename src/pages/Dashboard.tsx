@@ -152,25 +152,93 @@ export default function Dashboard() {
           }),
         */
         
-        // Fetch enrolled events by getting all events and filtering
-        apiClient.getAvailableEvents(1, 100) // Get first 100 events
-          .then(response => {
-            console.log('All events response:', response);
-            // Filter to show only enrolled events
-            const enrolledEvents = response.data.filter(event => 
-              event.is_enrolled === true || 
-              event.enrollment_status === 'Signed Up' || 
-              event.enrollment_status === 'Enrolled' || 
-              event.enrollment_status === 'Confirmed' ||
-              event.enrollment_status === 'attended'
+        // Fetch enrolled events by getting enrollments from history
+        // Also fetch all events to check for future enrollments that might not be in history yet
+        Promise.all([
+          apiClient.getVolunteerEnrollments(),
+          apiClient.getAvailableEvents(1, 100)
+        ])
+          .then(([enrollmentsResponse, eventsResponse]) => {
+            console.log('Enrollments response:', enrollmentsResponse);
+            console.log('All events response:', eventsResponse);
+            
+            // Get enrolled event IDs from history
+            const enrolledEventIds = new Set(
+              enrollmentsResponse.data.map(e => parseInt(e.event_id))
             );
-            console.log('Filtered enrolled events:', enrolledEvents);
-            setRecentEvents(enrolledEvents.slice(0, 3));
+            console.log('Enrolled event IDs from history:', Array.from(enrolledEventIds));
+            
+            // Map enrollments to events (enrollments contain event data)
+            // Filter out enrollments that don't have event data
+            const enrolledEventsFromHistory = enrollmentsResponse.data
+              .filter(enrollment => enrollment.event && enrollment.event.event_id)
+              .map(enrollment => ({
+                ...enrollment.event,
+                is_enrolled: true,
+                enrollment_status: enrollment.status || 'Signed Up',
+                enrollment_id: enrollment.enrollment_id
+              }));
+            
+            console.log('Enrolled events from history:', enrolledEventsFromHistory);
+            
+            // Also check events list for enrolled events that might not be in history yet
+            // (e.g., future enrollments that haven't been attended)
+            const enrolledEventsFromList = eventsResponse.data
+              .filter(event => {
+                // Only include if NOT already in history (to avoid duplicates)
+                const isInHistory = enrolledEventIds.has(event.event_id);
+                if (isInHistory) return false; // Already have it from history
+                
+                // Check if event has enrollment status in the event data
+                const isEnrolled = event.is_enrolled === true || 
+                  event.enrollment_status === 'Enrolled' || 
+                  event.enrollment_status === 'Signed Up' ||
+                  event.enrollment_status === 'confirmed' ||
+                  event.enrollment_status === 'attended' ||
+                  event.can_enroll === false;
+                return isEnrolled;
+              })
+              .map(event => ({
+                ...event,
+                is_enrolled: true,
+                enrollment_status: event.enrollment_status || 'Signed Up'
+              }));
+            
+            console.log('Enrolled events from list:', enrolledEventsFromList);
+            
+            // Combine both lists, removing duplicates by event_id
+            // Prioritize history events over list events (history has more complete data)
+            const allEnrolledEvents = [...enrolledEventsFromHistory, ...enrolledEventsFromList];
+            const uniqueEnrolledEvents = allEnrolledEvents.filter((event, index, self) =>
+              index === self.findIndex(e => e.event_id === event.event_id)
+            );
+            
+            console.log('All enrolled events (combined):', uniqueEnrolledEvents);
+            
+            // Sort by event date (most recent first) and take first 3
+            const sortedEvents = uniqueEnrolledEvents.sort((a, b) => 
+              new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+            );
+            console.log('Final enrolled events (sorted, top 3):', sortedEvents.slice(0, 3));
+            setRecentEvents(sortedEvents.slice(0, 3));
           })
-        .catch(error => {
-          console.error('Error fetching events:', error)
-          setRecentEvents([])
-        }),
+          .catch(error => {
+            console.error('Error fetching enrollments:', error)
+            // Fallback to getting all events and filtering if enrollments endpoint fails
+            apiClient.getAvailableEvents(1, 100)
+              .then(response => {
+                const enrolledEvents = response.data.filter(event => 
+                  event.is_enrolled === true || 
+                  event.enrollment_status === 'Enrolled' || 
+                  event.enrollment_status === 'Signed Up' ||
+                  event.enrollment_status === 'confirmed' ||
+                  event.enrollment_status === 'attended' ||
+                  event.can_enroll === false
+                );
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
+          }),
       
       // Fetch badges using the badge context
       refreshBadges()
@@ -201,7 +269,59 @@ useEffect(() => {
 // Listen for enrollment updates and refresh dashboard
 useEffect(() => {
   const handleEnrollmentUpdate = () => {
-    refreshDashboard();
+    // Refresh enrolled events by combining history and events list
+    Promise.all([
+      apiClient.getVolunteerEnrollments(),
+      apiClient.getAvailableEvents(1, 100)
+    ])
+      .then(([enrollmentsResponse, eventsResponse]) => {
+        // Get enrolled event IDs from history
+        const enrolledEventIds = new Set(
+          enrollmentsResponse.data.map(e => parseInt(e.event_id))
+        );
+        
+        // Map enrollments to events (enrollments contain event data)
+        const enrolledEventsFromHistory = enrollmentsResponse.data.map(enrollment => ({
+          ...enrollment.event,
+          is_enrolled: true,
+          enrollment_status: enrollment.status,
+          enrollment_id: enrollment.enrollment_id
+        }));
+        
+        // Also check events list for enrolled events
+        const enrolledEventsFromList = eventsResponse.data
+          .filter(event => {
+            const isEnrolled = enrolledEventIds.has(event.event_id) ||
+              event.is_enrolled === true || 
+              event.enrollment_status === 'Enrolled' || 
+              event.enrollment_status === 'Signed Up' ||
+              event.enrollment_status === 'confirmed' ||
+              event.enrollment_status === 'attended' ||
+              event.can_enroll === false;
+            return isEnrolled;
+          })
+          .map(event => ({
+            ...event,
+            is_enrolled: true,
+            enrollment_status: event.enrollment_status || 'Signed Up'
+          }));
+        
+        // Combine both lists, removing duplicates
+        const allEnrolledEvents = [...enrolledEventsFromHistory, ...enrolledEventsFromList];
+        const uniqueEnrolledEvents = allEnrolledEvents.filter((event, index, self) =>
+          index === self.findIndex(e => e.event_id === event.event_id)
+        );
+        
+        // Sort by event date (most recent first) and take first 3
+        const sortedEvents = uniqueEnrolledEvents.sort((a, b) => 
+          new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+        );
+        setRecentEvents(sortedEvents.slice(0, 3));
+      })
+      .catch(error => {
+        console.error('Error refreshing enrollments after update:', error)
+        refreshDashboard();
+      });
   };
   
   window.addEventListener('enrollmentUpdated', handleEnrollmentUpdate);
@@ -278,24 +398,39 @@ useEffect(() => {
           }),
         */
       
-        // Refresh enrolled events by getting all events and filtering
-        apiClient.getAvailableEvents(1, 100) // Get first 100 events
+        // Refresh enrolled events by getting enrollments directly
+        apiClient.getVolunteerEnrollments()
           .then(response => {
-            console.log('Refreshing - All events response:', response);
-            // Filter to show only enrolled events
-            const enrolledEvents = response.data.filter(event => 
-              event.is_enrolled === true || 
-              event.enrollment_status === 'Signed Up' || 
-              event.enrollment_status === 'Enrolled' || 
-              event.enrollment_status === 'Confirmed' ||
-              event.enrollment_status === 'attended'
+            console.log('Refreshing - Enrollments response:', response);
+            // Map enrollments to events (enrollments contain event data)
+            const enrolledEvents = response.data.map(enrollment => ({
+              ...enrollment.event,
+              is_enrolled: true,
+              enrollment_status: enrollment.status,
+              enrollment_id: enrollment.enrollment_id
+            }));
+            // Sort by event date (most recent first) and take first 3
+            const sortedEvents = enrolledEvents.sort((a, b) => 
+              new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
             );
-            console.log('Refreshing - Filtered enrolled events:', enrolledEvents);
-            setRecentEvents(enrolledEvents.slice(0, 3));
+            setRecentEvents(sortedEvents.slice(0, 3));
           })
           .catch(error => {
-            console.error('Error refreshing enrolled events:', error)
-            setRecentEvents([])
+            console.error('Error refreshing enrollments:', error)
+            // Fallback to getting all events and filtering if enrollments endpoint fails
+            apiClient.getAvailableEvents(1, 100)
+              .then(response => {
+                const enrolledEvents = response.data.filter(event => 
+                  event.is_enrolled === true || 
+                  event.enrollment_status === 'Enrolled' || 
+                  event.enrollment_status === 'Signed Up' ||
+                  event.enrollment_status === 'confirmed' ||
+                  event.enrollment_status === 'attended' ||
+                  event.can_enroll === false
+                );
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
           }),
       
         // Refresh badges using the badge context
@@ -823,8 +958,7 @@ useEffect(() => {
               variant="outline"
               onClick={() => {
                 // Open survey modal
-                const event = new Event('surveyOpen');
-                window.dispatchEvent(event);
+                setSurveyOpen(true);
               }}
             >
               <FileText className="h-7 w-7" />

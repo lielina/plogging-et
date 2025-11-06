@@ -143,6 +143,7 @@ export interface Event {
   status: string;
   qr_code_path?: string;
   image_path?: string; // Add image_path field
+  sections?: Section[]; // Add sections property
   // Enrollment information that may be returned for volunteers
   is_enrolled?: boolean;
   enrollment_status?: string;
@@ -295,7 +296,7 @@ export interface EPloggingSubmission {
   image: File;
   quote: string;
   location: string;
-
+  
 }
 
 
@@ -507,7 +508,7 @@ class ApiClient {
       }
 
       const blob = await response.blob();
-
+      
       // Validate it's an image
       if (!blob.type.startsWith('image/')) {
         throw new Error(`Invalid image type: ${blob.type}`);
@@ -696,13 +697,6 @@ class ApiClient {
     return this.request<{ data: any }>('/volunteer/statistics');
   }
 
-  // Add new method for volunteer activity trends
-  async getVolunteerActivityTrends(): Promise<{ data: any[] }> {
-    // Since there's no direct endpoint for volunteer activity trends,
-    // we'll use the volunteer history endpoint and transform the data
-    return this.request<{ data: any[] }>('/volunteer/history');
-  }
-
   async getAvailableEvents(page: number = 1, perPage: number = 15): Promise<{ data: Event[], pagination?: any }> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -756,6 +750,74 @@ class ApiClient {
     }
   }
 
+  async getVolunteerEnrollments(): Promise<{ data: VolunteerEnrollment[] }> {
+    try {
+      // Use GET /volunteer/history endpoint to get enrollment history
+      const historyResponse = await this.getVolunteerHistory();
+      
+      console.log('History response in getVolunteerEnrollments:', historyResponse);
+      
+      // The history endpoint returns events with enrollment data
+      // Map history data to VolunteerEnrollment format
+      if (historyResponse.data && Array.isArray(historyResponse.data)) {
+        console.log('History data array length:', historyResponse.data.length);
+        console.log('First history item:', historyResponse.data[0]);
+        
+        const enrollments: VolunteerEnrollment[] = historyResponse.data.map((item: any) => {
+          // History endpoint returns events the volunteer has participated in
+          // Extract enrollment information from the history item
+          // Handle different possible response structures
+          const enrollmentId = item.enrollment_id || item.enrollment?.enrollment_id || item.id || 0;
+          const eventId = item.event_id || item.event?.event_id || item.id || 0;
+          const volunteerId = item.volunteer_id || item.volunteer?.volunteer_id || '';
+          
+          // Get event data - it might be nested in item.event or flat in item
+          const eventData = item.event || item;
+          
+          return {
+            enrollment_id: enrollmentId,
+            volunteer_id: String(volunteerId),
+            event_id: String(eventId),
+            signup_date: item.enrollment?.signup_date || item.enrollment?.created_at || item.signup_date || item.created_at || item.enrollment_date || '',
+            status: item.enrollment?.status || item.enrollment_status || item.status || 'Signed Up',
+            created_at: item.enrollment?.created_at || item.created_at || '',
+            updated_at: item.enrollment?.updated_at || item.updated_at || '',
+            event: {
+              event_id: eventId,
+              event_name: eventData.event_name || item.event_name || '',
+              description: eventData.description || item.description || '',
+              event_date: eventData.event_date || item.event_date || '',
+              start_time: eventData.start_time || item.start_time || '',
+              end_time: eventData.end_time || item.end_time || '',
+              location_name: eventData.location_name || item.location_name || '',
+              latitude: eventData.latitude || item.latitude || '',
+              longitude: eventData.longitude || item.longitude || '',
+              estimated_duration_hours: eventData.estimated_duration_hours || item.estimated_duration_hours || 0,
+              max_volunteers: eventData.max_volunteers || item.max_volunteers || 0,
+              status: eventData.status || item.status || 'Upcoming',
+              image_path: eventData.image_path || item.image_path || undefined,
+              sections: eventData.sections || item.sections || undefined,
+              is_enrolled: true,
+              enrollment_status: item.enrollment?.status || item.enrollment_status || item.status || 'Signed Up',
+              can_enroll: false,
+              enrollment_id: enrollmentId
+            }
+          };
+        });
+        
+        console.log('Mapped enrollments:', enrollments);
+        return { data: enrollments };
+      }
+      
+      console.log('History response has no data array, returning empty');
+      return { data: [] };
+    } catch (error: any) {
+      console.error('Error fetching volunteer enrollments from history:', error);
+      // Return empty array if error occurs
+      return { data: [] };
+    }
+  }
+
   async cancelEnrollment(enrollmentId: number): Promise<{ data: any }> {
     return this.request<{ data: any }>(`/volunteer/enrollments/${enrollmentId}`, {
       method: 'DELETE',
@@ -798,30 +860,6 @@ class ApiClient {
       console.error('Error fetching volunteer badges:', error);
       // Return empty array on error to prevent UI breakage
       return { data: [] };
-    }
-  }
-
-  // New method to check for newly earned badges after an action
-  async checkForNewBadges(previousBadges: VolunteerBadge[] = []): Promise<{ data: VolunteerBadge[], newBadges: VolunteerBadge[] }> {
-    try {
-      const response = await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
-      // Ensure we always return an array, even if the response is malformed
-      if (!response.data || !Array.isArray(response.data)) {
-        console.warn('Badges API returned invalid data structure:', response);
-        return { data: [], newBadges: [] };
-      }
-
-      // Filter to find newly earned badges
-      const currentBadges = response.data;
-      const newBadges = currentBadges.filter(currentBadge => {
-        return !previousBadges.some(prevBadge => prevBadge.badge_id === currentBadge.badge_id);
-      });
-
-      return { data: currentBadges, newBadges };
-    } catch (error) {
-      console.error('Error checking for new badges:', error);
-      // Return empty arrays on error
-      return { data: [], newBadges: [] };
     }
   }
 
@@ -1179,11 +1217,6 @@ class ApiClient {
     return this.request<{ data: any[] }>('/volunteer/history');
   }
 
-  // Get enrolled events for the current volunteer
-  async getEnrolledEvents(): Promise<{ data: Event[] }> {
-    return this.request<{ data: Event[] }>('/volunteer/enrollments');
-  }
-
   // Add Notification endpoints
   async getNotifications(): Promise<{ data: any[] }> {
     return this.request<{ data: any[] }>('/volunteer/notifications');
@@ -1246,27 +1279,6 @@ class ApiClient {
     return this.request<{ data: any[] }>(`/volunteer/${volunteerId}/badges`);
   }
 
-  // Get public ePlogging posts (no authentication required)
-  // Public ePlogging posts
-  async getPublicEPloggingPosts(
-    perPage = 15,
-    volunteerId?: number
-  ): Promise<any> {
-    const params = new URLSearchParams({
-      per_page: perPage.toString(),
-    });
-
-    if (volunteerId != null) {
-      params.append('volunteer_id', volunteerId.toString());
-    }
-    const endpoint = `/eplogging?${params.toString()}`;
-    return this.request(endpoint, {
-      method: 'GET',
-    });
-  }
-
-
-
   // Get paginated ePlogging posts
   async getEPloggingPosts(page = 1, perPage = 12): Promise<any> {
     const params = new URLSearchParams({
@@ -1282,7 +1294,7 @@ class ApiClient {
       page: page.toString(),
       per_page: perPage.toString(),
     });
-    return this.request(`/volunteer/eplogging/my-posts?${params.toString()}`);
+    return this.request(`/volunteer/eplogging/my-posts?${params.toString()}`); 
   }
 
   async getEPloggingPost(post_id: number): Promise<any> {
@@ -1320,10 +1332,6 @@ class ApiClient {
 
   async deleteEPloggingPost(post_id: number): Promise<{ message: string }> {
     return this.request(`/volunteer/eplogging/${post_id}`, { method: "DELETE" });
-  }
-
-  async likeEPloggingPost(post_id: number): Promise<any> {
-    return this.request(`/volunteer/eplogging/${post_id}/like`, { method: "POST" });
   }
 
   // Admin ePlogging endpoints
