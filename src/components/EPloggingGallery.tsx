@@ -81,7 +81,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       setError(null)
 
       const response = isPublic
-        ? await apiClient.getPublicEPloggingPosts(15, undefined)  // Don't send volunteer_id when not authenticated
+        ? await apiClient.getPublicEPloggingPosts(currentPage, 15, undefined) 
         : showMyPosts 
           ? await apiClient.getMyEPloggingPosts(currentPage, 22)
           : await apiClient.getEPloggingPosts(currentPage, 22)
@@ -221,8 +221,8 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
     }
   }
 
-  // Only filter posts when not showing my posts (gallery view)
-  const filteredPosts = showMyPosts 
+  // Only filter posts when not showing my posts and not public (gallery view with search)
+  const filteredPosts = showMyPosts || isPublic
     ? posts
     : posts.filter(post => 
         post.quote.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -299,7 +299,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
           </p>
         </div>
         
-        {!showMyPosts && (
+        {!showMyPosts && !isPublic && (
           <div className="flex gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -409,8 +409,8 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
             ))}
           </div>
 
-          {/* Pagination - Always show for My Posts if there are posts, or for gallery if multiple pages */}
-          {filteredPosts.length > 0 && (showMyPosts || totalPages > 1 || currentPage > 1 || filteredPosts.length === 22) && (
+          {/* Pagination - Show for My Posts, Public posts, or gallery if multiple pages */}
+          {filteredPosts.length > 0 && (showMyPosts || isPublic || totalPages > 1 || currentPage > 1 || filteredPosts.length === 22) && (
             <div className="flex items-center justify-end gap-3 mt-6">
               <Button
                 variant="outline"
@@ -452,16 +452,20 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
           <h3 className="text-lg font-semibold text-gray-600 mb-2">
             {showMyPosts 
               ? 'No posts available'
-              : (searchTerm ? 'No posts match your search' : 'No posts available')
+              : isPublic
+                ? 'No posts available'
+                : (searchTerm ? 'No posts match your search' : 'No posts available')
             }
           </h3>
           <p className="text-gray-500">
             {showMyPosts
               ? 'You haven\'t created any ePlogging posts yet. Share your first post!'
-              : (searchTerm 
-                  ? 'Try adjusting your search terms' 
-                  : 'Be the first to share your ePlogging experience!'
-                )
+              : isPublic
+                ? 'Be the first to share your ePlogging experience!'
+                : (searchTerm 
+                    ? 'Try adjusting your search terms' 
+                    : 'Be the first to share your ePlogging experience!'
+                  )
             }
           </p>
         </div>
