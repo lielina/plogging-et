@@ -49,7 +49,7 @@ const UserSidebar = () => {
   const navItems = [
     { name: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
     { name: "Events", to: "/events", icon: Calendar },
-    { name: "ePlogging", to: "/eplogging", icon: Camera },
+    { name: "ePlogging", to: "/eplogging/manage", icon: Camera },
     { name: "Leaderboard", to: "/leaderboard", icon: BarChart3 },
     { name: "Certificates", to: "/certificates", icon: FileText },
     { name: "My Badge", to: "/badges", icon: Award },
