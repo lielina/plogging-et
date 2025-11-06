@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { 
   MapPin, 
   Calendar,
@@ -81,7 +82,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       setError(null)
 
       const response = isPublic
-        ? await apiClient.getPublicEPloggingPosts(15, undefined)  // Don't send volunteer_id when not authenticated
+        ? await apiClient.getPublicEPloggingPosts(currentPage, 15, undefined) 
         : showMyPosts 
           ? await apiClient.getMyEPloggingPosts(currentPage, 22)
           : await apiClient.getEPloggingPosts(currentPage, 22)
@@ -221,8 +222,8 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
     }
   }
 
-  // Only filter posts when not showing my posts (gallery view)
-  const filteredPosts = showMyPosts 
+  // Only filter posts when not showing my posts and not public (gallery view with search)
+  const filteredPosts = showMyPosts || isPublic
     ? posts
     : posts.filter(post => 
         post.quote.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -235,6 +236,49 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    
+    if (diffInSeconds < 60) return 'Just now'
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`
+    
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    })
+  }
+
+  const getVolunteerName = (volunteer: EPPost['volunteer']) => {
+    if (volunteer.first_name && volunteer.last_name) {
+      return `${volunteer.first_name} ${volunteer.last_name}`
+    }
+    return volunteer.first_name || volunteer.last_name || 'Volunteer'
+  }
+
+  const getInitials = (volunteer: EPPost['volunteer']) => {
+    const firstName = volunteer.first_name || ''
+    const lastName = volunteer.last_name || ''
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase()
+    }
+    if (firstName) {
+      return firstName[0].toUpperCase()
+    }
+    if (lastName) {
+      return lastName[0].toUpperCase()
+    }
+    return 'V'
+  }
+
+  const getProfileImageUrl = (volunteer: EPPost['volunteer']) => {
+    return volunteer.profile_image_url || volunteer.profile_image || null
   }
 
   const getStatusColor = (status: string) => {
@@ -286,45 +330,76 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header and Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">
-            {showMyPosts ? 'My ePlogging Posts' : 'ePlogging Gallery'}
-          </h2>
-          <p className="text-gray-600">
-            {showMyPosts 
-              ? 'Your submitted ePlogging posts' 
-              : 'Community plogging activities from around the world'
-            }
-          </p>
-        </div>
-        
-        {!showMyPosts && (
-          <div className="flex gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search posts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64"
-              />
-            </div>
+      {!isPublic && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {showMyPosts ? 'My ePlogging Posts' : 'ePlogging Gallery'}
+            </h2>
+            <p className="text-gray-600">
+              {showMyPosts 
+                ? 'Your submitted ePlogging posts' 
+                : 'Community plogging activities from around the world'
+              }
+            </p>
           </div>
-        )}
-      </div>
+          
+          {!showMyPosts && (
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search posts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Posts Grid */}
       {filteredPosts.length > 0 ? (
         <>
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className={`grid gap-6 ${isPublic ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {filteredPosts.map((post) => (
-              <Card key={post.post_id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card key={post.post_id} className={`overflow-hidden hover:shadow-lg transition-shadow ${isPublic ? 'shadow-md' : ''}`}>
+                {/* Facebook-like Header - Only show for public posts */}
+                {isPublic && (
+                  <CardContent className="p-4 pb-3 border-b">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        {getProfileImageUrl(post.volunteer) ? (
+                          <AvatarImage 
+                            src={getProfileImageUrl(post.volunteer)!} 
+                            alt={getVolunteerName(post.volunteer)}
+                            className="object-cover"
+                          />
+                        ) : null}
+                        <AvatarFallback className="bg-green-100 text-green-700 font-semibold">
+                          {getInitials(post.volunteer)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 text-sm">
+                          {getVolunteerName(post.volunteer)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatDateTime(post.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
+
                 {/* Image */}
                 <div className="relative">
                   <img
                     src={post.image_url || post.image_path}
-                    className="w-full h-48 object-cover"
+                    className={`w-full ${isPublic ? 'h-64 object-cover bg-gray-50' : 'h-48 object-cover'}`}
+                    alt={post.quote || 'ePlogging post'}
                   />
                   {!isPublic && (
                     <div className="absolute top-2 right-2">
@@ -335,24 +410,34 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                   )}
                 </div>
 
-                <CardContent className="p-4">
+                <CardContent className={`p-4 ${isPublic ? 'pt-3' : ''}`}>
                   {/* Quote */}
-                  <blockquote className="text-sm text-gray-700 italic mb-3 p-2 bg-gray-50 rounded">
-                    "{post.quote}"
-                  </blockquote>
-                  {/* location */}
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                    {post.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span className="truncate max-w-32">{post.location}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(post.created_at)}</span>
-                    </div>
+                  <div className={`${isPublic ? 'mb-3' : 'mb-3'}`}>
+                    <p className={`text-gray-800 ${isPublic ? 'text-base' : 'text-sm italic'} ${!isPublic ? 'p-2 bg-gray-50 rounded' : ''}`}>
+                      {isPublic ? post.quote : `"${post.quote}"`}
+                    </p>
                   </div>
+                  
+                  {/* Location and Date - Only show for non-public posts or show location for public */}
+                  {!isPublic ? (
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                      {post.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate max-w-32">{post.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{formatDate(post.created_at)}</span>
+                      </div>
+                    </div>
+                  ) : post.location && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-4">
+                      <MapPin className="w-4 h-4" />
+                      <span>{post.location}</span>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex items-center justify-between">
@@ -409,8 +494,8 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
             ))}
           </div>
 
-          {/* Pagination - Always show for My Posts if there are posts, or for gallery if multiple pages */}
-          {filteredPosts.length > 0 && (showMyPosts || totalPages > 1 || currentPage > 1 || filteredPosts.length === 22) && (
+          {/* Pagination - Show for My Posts, Public posts, or gallery if multiple pages */}
+          {filteredPosts.length > 0 && (showMyPosts || isPublic || totalPages > 1 || currentPage > 1 || filteredPosts.length === 22) && (
             <div className="flex items-center justify-end gap-3 mt-6">
               <Button
                 variant="outline"
@@ -452,16 +537,20 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
           <h3 className="text-lg font-semibold text-gray-600 mb-2">
             {showMyPosts 
               ? 'No posts available'
-              : (searchTerm ? 'No posts match your search' : 'No posts available')
+              : isPublic
+                ? 'No posts available'
+                : (searchTerm ? 'No posts match your search' : 'No posts available')
             }
           </h3>
           <p className="text-gray-500">
             {showMyPosts
               ? 'You haven\'t created any ePlogging posts yet. Share your first post!'
-              : (searchTerm 
-                  ? 'Try adjusting your search terms' 
-                  : 'Be the first to share your ePlogging experience!'
-                )
+              : isPublic
+                ? 'Be the first to share your ePlogging experience!'
+                : (searchTerm 
+                    ? 'Try adjusting your search terms' 
+                    : 'Be the first to share your ePlogging experience!'
+                  )
             }
           </p>
         </div>
