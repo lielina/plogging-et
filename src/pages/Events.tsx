@@ -168,6 +168,10 @@ export default function Events() {
         title: "Enrollment Successful",
         description: response.message || "You have been successfully enrolled in this event.",
       })
+      
+      // Dispatch event to refresh dashboard
+      const event = new CustomEvent('enrollmentUpdated');
+      window.dispatchEvent(event);
     } catch (error: any) {
       console.error('Error enrolling in event:', error)
       

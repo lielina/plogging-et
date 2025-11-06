@@ -104,7 +104,8 @@ export default function Dashboard() {
           }),
         
         // Fetch volunteer activity trends
-        // Try to use volunteer history endpoint, fallback to generating sample data based on statistics
+        // Temporarily disabled due to server errors with the history endpoint
+        /*
         apiClient.getVolunteerHistory()
           .then(response => {
             console.log('Volunteer history response:', response);
@@ -149,12 +150,22 @@ export default function Dashboard() {
               activityData: []
             }))
           }),
+        */
         
-        // Fetch enrolled events directly
-        apiClient.getEnrolledEvents()
+        // Fetch enrolled events by getting all events and filtering
+        apiClient.getAvailableEvents(1, 100) // Get first 100 events
           .then(response => {
-            console.log('Enrolled events response:', response);
-            setRecentEvents(response.data.slice(0, 3));
+            console.log('All events response:', response);
+            // Filter to show only enrolled events
+            const enrolledEvents = response.data.filter(event => 
+              event.is_enrolled === true || 
+              event.enrollment_status === 'Signed Up' || 
+              event.enrollment_status === 'Enrolled' || 
+              event.enrollment_status === 'Confirmed' ||
+              event.enrollment_status === 'attended'
+            );
+            console.log('Filtered enrolled events:', enrolledEvents);
+            setRecentEvents(enrolledEvents.slice(0, 3));
           })
         .catch(error => {
           console.error('Error fetching events:', error)
@@ -187,6 +198,19 @@ useEffect(() => {
   fetchDashboardData()
 }, [location.pathname, user, isSurveyOpen])
 
+// Listen for enrollment updates and refresh dashboard
+useEffect(() => {
+  const handleEnrollmentUpdate = () => {
+    refreshDashboard();
+  };
+  
+  window.addEventListener('enrollmentUpdated', handleEnrollmentUpdate);
+  
+  return () => {
+    window.removeEventListener('enrollmentUpdated', handleEnrollmentUpdate);
+  };
+}, []);
+
   const refreshDashboard = async () => {
     try {
       setIsLoading(true)
@@ -209,6 +233,8 @@ useEffect(() => {
           }),
       
         // Refresh volunteer activity trends
+        // Temporarily disabled due to server errors with the history endpoint
+        /*
         apiClient.getVolunteerHistory()
           .then(response => {
             console.log('Refreshing - Volunteer history response:', response);
@@ -250,12 +276,22 @@ useEffect(() => {
             // Don't use default data if API fails, keep existing data
             // If there's no existing data, keep the empty array
           }),
+        */
       
-        // Refresh enrolled events directly
-        apiClient.getEnrolledEvents()
+        // Refresh enrolled events by getting all events and filtering
+        apiClient.getAvailableEvents(1, 100) // Get first 100 events
           .then(response => {
-            console.log('Refreshing - Enrolled events response:', response);
-            setRecentEvents(response.data.slice(0, 3));
+            console.log('Refreshing - All events response:', response);
+            // Filter to show only enrolled events
+            const enrolledEvents = response.data.filter(event => 
+              event.is_enrolled === true || 
+              event.enrollment_status === 'Signed Up' || 
+              event.enrollment_status === 'Enrolled' || 
+              event.enrollment_status === 'Confirmed' ||
+              event.enrollment_status === 'attended'
+            );
+            console.log('Refreshing - Filtered enrolled events:', enrolledEvents);
+            setRecentEvents(enrolledEvents.slice(0, 3));
           })
           .catch(error => {
             console.error('Error refreshing enrolled events:', error)
