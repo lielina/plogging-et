@@ -8,7 +8,9 @@ import { useAuth } from '@/contexts/AuthContext'
 
 interface TopVolunteer {
   volunteer_id: number;
-  name: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   total_hours: string | number;
   total_hours_contributed?: string | number; // Add fallback field
@@ -47,31 +49,43 @@ export default function Leaderboard() {
         console.log('Is array:', Array.isArray(response.data));
         
         // Handle different response structures
+        let volunteers: TopVolunteer[] = []
         if (response.data.volunteers) {
           console.log('Using volunteers property');
-          setTopVolunteers(response.data.volunteers)
+          volunteers = response.data.volunteers
           setCriteria(response.data.criteria || 'hours')
         } else if (Array.isArray(response.data)) {
           console.log('Using direct array');
           // If response is directly an array of volunteers
-          setTopVolunteers(response.data)
+          volunteers = response.data
           setCriteria('hours')
         } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
           console.log('Using object structure');
           // If response is an object with volunteer data
           // Check if it has a data property that is an array
           if (Array.isArray(response.data.data)) {
-            setTopVolunteers(response.data.data)
+            volunteers = response.data.data
             setCriteria(response.data.criteria || 'hours')
           } else {
-            setTopVolunteers([response.data])
+            volunteers = [response.data]
             setCriteria('hours')
           }
         } else {
           console.log('Using fallback empty array');
           // Fallback to empty array
-          setTopVolunteers([])
+          volunteers = []
         }
+        
+        // Normalize volunteer names - combine first_name and last_name if name is not present
+        const normalizedVolunteers = volunteers.map(volunteer => ({
+          ...volunteer,
+          name: volunteer.name || 
+                (volunteer.first_name && volunteer.last_name 
+                  ? `${volunteer.first_name} ${volunteer.last_name}`.trim()
+                  : volunteer.first_name || volunteer.last_name || 'Volunteer')
+        }))
+        
+        setTopVolunteers(normalizedVolunteers)
       } catch (error: any) {
         console.error('Error fetching top volunteers:', error)
         // Provide a more user-friendly error message
@@ -237,7 +251,7 @@ export default function Leaderboard() {
                   <CardTitle className="text-base sm:text-lg">2nd Place</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-gray-700 mb-2 truncate">{topVolunteers[1].name}</div>
+                  <div className="text-base sm:text-lg font-bold text-gray-700 mb-2 truncate">{topVolunteers[1].name || 'Volunteer'}</div>
                   <div className="text-xs sm:text-sm text-gray-600 mb-3 truncate">{topVolunteers[1].email}</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
@@ -267,7 +281,7 @@ export default function Leaderboard() {
                   <CardTitle className="text-lg sm:text-xl">🏆 1st Place</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="text-xl sm:text-3xl font-bold text-gray-800 mb-2 truncate">{topVolunteers[0].name}</div>
+                  <div className="text-lg sm:text-xl font-bold text-gray-800 mb-2 truncate">{topVolunteers[0].name || 'Volunteer'}</div>
                   <div className="text-xs sm:text-sm text-gray-600 mb-3 truncate">{topVolunteers[0].email}</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
@@ -297,7 +311,7 @@ export default function Leaderboard() {
                   <CardTitle className="text-base sm:text-lg">3rd Place</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-gray-700 mb-2 truncate">{topVolunteers[2].name}</div>
+                  <div className="text-base sm:text-lg font-bold text-gray-700 mb-2 truncate">{topVolunteers[2].name || 'Volunteer'}</div>
                   <div className="text-xs sm:text-sm text-gray-600 mb-3 truncate">{topVolunteers[2].email}</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
@@ -365,7 +379,7 @@ export default function Leaderboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{volunteer.name}</div>
+                          <div className="text-sm font-medium text-gray-900">{volunteer.name || 'Volunteer'}</div>
                           <div className="text-sm text-gray-500">{volunteer.email}</div>
                         </div>
                       </td>
