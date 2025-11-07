@@ -48,12 +48,13 @@ const Layout = () => {
 
   // Show sidebar on dashboard pages when authenticated
   // Note: '/events' is intentionally excluded so Events remains a public page
+  // Note: '/eplogging/manage' is for user's own posts, '/eplogging' is public
   const isDashboardRoute = location.pathname.startsWith('/dashboard') || 
                           location.pathname.startsWith('/profile') || 
                           location.pathname.startsWith('/leaderboard') ||
                           location.pathname.startsWith('/certificates') ||
                           location.pathname.startsWith('/badges') ||
-                          location.pathname.startsWith('/eplogging') ||
+                          location.pathname.startsWith('/eplogging/manage') ||
                           location.pathname.startsWith('/survey') ||
                           location.pathname === '/events';
 

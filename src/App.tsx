@@ -116,6 +116,11 @@ function App() {
               <Route path="/blog/:postId" element={<BlogPostPage />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/eplogging" element={<EPlogging />} />
+              <Route path="/eplogging/manage" element={
+                <ProtectedRoute>
+                  <EPlogging />
+                </ProtectedRoute>
+              } />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/leaderboard-public" element={<Leaderboard />} />

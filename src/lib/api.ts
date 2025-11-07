@@ -579,6 +579,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
+ 
 
     if (response.data.token) {
       this.setToken(response.data.token);
@@ -1396,6 +1397,24 @@ class ApiClient {
   async getVolunteerBadgesById(volunteerId: number): Promise<{ data: any[] }> {
     return this.request<{ data: any[] }>(`/volunteer/${volunteerId}/badges`);
   }
+
+  // Get public ePlogging posts (no authentication required)
+  // Public ePlogging posts
+ async getPublicEPloggingPosts(page = 1, perPage = 15, volunteerId?: number): Promise<any> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: perPage.toString(),
+  });
+
+  if (volunteerId != null) {
+    params.append('volunteer_id', volunteerId.toString());
+  }
+
+  const endpoint = `/eplogging?${params.toString()}`;
+  return this.request(endpoint, { method: 'GET' });
+}
+
+
 
   // Get paginated ePlogging posts
   async getEPloggingPosts(page = 1, perPage = 12): Promise<any> {

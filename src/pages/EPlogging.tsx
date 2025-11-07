@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLocation } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,6 +20,8 @@ import EPloggingGallery from '@/components/EPloggingGallery'
 
 export default function EPlogging() {
   const { isAuthenticated, user } = useAuth()
+  const location = useLocation()
+  const isManageRoute = location.pathname === '/eplogging/manage'
   const [activeTab, setActiveTab] = useState('my-posts')
   const [showForm, setShowForm] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -38,8 +41,8 @@ export default function EPlogging() {
     setShowForm(false)
   }
 
-  // Show public gallery for unauthenticated users
-  if (!isAuthenticated) {
+  // Show public gallery for unauthenticated users OR when on public route (not /eplogging/manage)
+  if (!isAuthenticated || !isManageRoute) {
     return (
       <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
         {/* Header */}
@@ -111,6 +114,7 @@ export default function EPlogging() {
     )
   }
 
+  // This is the manage route - show user's own posts management
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -119,10 +123,10 @@ export default function EPlogging() {
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
               <Camera className="w-8 h-8 text-green-600" />
-              ePlogging
+              My ePlogging
             </h1>
             <p className="text-gray-600">
-              Share your remote plogging activities with just a photo, quote, and location to inspire others
+              Manage your ePlogging posts. Share your remote plogging activities with just a photo, quote, and location to inspire others
             </p>
           </div>
           
