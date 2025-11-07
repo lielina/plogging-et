@@ -678,34 +678,6 @@ export default function Events() {
 
                       
 
-                      {/* Enrollment Status (if enrolled) */}
-                      {(() => {
-                        const buttonState = getButtonState(event)
-                        // Show enrollment details if user is enrolled (use backend status only)
-                        const isEnrolled = event.is_enrolled === true;
-                        
-                        console.log(`Rendering enrollment status for event ${event.event_id}:`, {
-                          isEnrolled,
-                          eventIsEnrolled: event.is_enrolled,
-                          enrollmentStatus: event.enrollment_status
-                        });
-                        
-                        if (isEnrolled) {
-                          return (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                <span className="text-sm font-medium text-green-800">Enrolled</span>
-                              </div>
-                              <p className="text-xs text-green-600 mt-1">
-                                Check your dashboard for more details and event updates.
-                              </p>
-                            </div>
-                          )
-                        }
-                        return null
-                      })()
-                    }
                       {/* Action Button */}
                       {(() => {
                         const buttonState = getButtonState(event)
