@@ -1,5 +1,6 @@
 import { Outlet, useLocation, useNavigate, Link, NavLink } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
+import { useSurvey } from '@/contexts/SurveyContext';
 import { useToast } from '@/hooks/use-toast';
 import { Leaf, Menu, X, Home, Calendar, FileText, Award, User, LogOut, LogIn, Users, Image, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,17 +12,39 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import UserSidebar from '@/components/ui/user-sidebar'; // Import UserSidebar instead
+import { useSidebar } from '@/contexts/SidebarContext'; // Import useSidebar hook
+import SurveyModal from '@/components/SurveyModal';
 
 import React, { useState } from 'react';
 
 const Layout = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { isCollapsed } = useSidebar(); // Get sidebar collapse state
+  const { isSurveyOpen, closeSurvey } = useSurvey(); // Get survey context
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+
+  const handleSurveyComplete = () => {
+    // Mark survey as completed for this user
+    if (user && 'volunteer_id' in user) {
+      const userId = user.volunteer_id;
+      localStorage.setItem(`surveyCompleted_${userId}`, 'true');
+    }
+    closeSurvey();
+    toast({
+      title: "Success",
+      description: "Survey submitted successfully!",
+    });
+  };
+
+  const handleSurveySkip = () => {
+    // User can skip for now, but we'll still show the option in quick actions
+    closeSurvey();
+  };
 
   // Show sidebar on dashboard pages when authenticated
   // Note: '/events' is intentionally excluded so Events remains a public page
@@ -334,6 +357,16 @@ const Layout = () => {
           </header>
         )}
         
+        {/* Survey Modal - Available on all pages */}
+        {isAuthenticated && (
+          <SurveyModal 
+            open={isSurveyOpen} 
+            onClose={closeSurvey} 
+            onSurveyComplete={handleSurveyComplete} 
+            onSkip={handleSurveySkip}
+          />
+        )}
+
         {/* Main content */}
         <main className={`flex-1 ${isAuthenticated && isDashboardRoute ? 'pt-0' : ''}`}>
           <Outlet />
@@ -417,8 +450,10 @@ const Layout = () => {
               <p>
                 Powered by{" "}
                 <a
-                  href="https://kasmasolution.com"
+                  href="https://pixeladdis.com"
                   className="hover:text-white/70 cursor-pointer"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   Pixel Addis Solutions
                 </a>

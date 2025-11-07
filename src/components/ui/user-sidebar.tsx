@@ -287,7 +287,7 @@ const UserSidebar = () => {
                   openSurvey();
                   isMobile && setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center space-x-3 w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 transition-colors w-full text-left"
               >
                 <Clipboard className="h-5 w-5 flex-shrink-0" />
                 {(!isCollapsed || isMobile) && <span>Take Survey</span>}

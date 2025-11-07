@@ -98,15 +98,58 @@ export default function Profile() {
     setProfileForm({ ...profileForm, phone_number: formattedPhone });
   };
 
+  const validateProfileForm = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    // Validate first name - only strings, no numbers
+    if (!profileForm.first_name || profileForm.first_name.trim() === '') {
+      errors.push('First name is required');
+    } else if (!/^[a-zA-Z\s'-]+$/.test(profileForm.first_name.trim())) {
+      errors.push('First name can only contain letters, spaces, hyphens, and apostrophes');
+    }
+    
+    // Validate last name - only strings, no numbers
+    if (!profileForm.last_name || profileForm.last_name.trim() === '') {
+      errors.push('Last name is required');
+    } else if (!/^[a-zA-Z\s'-]+$/.test(profileForm.last_name.trim())) {
+      errors.push('Last name can only contain letters, spaces, hyphens, and apostrophes');
+    }
+    
+    // Validate phone number - must start with +251 and contain only numbers after
+    if (!profileForm.phone_number || profileForm.phone_number.trim() === '') {
+      errors.push('Phone number is required');
+    } else {
+      const phoneRegex = /^\+251[0-9]{9}$/;
+      if (!phoneRegex.test(profileForm.phone_number.trim())) {
+        errors.push('Phone number must be in format +251XXXXXXXXX (9 digits after +251)');
+      }
+    }
+    
+    return { isValid: errors.length === 0, errors };
+  };
+
   const handleProfileUpdate = async () => {
     if (!profile) return;
+    
+    // Validate form
+    const validation = validateProfileForm();
+    if (!validation.isValid) {
+      toast({
+        title: "Validation Error",
+        description: validation.errors.join('. '),
+        variant: "destructive"
+      });
+      return;
+    }
     
     setSaving(true);
     try {
       // Send the phone number in +251 format to the API
       const updateData = {
         ...profileForm,
-        phone_number: profileForm.phone_number // This is already in +251 format
+        first_name: profileForm.first_name.trim(),
+        last_name: profileForm.last_name.trim(),
+        phone_number: profileForm.phone_number.trim() // This is already in +251 format
       };
       
       const response = await apiClient.updateVolunteerProfile(updateData);
@@ -120,9 +163,18 @@ export default function Profile() {
       });
     } catch (error: any) {
       console.error('Profile update error:', error);
+      let errorMessage = error.message || "Failed to update profile. Please try again.";
+      
+      // Extract specific validation errors
+      if (error.message && error.message.includes('validation')) {
+        errorMessage = error.message;
+      } else if (error.message && error.message.includes('phone')) {
+        errorMessage = 'Invalid phone number format. Please use +251XXXXXXXXX format.';
+      }
+      
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update profile. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -375,8 +427,13 @@ export default function Profile() {
                     <Input
                       id="firstName"
                       value={profileForm.first_name}
-                      onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+                      onChange={(e) => {
+                        // Only allow letters, spaces, hyphens, and apostrophes
+                        const value = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
+                        setProfileForm({ ...profileForm, first_name: value });
+                      }}
                       className="text-sm sm:text-base"
+                      placeholder="Enter first name (letters only)"
                     />
                   ) : (
                     <p className="py-2 px-3 bg-gray-50 rounded-md text-sm sm:text-base">{profile.first_name}</p>
@@ -388,8 +445,13 @@ export default function Profile() {
                     <Input
                       id="lastName"
                       value={profileForm.last_name}
-                      onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+                      onChange={(e) => {
+                        // Only allow letters, spaces, hyphens, and apostrophes
+                        const value = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
+                        setProfileForm({ ...profileForm, last_name: value });
+                      }}
                       className="text-sm sm:text-base"
+                      placeholder="Enter last name (letters only)"
                     />
                   ) : (
                     <p className="py-2 px-3 bg-gray-50 rounded-md text-sm sm:text-base">{profile.last_name}</p>

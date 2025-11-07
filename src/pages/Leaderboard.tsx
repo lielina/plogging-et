@@ -10,7 +10,8 @@ interface TopVolunteer {
   volunteer_id: number;
   name: string;
   email: string;
-  total_hours: string;
+  total_hours: string | number;
+  total_hours_contributed?: string | number; // Add fallback field
   events_attended: number;
   badges_earned: number;
   rank_value: string;
@@ -241,7 +242,7 @@ export default function Leaderboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
                       <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                      <span className="font-semibold text-sm sm:text-base">{topVolunteers[1].total_hours} hrs</span>
+                      <span className="font-semibold text-sm sm:text-base">{topVolunteers[1].total_hours || topVolunteers[1].total_hours_contributed || '0'} hrs</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -271,7 +272,7 @@ export default function Leaderboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
                       <Clock className="h-4 w-4 flex-shrink-0" />
-                      <span className="font-semibold text-base sm:text-lg">{topVolunteers[0].total_hours} hrs</span>
+                      <span className="font-semibold text-base sm:text-lg">{topVolunteers[0].total_hours || topVolunteers[0].total_hours_contributed || '0'} hrs</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -301,7 +302,7 @@ export default function Leaderboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
                       <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                      <span className="font-semibold text-sm sm:text-base">{topVolunteers[2].total_hours} hrs</span>
+                      <span className="font-semibold text-sm sm:text-base">{topVolunteers[2].total_hours || topVolunteers[2].total_hours_contributed || '0'} hrs</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -371,7 +372,7 @@ export default function Leaderboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
-                          {volunteer.total_hours} hrs
+                          {volunteer.total_hours || volunteer.total_hours_contributed || '0'} hrs
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

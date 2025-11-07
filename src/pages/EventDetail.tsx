@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useBadges } from '@/contexts/BadgeContext'
 import { apiClient, Event, Section, FRONTEND_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,8 +13,7 @@ import QRCode from 'qrcode'
 import QRScanner from '@/components/ui/qr-scanner'
 import Map from '@/components/ui/map'
 import { toast } from '@/hooks/use-toast'
-import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '@/utils/eventUtils'
-import { getNewlyEarnedBadges } from '@/lib/badge-utils'
+import { getEventStatus, generateEventShareLink, copyToClipboard as copyToClipboardUtil } from '@/utils/eventUtils';
 
 interface Enrollment {
   enrollment_id: number;
@@ -70,33 +68,49 @@ interface AttendanceRecord {
 interface EventDetailData extends Event {
   enrollments: Enrollment[];
   attendance_records: AttendanceRecord[];
-  sections?: Section[];
+  sections?: Section[]; // Add sections property
 }
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { badges, checkForNewBadges, refreshBadges } = useBadges() // Destructure badge context functions
   const [event, setEvent] = useState<EventDetailData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isVolunteerScannerOpen, setIsVolunteerScannerOpen] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [isCheckInScannerOpen, setIsCheckInScannerOpen] = useState(false)
-  const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
+  // const [isCheckOutScannerOpen, setIsCheckOutScannerOpen] = useState(false) // Removed as per requirement - only check-in is needed
   const [scanResult, setScanResult] = useState('')
   const [sectionQrCodes, setSectionQrCodes] = useState<Record<number, string>>({})
 
   const [copied, setCopied] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
+  const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
+  const [enrolledEventIds, setEnrolledEventIds] = useState<Set<number>>(new Set())
 
   // Check if current user is enrolled in this event
   const isUserEnrolled = () => {
     if (!user || !event) return false
-    return event.enrollments.some(enrollment => 
-      enrollment.volunteer.volunteer_id === (user as any).volunteer_id
-    )
+    
+    // First check if event ID is in enrolled events set
+    if (enrolledEventIds.has(event.event_id)) {
+      return true
+    }
+    
+    // Also check enrollments array (fallback)
+    if (event.enrollments && event.enrollments.length > 0) {
+      const userVolunteerId = (user as any).volunteer_id
+      return event.enrollments.some(enrollment => {
+        const enrollmentVolunteerId = enrollment.volunteer?.volunteer_id || enrollment.volunteer_id
+        // Handle both string and number comparisons
+        return String(enrollmentVolunteerId) === String(userVolunteerId) ||
+               Number(enrollmentVolunteerId) === Number(userVolunteerId)
+      })
+    }
+    
+    return false
   }
 
   // Handle enrollment button click
@@ -124,43 +138,53 @@ export default function EventDetail() {
   // Handle actual enrollment
   const handleEnroll = async () => {
     try {
-      // Check if user is already enrolled in this event
-      if (isUserEnrolled()) {
-        toast({
-          title: "Already Enrolled",
-          description: "You are already enrolled in this event.",
-          variant: "destructive",
-        });
-        setIsEnrollDialogOpen(false);
-        return;
-      }
-      
       // Extract volunteer_id from user context
       const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
-      const response = await apiClient.enrollInEvent(parseInt(eventId!), volunteerId)
+      await apiClient.enrollInEvent(parseInt(eventId!), volunteerId)
       
-      // Refresh event data to show updated enrollment
-      const response2 = await apiClient.getEventDetails(parseInt(eventId!))
-      setEvent(response2.data as EventDetailData)
+      // Update enrolled event IDs immediately
+      setEnrolledEventIds(prev => new Set(prev).add(parseInt(eventId!)))
+      
+      // Refresh event data and enrolled events to show updated enrollment
+      const [eventResponse, enrolledResponse] = await Promise.allSettled([
+        apiClient.getEventDetails(parseInt(eventId!)),
+        apiClient.getEnrolledEvents().catch(() => ({ data: [] }))
+      ])
+      
+      if (eventResponse.status === 'fulfilled') {
+        setEvent(eventResponse.value.data as EventDetailData)
+      }
+      
+      if (enrolledResponse.status === 'fulfilled') {
+        const enrolledEvents = enrolledResponse.value.data || []
+        const enrolledIds = new Set(enrolledEvents.map((e: any) => e.event_id || e.id))
+        setEnrolledEventIds(enrolledIds)
+      }
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('enrollmentUpdated', { detail: { eventId: parseInt(eventId!) } }))
       
       toast({
         title: "Enrollment Successful",
-        description: response.message || "You have been successfully enrolled in this event.",
+        description: "You have been successfully enrolled in this event.",
       })
-      
-      // Dispatch event to refresh dashboard
-      const event = new CustomEvent('enrollmentUpdated');
-      window.dispatchEvent(event);
     } catch (error: any) {
       // Check if it's a timing issue with event status
       if (error.message && error.message.includes('Cannot enroll in non-upcoming events')) {
         // Use our utility to check if event should be upcoming
         if (event) {
-          const eventStatusInfo = getEventStatus(
+          // Use API status, fallback to calculated status if not available
+          const backendStatus = event.status?.toLowerCase();
+          const calculatedStatusInfo = getEventStatus(
             event.event_date,
             event.start_time,
             event.end_time
           );
+          const eventStatus = backendStatus || calculatedStatusInfo.status;
+          const eventStatusInfo = {
+            ...calculatedStatusInfo,
+            status: eventStatus as 'upcoming' | 'active' | 'completed' | 'unknown'
+          };
           
           if (eventStatusInfo.canEnroll) {
             toast({
@@ -182,30 +206,35 @@ export default function EventDetail() {
             variant: "destructive",
           });
         }
-      } else if (error.message && error.message.includes('Already enrolled')) {
+      } else if (error.message && (error.message.includes('Already enrolled') || error.message.includes('already enrolled'))) {
+        // User is already enrolled - refresh event data to show correct status
         toast({
           title: "Already Enrolled",
-          description: "You are already enrolled in this event.",
-          variant: "destructive",
+          description: "You are already enrolled in this event. Check your dashboard for enrollment details.",
+          variant: "default",
         });
-        // Update local state to reflect enrollment
-        if (event) {
-          setEvent({
-            ...event,
-            enrollments: [
-              ...event.enrollments,
-              {
-                enrollment_id: Date.now(),
-                volunteer_id: (user && 'volunteer_id' in user) ? user.volunteer_id.toString() : '',
-                event_id: eventId!,
-                signup_date: new Date().toISOString(),
-                status: 'Signed Up',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                volunteer: user as any
-              }
-            ]
-          });
+        
+        // Update enrolled event IDs immediately
+        setEnrolledEventIds(prev => new Set(prev).add(parseInt(eventId!)))
+        
+        // Refresh event data to show updated enrollment status
+        try {
+          const [eventResponse, enrolledResponse] = await Promise.allSettled([
+            apiClient.getEventDetails(parseInt(eventId!)),
+            apiClient.getEnrolledEvents().catch(() => ({ data: [] }))
+          ])
+          
+          if (eventResponse.status === 'fulfilled') {
+            setEvent(eventResponse.value.data as EventDetailData)
+          }
+          
+          if (enrolledResponse.status === 'fulfilled') {
+            const enrolledEvents = enrolledResponse.value.data || []
+            const enrolledIds = new Set(enrolledEvents.map((e: any) => e.event_id || e.id))
+            setEnrolledEventIds(enrolledIds)
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing event details:', refreshError)
         }
       } else {
         toast({
@@ -227,16 +256,31 @@ export default function EventDetail() {
         setIsLoading(true)
         setError('')
         
-        const response = await apiClient.getEventDetails(parseInt(eventId))
-        setEvent(response.data as EventDetailData)
+        // Fetch both event details and enrolled events in parallel
+        const [eventResponse, enrolledResponse] = await Promise.allSettled([
+          apiClient.getEventDetails(parseInt(eventId)),
+          apiClient.getEnrolledEvents().catch(() => ({ data: [] })) // Don't fail if endpoint doesn't exist
+        ])
         
-        // Log the event data for debugging
-        console.log('Event data:', response.data);
-        if (response.data.image_path) {
-          console.log('Image path:', response.data.image_path);
-          console.log('Image path starts with http:', response.data.image_path.startsWith('http'));
+        if (eventResponse.status === 'fulfilled') {
+          const eventData = eventResponse.value.data as EventDetailData
+          setEvent(eventData)
+          
+          // Log the event data for debugging
+          console.log('Event data:', eventData);
+          if (eventData.image_path) {
+            console.log('Image path:', eventData.image_path);
+            console.log('Image path starts with http:', eventData.image_path.startsWith('http'));
+          }
         }
         
+        // Update enrolled event IDs
+        if (enrolledResponse.status === 'fulfilled') {
+          const enrolledEvents = enrolledResponse.value.data || []
+          const enrolledIds = new Set(enrolledEvents.map((e: any) => e.event_id || e.id))
+          setEnrolledEventIds(enrolledIds)
+          console.log('Enrolled event IDs:', Array.from(enrolledIds))
+        }
 
       } catch (err: any) {
         setError(err.message || 'Failed to fetch event details')
@@ -246,7 +290,7 @@ export default function EventDetail() {
     }
 
     fetchEventDetails()
-  }, [eventId])
+  }, [eventId, user])
 
   // Generate QR codes for event sections
   useEffect(() => {
@@ -430,8 +474,9 @@ export default function EventDetail() {
 
   // Social Media Sharing Functions
   const getShareUrl = () => {
-    // Use the public/user-side URL
-    return `${FRONTEND_URL}/events/${eventId}`;
+    // Use current window location to get the base URL dynamically
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/events/${eventId}`;
   }
 
   const getShareText = () => {
@@ -535,71 +580,8 @@ ${description}
   // User Check-in Function (removed event QR code check-in)
   const handleUserCheckIn = async (qrData: string) => {
     try {
-    // Parse QR data (format: https://plogging-user-wyci.vercel.app/events/eventId)
-      let scannedEventId: number | null = null;
-      
-      if (qrData.startsWith(`${FRONTEND_URL}/events/`)) {
-        const urlParts = qrData.split('/')
-        scannedEventId = parseInt(urlParts[urlParts.length - 1])
-      } else {
-        // Handle old format for backward compatibility
-        const parts = qrData.split(':')
-        if (parts.length === 2 && parts[0] === 'event') {
-          scannedEventId = parseInt(parts[1])
-        }
-      }
-      
-      if (scannedEventId && scannedEventId === parseInt(eventId!)) {
-        // Get user ID based on user type
-        let userId = ''
-        if (user && 'volunteer_id' in user) {
-          userId = `volunteer:${user.volunteer_id}`
-        } else if (user && 'admin_id' in user) {
-          userId = `admin:${user.admin_id}`
-        }
-        
-        if (!userId) {
-          throw new Error('User not authenticated')
-        }
-        
-        // If event has sections, open section selection dialog
-        if (event?.sections && event.sections.length > 0) {
-          setIsSectionCheckInDialogOpen(true)
-          return
-        }
-        
-        // Get current badges before check-in
-        const previousBadges = [...badges]; // Create a copy of current badges
-        
-        // Perform check-in for the current user
-        await apiClient.checkIn(scannedEventId, userId)
-        setScanResult('Check-in successful!')
-        
-        // Refresh event data to show updated attendance
-        const response = await apiClient.getEventDetails(parseInt(eventId!))
-        setEvent(response.data as EventDetailData)
-        
-        // After successful check-in, check for any new badges that should be awarded
-        try {
-          // Check for new badges using the badge context
-          const newBadges = await checkForNewBadges(previousBadges);
-          
-          // The badge context will automatically show notifications for new badges
-          console.log('New badges earned:', newBadges);
-        } catch (badgeError) {
-          console.error('Error checking for new badges after check-in:', badgeError)
-        }
-        
-        // Refresh badges in the context
-        await refreshBadges();
-        
-        toast({
-          title: "Check-in Successful",
-          description: "You have been successfully checked in to this event.",
-        })
-      } else {
-        setScanResult('Invalid event QR code')
-      }
+      // Only allow section-based check-in
+      setScanResult('Please scan a section QR code instead of the event QR code')
     } catch (err: any) {
       setScanResult(err.message || 'Check-in failed')
       toast({
@@ -610,7 +592,7 @@ ${description}
     }
   }
 
-// New section-based check-in handler
+  // New section-based check-in handler
   const handleSectionCheckIn = async (sectionId: number) => {
     if (!user || !('volunteer_id' in user)) return
     
@@ -626,9 +608,6 @@ ${description}
         return
       }
       
-      // Get current badges before check-in
-      const previousBadges = [...badges]; // Create a copy of current badges
-      
       // Call the section-based check-in API
       await apiClient.checkInSection(user.volunteer_id, parseInt(eventId!), sectionId)
       setScanResult('Check-in to section successful!')
@@ -637,20 +616,6 @@ ${description}
       // Refresh event data to show updated attendance
       const response = await apiClient.getEventDetails(parseInt(eventId!))
       setEvent(response.data as EventDetailData)
-      
-      // After successful check-in, check for any new badges that should be awarded
-      try {
-        // Check for new badges using the badge context
-        const newBadges = await checkForNewBadges(previousBadges);
-        
-        // The badge context will automatically show notifications for new badges
-        console.log('New badges earned:', newBadges);
-      } catch (badgeError) {
-        console.error('Error checking for new badges after check-in:', badgeError)
-      }
-      
-      // Refresh badges in the context
-      await refreshBadges();
       
       toast({
         title: "Check-in Successful",
@@ -735,19 +700,33 @@ ${description}
                         start_time: event.start_time, 
                         end_time: event.end_time 
                       });
+                      // Use API status, fallback to calculated status if not available (same logic as admin side)
+                      const backendStatus = event.status?.toLowerCase();
                       const calculatedStatus = getEventStatus(
                         event.event_date,
                         event.start_time,
                         event.end_time
                       );
-                      console.log('Volunteer Calculated Status:', calculatedStatus);
+                      const status = backendStatus || calculatedStatus.status;
+                      const statusLower = status?.toLowerCase() || '';
+                      
+                      console.log('Event Status:', { backendStatus, calculatedStatus: calculatedStatus.status, finalStatus: status });
+                      
+                      let badgeVariant: "default" | "secondary" | "destructive" | "outline" = 'secondary';
+                      if (statusLower === 'active') {
+                        badgeVariant = 'default';
+                      } else if (statusLower === 'cancelled') {
+                        badgeVariant = 'destructive';
+                      } else if (statusLower === 'completed') {
+                        badgeVariant = 'outline';
+                      }
                       
                       return (
                         <Badge 
-                          variant={calculatedStatus.status === 'active' ? 'default' : 'secondary'}
+                          variant={badgeVariant}
                           className="text-sm px-3 py-1 w-fit"
                         >
-                          {calculatedStatus.status}
+                          {status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase() || 'Unknown'}
                         </Badge>
                       );
                     })()}
@@ -756,25 +735,47 @@ ${description}
                 <p className="text-gray-600 text-base sm:text-lg">{event.location_name}</p>
               </div>
               <div className="flex flex-wrap gap-3">
-                {/* Enrollment button for regular users */}
-                <Button 
-                  variant="default"
-                  onClick={handleEnrollClick}
-                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                  disabled={isUserEnrolled()}
-                >
-                  {isUserEnrolled() ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Enrolled
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Enroll Now
-                    </>
-                  )}
-                </Button>
+                {/* Enrollment button for regular users - only show if event is upcoming */}
+                {(() => {
+                  // Use API status, fallback to calculated status if not available (same logic as admin side)
+                  const backendStatus = event.status?.toLowerCase();
+                  const calculatedStatusInfo = getEventStatus(
+                    event.event_date,
+                    event.start_time,
+                    event.end_time
+                  );
+                  const eventStatus = backendStatus || calculatedStatusInfo.status;
+                  const eventStatusInfo = {
+                    ...calculatedStatusInfo,
+                    status: eventStatus as 'upcoming' | 'active' | 'completed' | 'unknown'
+                  };
+                  
+                  // Hide button if event is completed or active (not upcoming)
+                  if (eventStatus !== 'upcoming') {
+                    return null;
+                  }
+                  
+                  return (
+                    <Button 
+                      variant="default"
+                      onClick={handleEnrollClick}
+                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                      disabled={isUserEnrolled()}
+                    >
+                      {isUserEnrolled() ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Enrolled
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Enroll Now
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
                 
                 <Button 
                   variant="outline"
@@ -785,7 +786,6 @@ ${description}
                   <Scan className="h-4 w-4 mr-2" />
                   <span className="whitespace-nowrap">Check In</span>
                 </Button>
-                
                 <Button 
                   variant="outline"
                   onClick={() => setIsShareDialogOpen(true)}
@@ -839,6 +839,8 @@ ${description}
               </CardContent>
             </Card>
 
+
+
             {/* Date and Time */}
             <Card className="shadow-sm border-0 bg-white">
               <CardHeader className="pb-4">
@@ -865,7 +867,7 @@ ${description}
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* Event Sections */}
             {event.sections && event.sections.length > 0 && (
               <Card className="shadow-sm border-0 bg-white">
@@ -874,7 +876,7 @@ ${description}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-4">
-                    {event.sections.map((section: Section, index: number) => (
+                    {event.sections.map((section, index) => (
                       <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                           <h3 className="font-semibold text-gray-900">{section.section_name}</h3>
@@ -895,6 +897,53 @@ ${description}
                             <div>
                               <p className="text-xs text-gray-500">Distance</p>
                               <p className="text-sm font-medium">{section.distance_km} km</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center p-2 bg-white rounded">
+                            <div className="flex flex-col items-center">
+                              {sectionQrCodes[index + 1] ? (
+                                <>
+                                  <img 
+                                    src={sectionQrCodes[index + 1]}
+                                    alt={`Section ${index + 1} QR Code`}
+                                    className="w-16 h-16 object-contain"
+                                  />
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="text-xs mt-2"
+                                    onClick={() => {
+                                      // Create a temporary canvas to scale the QR code for download
+                                      const canvas = document.createElement('canvas')
+                                      const ctx = canvas.getContext('2d')
+                                      const img = new Image()
+                                      img.onload = () => {
+                                        canvas.width = img.width * 4
+                                        canvas.height = img.height * 4
+                                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+                                        const dataUrl = canvas.toDataURL('image/png')
+                                        
+                                        // Create download link
+                                        const link = document.createElement('a')
+                                        link.href = dataUrl
+                                        link.download = `section-${index + 1}-${section.section_name.replace(/\s+/g, '-')}-qr-code.png`
+                                        document.body.appendChild(link)
+                                        link.click()
+                                        document.body.removeChild(link)
+                                      }
+                                      img.src = sectionQrCodes[index + 1]
+                                    }}
+                                  >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    Download
+                                  </Button>
+                                </>
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+                                </div>
+                              )}
+                              <span className="text-xs text-gray-600 mt-2">Scan to Check In</span>
                             </div>
                           </div>
                         </div>
@@ -1113,6 +1162,8 @@ ${description}
         description="Scan a section QR code to check in"
       />
 
+      {/* User Check-out QR Scanner removed as per requirement - only check-in is needed */}
+
       {/* Volunteer QR Scanner */}
       <QRScanner
         isOpen={isVolunteerScannerOpen}
@@ -1241,38 +1292,48 @@ ${description}
 
       {/* Section Check-in Dialog */}
       <Dialog open={isSectionCheckInDialogOpen} onOpenChange={setIsSectionCheckInDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Select Section to Check In</DialogTitle>
+            <DialogTitle>Select Section</DialogTitle>
             <DialogDescription>
-              Please select which section you'd like to check in to.
+              Select which section you want to check into.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {event?.sections?.map((section: Section, index: number) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => handleSectionCheckIn(index + 1)}
-              >
-                <div className="flex flex-col items-start">
-                  <span className="font-semibold">{section.section_name}</span>
-                  <span className="text-xs text-gray-500">
-                    {formatTime(section.start_time)} - {formatTime(section.end_time)}
-                  </span>
+          
+          {event?.sections && event.sections.length > 0 && (
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {event.sections.map((section, index) => (
+                <div 
+                  key={index}
+                  className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => handleSectionCheckIn(index + 1)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium text-gray-900">{section.section_name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {formatTime(section.start_time)} - {formatTime(section.end_time)}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {section.distance_km} km
+                    </Badge>
+                  </div>
                 </div>
-              </Button>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsSectionCheckInDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsSectionCheckInDialogOpen(false)}
+            >
               Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-    </div>
-  )
+  </div>)
 }

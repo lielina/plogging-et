@@ -203,7 +203,9 @@ export function formatTimeForComparison(timeString: string): string {
  * @returns The full URL for the event
  */
 export function generateEventShareLink(eventId: number): string {
-    return `https://ploggingethiopia.org/events/${eventId}`;
+    // Use current window location to get the base URL dynamically
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/events/${eventId}`;
 }
 
 /**

@@ -2,34 +2,15 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBadges } from '@/contexts/BadgeContext'
+import { useSurvey } from '@/contexts/SurveyContext'
 import { apiClient, type Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge as BadgeComponent } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { 
-  Calendar, 
-  Users, 
-  Clock, 
-  Target, 
-  Award, 
-  FileText, 
-  RefreshCw,
-  CheckCircle,
-  AlertCircle,
-  Trophy,
-  Star,
-  Zap,
-  BarChart3,
-  MapPin
-} from 'lucide-react'
-// Add recharts imports
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
-import VolunteerBadge from '@/components/VolunteerBadge'
-import { type VolunteerBadgeData } from '@/lib/badge-generator'  // Import the type correctly
-import SurveyModal from '@/components/SurveyModal'
-import { getEventStatus } from '@/utils/eventUtils'
-import { toast } from '@/hooks/use-toast'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3, Share2 } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { useToast } from '@/hooks/use-toast'
 
 interface DashboardStats {
   total_events_attended: number;
@@ -48,24 +29,23 @@ interface ProgressData {
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user } = useAuth()
+  const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
   const { badges, loading: badgesLoading, error: badgesError, refreshBadges } = useBadges()
+  const { toast } = useToast()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<Event[]>([])
   const [badgesEarned, setBadgesEarned] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isSurveyOpen, setSurveyOpen] = useState(false)
   const hasCheckedSurvey = useRef(false)
   
   // Progress tracking data - initialize with empty data
   const [progressData, setProgressData] = useState<ProgressData>({
     monthlyGoal: 20, // 20 hours per month goal
     currentProgress: 0,
-    weeklyProgress: [],
-    activityData: []
+    weeklyProgress: [0, 0, 0, 0, 0, 0, 0], // Last 7 days - will be fetched from backend
+    activityData: [] // Will be fetched from backend
   })
 
   const fetchDashboardData = async () => {
@@ -79,7 +59,7 @@ export default function Dashboard() {
         const hasCompletedSurvey = localStorage.getItem(`surveyCompleted_${userId}`);
         if (!hasCompletedSurvey && !isSurveyOpen) {
           // Show survey modal if not completed
-          setSurveyOpen(true)
+          openSurvey()
         }
         hasCheckedSurvey.current = true
       }
@@ -103,77 +83,42 @@ export default function Dashboard() {
             })
           }),
         
-        // Fetch volunteer activity trends
-        // Temporarily disabled due to server errors with the history endpoint
-        /*
+        // Fetch enrolled events from volunteer history endpoint
         apiClient.getVolunteerHistory()
           .then(response => {
             console.log('Volunteer history response:', response);
-            // Transform the data for the chart
-            if (response.data && Array.isArray(response.data)) {
-              // Group events by month
-              const monthlyData: Record<string, { events: number; hours: number; waste: number }> = {};
-              
-              response.data.forEach(event => {
-                // Extract month from event date
-                const date = new Date(event.event_date);
-                const month = date.toLocaleString('default', { month: 'short' });
-                
-                if (!monthlyData[month]) {
-                  monthlyData[month] = { events: 0, hours: 0, waste: 0 };
-                }
-                
-                monthlyData[month].events += 1;
-                monthlyData[month].hours += parseFloat(event.hours_contributed) || 0;
-                monthlyData[month].waste += parseFloat(event.waste_collected_kg) || 0;
-              });
-              
-              // Convert to array format for chart
-              const activityData = Object.entries(monthlyData).map(([month, data]) => ({
-                month,
-                events: data.events,
-                hours: data.hours,
-                waste: data.waste
-              }));
-              
+            // Get events with enrollment details
+            const enrolledEvents = response.data || []
+            setRecentEvents(enrolledEvents.slice(0, 3));
+          })
+          .catch(error => {
+            console.error('Error fetching volunteer history:', error)
+            // Fallback to enrolled events endpoint if history endpoint fails
+            apiClient.getEnrolledEvents()
+              .then(response => {
+                const enrolledEvents = response.data || []
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
+          }),
+        
+        // Fetch activity trends from backend
+        apiClient.getActivityTrends()
+          .then(response => {
+            console.log('Activity trends response:', response);
+            if (response.data && response.data.length > 0) {
               setProgressData(prev => ({
                 ...prev,
-                activityData
-              }));
+                activityData: response.data
+              }))
             }
           })
           .catch(error => {
-            console.error('Error fetching volunteer activity trends:', error)
-            // Don't use default data if API fails, keep empty array
-            setProgressData(prev => ({
-              ...prev,
-              activityData: []
-            }))
+            console.error('Error fetching activity trends:', error)
+            // Keep empty array if backend doesn't have data yet
           }),
-        */
-        
-        // Fetch enrolled events by getting all events and filtering
-        apiClient.getAvailableEvents(1, 100) // Get first 100 events
-          .then(response => {
-            console.log('All events response:', response);
-            // Filter to show only enrolled events
-            const enrolledEvents = response.data.filter(event => 
-              event.is_enrolled === true || 
-              event.enrollment_status === 'Signed Up' || 
-              event.enrollment_status === 'Enrolled' || 
-              event.enrollment_status === 'Confirmed' ||
-              event.enrollment_status === 'attended'
-            );
-            console.log('Filtered enrolled events:', enrolledEvents);
-            setRecentEvents(enrolledEvents.slice(0, 3));
-          })
-        .catch(error => {
-          console.error('Error fetching events:', error)
-          setRecentEvents([])
-        }),
       
-      // Fetch badges using the badge context
-      refreshBadges()
+      // Badges are now managed by BadgeContext, no need to fetch here
     ]
     
     // Wait for all promises to complete (either resolve or reject)
@@ -201,7 +146,59 @@ useEffect(() => {
 // Listen for enrollment updates and refresh dashboard
 useEffect(() => {
   const handleEnrollmentUpdate = () => {
-    refreshDashboard();
+    // Refresh enrolled events by combining history and events list
+    Promise.all([
+      apiClient.getVolunteerEnrollments(),
+      apiClient.getAvailableEvents(1, 100)
+    ])
+      .then(([enrollmentsResponse, eventsResponse]) => {
+        // Get enrolled event IDs from history
+        const enrolledEventIds = new Set(
+          enrollmentsResponse.data.map(e => parseInt(e.event_id))
+        );
+        
+        // Map enrollments to events (enrollments contain event data)
+        const enrolledEventsFromHistory = enrollmentsResponse.data.map(enrollment => ({
+          ...enrollment.event,
+          is_enrolled: true,
+          enrollment_status: enrollment.status,
+          enrollment_id: enrollment.enrollment_id
+        }));
+        
+        // Also check events list for enrolled events
+        const enrolledEventsFromList = eventsResponse.data
+          .filter(event => {
+            const isEnrolled = enrolledEventIds.has(event.event_id) ||
+              event.is_enrolled === true || 
+              event.enrollment_status === 'Enrolled' || 
+              event.enrollment_status === 'Signed Up' ||
+              event.enrollment_status === 'confirmed' ||
+              event.enrollment_status === 'attended' ||
+              event.can_enroll === false;
+            return isEnrolled;
+          })
+          .map(event => ({
+            ...event,
+            is_enrolled: true,
+            enrollment_status: event.enrollment_status || 'Signed Up'
+          }));
+        
+        // Combine both lists, removing duplicates
+        const allEnrolledEvents = [...enrolledEventsFromHistory, ...enrolledEventsFromList];
+        const uniqueEnrolledEvents = allEnrolledEvents.filter((event, index, self) =>
+          index === self.findIndex(e => e.event_id === event.event_id)
+        );
+        
+        // Sort by event date (most recent first) and take first 3
+        const sortedEvents = uniqueEnrolledEvents.sort((a, b) => 
+          new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+        );
+        setRecentEvents(sortedEvents.slice(0, 3));
+      })
+      .catch(error => {
+        console.error('Error refreshing enrollments after update:', error)
+        refreshDashboard();
+      });
   };
   
   window.addEventListener('enrollmentUpdated', handleEnrollmentUpdate);
@@ -232,70 +229,72 @@ useEffect(() => {
             })
           }),
       
-        // Refresh volunteer activity trends
-        // Temporarily disabled due to server errors with the history endpoint
-        /*
+        // Refresh enrolled events from volunteer history endpoint
         apiClient.getVolunteerHistory()
           .then(response => {
             console.log('Refreshing - Volunteer history response:', response);
-            // Transform the data for the chart
-            if (response.data && Array.isArray(response.data)) {
-              // Group events by month
-              const monthlyData: Record<string, { events: number; hours: number; waste: number }> = {};
-              
-              response.data.forEach(event => {
-                // Extract month from event date
-                const date = new Date(event.event_date);
-                const month = date.toLocaleString('default', { month: 'short' });
-                
-                if (!monthlyData[month]) {
-                  monthlyData[month] = { events: 0, hours: 0, waste: 0 };
-                }
-                
-                monthlyData[month].events += 1;
-                monthlyData[month].hours += parseFloat(event.hours_contributed) || 0;
-                monthlyData[month].waste += parseFloat(event.waste_collected_kg) || 0;
-              });
-              
-              // Convert to array format for chart
-              const activityData = Object.entries(monthlyData).map(([month, data]) => ({
-                month,
-                events: data.events,
-                hours: data.hours,
-                waste: data.waste
-              }));
-              
-              setProgressData(prev => ({
-                ...prev,
-                activityData
-              }));
-            }
-          })
-          .catch(error => {
-            console.error('Error refreshing volunteer activity trends:', error)
-            // Don't use default data if API fails, keep existing data
-            // If there's no existing data, keep the empty array
-          }),
-        */
-      
-        // Refresh enrolled events by getting all events and filtering
-        apiClient.getAvailableEvents(1, 100) // Get first 100 events
-          .then(response => {
-            console.log('Refreshing - All events response:', response);
-            // Filter to show only enrolled events
-            const enrolledEvents = response.data.filter(event => 
-              event.is_enrolled === true || 
-              event.enrollment_status === 'Signed Up' || 
-              event.enrollment_status === 'Enrolled' || 
-              event.enrollment_status === 'Confirmed' ||
-              event.enrollment_status === 'attended'
-            );
-            console.log('Refreshing - Filtered enrolled events:', enrolledEvents);
+            const enrolledEvents = response.data || []
             setRecentEvents(enrolledEvents.slice(0, 3));
           })
           .catch(error => {
-            console.error('Error refreshing enrolled events:', error)
-            setRecentEvents([])
+            console.error('Error refreshing volunteer history:', error)
+            // Fallback to enrolled events endpoint if history endpoint fails
+            apiClient.getEnrolledEvents()
+              .then(response => {
+                const enrolledEvents = response.data || []
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
+          }),
+        
+        // Refresh activity trends from backend
+        apiClient.getActivityTrends()
+          .then(response => {
+            console.log('Refreshing - Activity trends response:', response);
+            if (response.data && response.data.length > 0) {
+              setProgressData(prev => ({
+                ...prev,
+                activityData: response.data
+              }))
+            }
+          })
+          .catch(error => {
+            console.error('Error refreshing activity trends:', error)
+          }),
+      
+        // Refresh enrolled events by getting enrollments directly
+        apiClient.getVolunteerEnrollments()
+          .then(response => {
+            console.log('Refreshing - Enrollments response:', response);
+            // Map enrollments to events (enrollments contain event data)
+            const enrolledEvents = response.data.map(enrollment => ({
+              ...enrollment.event,
+              is_enrolled: true,
+              enrollment_status: enrollment.status,
+              enrollment_id: enrollment.enrollment_id
+            }));
+            // Sort by event date (most recent first) and take first 3
+            const sortedEvents = enrolledEvents.sort((a, b) => 
+              new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+            );
+            setRecentEvents(sortedEvents.slice(0, 3));
+          })
+          .catch(error => {
+            console.error('Error refreshing enrollments:', error)
+            // Fallback to getting all events and filtering if enrollments endpoint fails
+            apiClient.getAvailableEvents(1, 100)
+              .then(response => {
+                const enrolledEvents = response.data.filter(event => 
+                  event.is_enrolled === true || 
+                  event.enrollment_status === 'Enrolled' || 
+                  event.enrollment_status === 'Signed Up' ||
+                  event.enrollment_status === 'confirmed' ||
+                  event.enrollment_status === 'attended' ||
+                  event.can_enroll === false
+                );
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
           }),
       
         // Refresh badges using the badge context
@@ -318,17 +317,12 @@ useEffect(() => {
       const userId = user.volunteer_id;
       localStorage.setItem(`surveyCompleted_${userId}`, 'true');
     }
-    setSurveyOpen(false);
+    closeSurvey();
   };
 
   const handleSurveySkip = () => {
     // User can skip for now, but we'll still show the option in quick actions
-    setSurveyOpen(false);
-  };
-
-  // Add the missing closeSurvey function
-  const closeSurvey = () => {
-    setSurveyOpen(false);
+    closeSurvey();
   };
 
   if (error) {
@@ -369,14 +363,6 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50">
-      {/* Survey Modal */}
-      <SurveyModal 
-        open={isSurveyOpen} 
-        onClose={closeSurvey} 
-        onSurveyComplete={handleSurveyComplete} 
-        onSkip={handleSurveySkip}
-      />
-      
       {/* Enhanced Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 rounded-lg mb-6">
         <div className="flex items-center gap-4">
@@ -590,57 +576,55 @@ useEffect(() => {
               Your volunteering activity over the past 6 months
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {progressData.activityData && progressData.activityData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={progressData.activityData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                  <YAxis stroke="#666" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e5e7eb', 
-                      borderRadius: '8px' 
-                    }} 
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="events" 
-                    stroke="#10b981" 
-                    strokeWidth={3} 
-                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                    name="Events Attended"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="hours" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3} 
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    name="Hours Volunteered"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="waste" 
-                    stroke="#f59e0b" 
-                    strokeWidth={3} 
-                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                    name="Waste Collected (kg)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                <BarChart3 className="h-16 w-16 mb-4" />
-                <p className="text-lg mb-2">No Activity Data Available</p>
-                <p className="text-sm text-center">
-                  Your activity trends will appear here once you participate in events.
-                </p>
-              </div>
-            )}
-          </CardContent>
+            <CardContent>
+              {progressData.activityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={progressData.activityData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" stroke="#666" fontSize={12} />
+                    <YAxis stroke="#666" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb', 
+                        borderRadius: '8px' 
+                      }} 
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="events" 
+                      stroke="#10b981" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                      name="Events Attended"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="hours" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                      name="Hours Volunteered"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="waste" 
+                      stroke="#f59e0b" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
+                      name="Waste Collected (kg)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No activity data available yet</p>
+                  <p className="text-sm">Activity trends will appear here once you start participating in events</p>
+                </div>
+              )}
+            </CardContent>
         </Card>
 
         {/* Recent Events and Badges */}
@@ -740,39 +724,75 @@ useEffect(() => {
                 </div>
               ) : badges.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {badges.map((badge) => (
-                    <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200">
-                      <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                        {badge.image_url ? (
-                          <img 
-                            src={badge.image_url} 
-                            alt={badge.badge_name}
-                            className="h-10 w-10 rounded-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              const parent = e.currentTarget.parentElement;
-                              if (parent) {
-                                const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
-                                if (fallback) fallback.style.display = 'block';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
-                      </div>
-                      <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {badge.description}
-                      </p>
-                      {badge.pivot && badge.pivot.earned_date && (
-                        <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
-                          <span className="text-xs text-yellow-800 font-medium">
-                            Earned: {new Date(badge.pivot.earned_date).toLocaleDateString()}
-                          </span>
+                  {badges.map((badge) => {
+                    const shareBadge = () => {
+                      const shareText = `I earned the ${badge.badge_name} badge! ${badge.description} 🏆 #PloggingEthiopia #Badge`;
+                      const shareUrl = window.location.origin + '/dashboard';
+                      
+                      if (navigator.share) {
+                        navigator.share({
+                          title: `${badge.badge_name} Badge`,
+                          text: shareText,
+                          url: shareUrl
+                        }).catch(() => {
+                          // Fallback to copying to clipboard
+                          navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                          toast({
+                            title: "Link Copied",
+                            description: "Badge information copied to clipboard!",
+                          });
+                        });
+                      } else {
+                        // Fallback: copy to clipboard
+                        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                        toast({
+                          title: "Link Copied",
+                          description: "Badge information copied to clipboard!",
+                        });
+                      }
+                    };
+                    
+                    return (
+                      <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200 relative group">
+                        <button
+                          onClick={shareBadge}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-white/50"
+                          title="Share badge"
+                        >
+                          <Share2 className="h-4 w-4 text-gray-600" />
+                        </button>
+                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                          {badge.image_url ? (
+                            <img 
+                              src={badge.image_url} 
+                              alt={badge.badge_name}
+                              className="h-10 w-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
+                                  if (fallback) fallback.style.display = 'block';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                          {badge.description}
+                        </p>
+                        {badge.pivot && badge.pivot.earned_date && (
+                          <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
+                            <span className="text-xs text-yellow-800 font-medium">
+                              Earned: {new Date(badge.pivot.earned_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -797,7 +817,7 @@ useEffect(() => {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8">
+        <div className="mt-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
           <div className="grid gap-4 md:grid-cols-4">
             <Button className="h-20 flex flex-col items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" asChild>
@@ -823,8 +843,7 @@ useEffect(() => {
               variant="outline"
               onClick={() => {
                 // Open survey modal
-                const event = new Event('surveyOpen');
-                window.dispatchEvent(event);
+                openSurvey();
               }}
             >
               <FileText className="h-7 w-7" />
