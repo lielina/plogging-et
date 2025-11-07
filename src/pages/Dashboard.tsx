@@ -42,15 +42,8 @@ export default function Dashboard() {
   const [progressData, setProgressData] = useState<ProgressData>({
     monthlyGoal: 20, // 20 hours per month goal
     currentProgress: 0,
-    weeklyProgress: [2, 4, 3, 6, 5, 4, 3], // Last 7 days
-    activityData: [
-      { month: 'Jan', events: 2, hours: 8, waste: 15 },
-      { month: 'Feb', events: 3, hours: 12, waste: 22 },
-      { month: 'Mar', events: 1, hours: 4, waste: 8 },
-      { month: 'Apr', events: 4, hours: 16, waste: 28 },
-      { month: 'May', events: 2, hours: 8, waste: 18 },
-      { month: 'Jun', events: 3, hours: 12, waste: 25 },
-    ]
+    weeklyProgress: [0, 0, 0, 0, 0, 0, 0], // Last 7 days - will be fetched from backend
+    activityData: [] // Will be fetched from backend
   })
 
   const fetchDashboardData = async () => {
@@ -88,67 +81,40 @@ export default function Dashboard() {
             })
           }),
         
-        // Fetch events and check for local enrollment tracking
-        apiClient.getAvailableEvents()
+        // Fetch enrolled events from volunteer history endpoint
+        apiClient.getVolunteerHistory()
           .then(response => {
-            console.log('All events response:', response);
-            
-            // Get locally stored enrollments from localStorage
-            let storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-            console.log('Stored enrollments:', storedEnrollments)
-            
-            // Validate stored enrollments by checking with backend
-            // This helps synchronize local storage with actual backend state
-            // Only remove enrollments if we're certain they don't exist or are explicitly not enrolled
-            const validatedEnrollments = []
-            for (const eventId of storedEnrollments) {
-              const event = response.data.find(e => e.event_id === eventId)
-              // Keep enrollment if event exists and is not explicitly marked as not enrolled
-              // or if we can't determine the status (to avoid false negatives)
-              if (!event || 
-                  event.is_enrolled === true || 
-                  event.enrollment_status === 'confirmed' || 
-                  event.enrollment_status === 'attended' ||
-                  event.enrollment_status === 'Enrolled' ||
-                  event.enrollment_status === 'Signed Up' ||
-                  event.can_enroll === false ||
-                  // If we can't determine status, keep it to avoid false negatives
-                  (event.is_enrolled !== false && 
-                   event.enrollment_status !== 'cancelled' &&
-                   event.enrollment_status !== 'missed')) {
-                validatedEnrollments.push(eventId)
-              }
+            console.log('Volunteer history response:', response);
+            // Get events with enrollment details
+            const enrolledEvents = response.data || []
+            setRecentEvents(enrolledEvents.slice(0, 3));
+          })
+          .catch(error => {
+            console.error('Error fetching volunteer history:', error)
+            // Fallback to enrolled events endpoint if history endpoint fails
+            apiClient.getEnrolledEvents()
+              .then(response => {
+                const enrolledEvents = response.data || []
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
+          }),
+        
+        // Fetch activity trends from backend
+        apiClient.getActivityTrends()
+          .then(response => {
+            console.log('Activity trends response:', response);
+            if (response.data && response.data.length > 0) {
+              setProgressData(prev => ({
+                ...prev,
+                activityData: response.data
+              }))
             }
-            
-            // Update localStorage with validated enrollments only if we removed some
-            if (validatedEnrollments.length !== storedEnrollments.length) {
-              localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
-              storedEnrollments = validatedEnrollments
-            }
-            
-            // Filter events based on stored enrollments or backend enrollment fields
-            const enrolledEvents = response.data.filter(event => {
-              const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-              // Check multiple possible fields for enrollment status
-              const isBackendEnrolled = event.is_enrolled === true || 
-                                    event.enrollment_status === 'confirmed' || 
-                                    event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false || // If can't enroll, might mean already enrolled
-                                    event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
-                                    event.enrollment_status === 'Signed Up' // Also check for 'Signed Up' status
-              
-              console.log(`Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-              
-              return isStoredEnrolled || isBackendEnrolled
-            })
-          
-          console.log('Enrolled events:', enrolledEvents)
-          setRecentEvents(enrolledEvents.slice(0, 3));
-        })
-        .catch(error => {
-          console.error('Error fetching events:', error)
-          setRecentEvents([])
-        }),
+          })
+          .catch(error => {
+            console.error('Error fetching activity trends:', error)
+            // Keep empty array if backend doesn't have data yet
+          }),
       
       // Fetch badges with proper error handling
       apiClient.getVolunteerBadges()
@@ -219,67 +185,38 @@ useEffect(() => {
             })
           }),
       
-        // Refresh events and filter for enrolled events
-        apiClient.getAvailableEvents()
-          .then(async response => {
-            console.log('Refreshing - All events response:', response);
-            
-            // Get locally stored enrollments from localStorage
-            let storedEnrollments = JSON.parse(localStorage.getItem('userEnrollments') || '[]')
-            console.log('Refreshing - Stored enrollments:', storedEnrollments)
-            
-            // Validate stored enrollments by checking with backend
-            // This helps synchronize local storage with actual backend state
-            // Only remove enrollments if we're certain they don't exist or are explicitly not enrolled
-            const validatedEnrollments = []
-            for (const eventId of storedEnrollments) {
-              const event = response.data.find(e => e.event_id === eventId)
-              // Keep enrollment if event exists and is not explicitly marked as not enrolled
-              // or if we can't determine the status (to avoid false negatives)
-              if (!event || 
-                  event.is_enrolled === true || 
-                  event.enrollment_status === 'confirmed' || 
-                  event.enrollment_status === 'attended' ||
-                  event.enrollment_status === 'Enrolled' ||
-                  event.enrollment_status === 'Signed Up' ||
-                  event.can_enroll === false ||
-                  // If we can't determine status, keep it to avoid false negatives
-                  (event.is_enrolled !== false && 
-                   event.enrollment_status !== 'cancelled' &&
-                   event.enrollment_status !== 'missed')) {
-                validatedEnrollments.push(eventId)
-              }
-            }
-            
-            // Update localStorage with validated enrollments only if we removed some
-            if (validatedEnrollments.length !== storedEnrollments.length) {
-              localStorage.setItem('userEnrollments', JSON.stringify(validatedEnrollments))
-              storedEnrollments = validatedEnrollments
-            }
-            
-            // Filter events based on stored enrollments or backend enrollment fields
-            const enrolledEvents = response.data.filter(event => {
-              const isStoredEnrolled = storedEnrollments.includes(event.event_id)
-              // Check multiple possible fields for enrollment status
-              const isBackendEnrolled = event.is_enrolled === true || 
-                                    event.enrollment_status === 'confirmed' || 
-                                    event.enrollment_status === 'attended' ||
-                                    event.can_enroll === false || // If can't enroll, might mean already enrolled
-                                    event.enrollment_status === 'Enrolled' || // Explicitly check for 'Enrolled' status
-                                    event.enrollment_status === 'Signed Up'; // Also check for 'Signed Up' status
-            
-              console.log(`Refresh - Event ${event.event_name}: stored=${isStoredEnrolled}, backend=${isBackendEnrolled}`, event)
-              
-              return isStoredEnrolled || isBackendEnrolled
-            });
-            
-            console.log('Refreshing - Enrolled events:', enrolledEvents)
+        // Refresh enrolled events from volunteer history endpoint
+        apiClient.getVolunteerHistory()
+          .then(response => {
+            console.log('Refreshing - Volunteer history response:', response);
+            const enrolledEvents = response.data || []
             setRecentEvents(enrolledEvents.slice(0, 3));
-        })
-        .catch(error => {
-          console.error('Error refreshing events:', error)
-          setRecentEvents([])
-        }),
+          })
+          .catch(error => {
+            console.error('Error refreshing volunteer history:', error)
+            // Fallback to enrolled events endpoint if history endpoint fails
+            apiClient.getEnrolledEvents()
+              .then(response => {
+                const enrolledEvents = response.data || []
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
+          }),
+        
+        // Refresh activity trends from backend
+        apiClient.getActivityTrends()
+          .then(response => {
+            console.log('Refreshing - Activity trends response:', response);
+            if (response.data && response.data.length > 0) {
+              setProgressData(prev => ({
+                ...prev,
+                activityData: response.data
+              }))
+            }
+          })
+          .catch(error => {
+            console.error('Error refreshing activity trends:', error)
+          }),
       
         // Refresh badges with proper error handling
         apiClient.getVolunteerBadges()
@@ -592,47 +529,55 @@ useEffect(() => {
               Your volunteering activity over the past 6 months
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={progressData.activityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e5e7eb', 
-                    borderRadius: '8px' 
-                  }} 
-                />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="events" 
-                  stroke="#10b981" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  name="Events Attended"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="hours" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                  name="Hours Volunteered"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="waste" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                  name="Waste Collected (kg)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
+            <CardContent>
+              {progressData.activityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={progressData.activityData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" stroke="#666" fontSize={12} />
+                    <YAxis stroke="#666" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb', 
+                        borderRadius: '8px' 
+                      }} 
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="events" 
+                      stroke="#10b981" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                      name="Events Attended"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="hours" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                      name="Hours Volunteered"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="waste" 
+                      stroke="#f59e0b" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
+                      name="Waste Collected (kg)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No activity data available yet</p>
+                  <p className="text-sm">Activity trends will appear here once you start participating in events</p>
+                </div>
+              )}
+            </CardContent>
         </Card>
 
         {/* Recent Events and Badges */}

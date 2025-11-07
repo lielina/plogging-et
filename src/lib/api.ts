@@ -338,6 +338,14 @@ class ApiClient {
       }
 
       console.log('API Error Response:', errorData);
+      
+      // Extract error message from various possible response formats
+      let errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+      
+      // Handle case where message might be in nested structure
+      if (typeof errorMessage === 'object') {
+        errorMessage = errorMessage.message || JSON.stringify(errorMessage);
+      }
 
       // Only clear token for 401 (Unauthorized) and 403 (Forbidden) errors on profile endpoints
       // This prevents logout when accessing admin-only pages like leaderboard
@@ -348,13 +356,10 @@ class ApiClient {
         }
       }
 
-      // Create a more descriptive error message
-      const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
-
       // Include validation errors if present
       if (errorData.errors) {
         const validationErrors = Object.values(errorData.errors).flat().join(', ');
-        throw new Error(`${errorMessage}: ${validationErrors}`);
+        errorMessage = `${errorMessage}. ${validationErrors}`;
       }
 
       // Include status code in error message for better debugging
@@ -548,6 +553,80 @@ class ApiClient {
 
   async getVolunteerStatistics(): Promise<{ data: any }> {
     return this.request<{ data: any }>('/volunteer/statistics');
+  }
+
+  // Get activity trends from backend
+  async getActivityTrends(): Promise<{ data: { month: string; events: number; hours: number; waste: number }[] }> {
+    try {
+      return this.request<{ data: { month: string; events: number; hours: number; waste: number }[] }>('/volunteer/activity-trends');
+    } catch (error) {
+      console.error('Error fetching activity trends:', error);
+      // Return empty array on error
+      return { data: [] };
+    }
+  }
+
+  // Get enrolled/registered events for volunteer
+  async getEnrolledEvents(): Promise<{ data: Event[] }> {
+    try {
+      const response = await this.request<{ data: VolunteerEnrollment[] }>('/volunteer/enrollments');
+      // Transform enrollments to events if needed
+      if (response.data && response.data.length > 0) {
+        // Check if response contains events directly or enrollments with event data
+        const events = response.data.map((enrollment: any) => {
+          // If enrollment has event property, use it
+          if (enrollment.event) {
+            return {
+              ...enrollment.event,
+              enrollment_status: enrollment.status,
+              is_enrolled: true
+            };
+          }
+          // Otherwise, assume the enrollment itself contains event data
+          return {
+            ...enrollment,
+            enrollment_status: enrollment.status || 'Enrolled',
+            is_enrolled: true
+          };
+        });
+        return { data: events as Event[] };
+      }
+      return { data: [] };
+    } catch (error) {
+      console.error('Error fetching enrolled events:', error);
+      return { data: [] };
+    }
+  }
+
+  // Get volunteer history (enrolled events)
+  async getVolunteerHistory(): Promise<{ data: Event[] }> {
+    try {
+      const response = await this.request<{ data: any[] }>('/volunteer/history');
+      // Transform history data to events if needed
+      if (response.data && response.data.length > 0) {
+        const events = response.data.map((item: any) => {
+          // If item has event property, use it
+          if (item.event) {
+            return {
+              ...item.event,
+              enrollment_status: item.status || item.enrollment_status || 'Enrolled',
+              is_enrolled: true
+            };
+          }
+          // Otherwise, assume the item itself contains event data
+          return {
+            ...item,
+            enrollment_status: item.status || item.enrollment_status || 'Enrolled',
+            is_enrolled: true
+          };
+        });
+        return { data: events as Event[] };
+      }
+      return { data: [] };
+    } catch (error) {
+      console.error('Error fetching volunteer history:', error);
+      return { data: [] };
+    }
   }
 
   async getAvailableEvents(page: number = 1, perPage: number = 15): Promise<{ data: Event[], pagination?: any }> {

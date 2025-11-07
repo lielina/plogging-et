@@ -25,6 +25,7 @@ export default function Events() {
   const [error, setError] = useState('')
   const [enrollingEvents, setEnrollingEvents] = useState<Set<number>>(new Set())
   const [confirmEnrollEvent, setConfirmEnrollEvent] = useState<number | null>(null)
+  const [enrolledEventIds, setEnrolledEventIds] = useState<Set<number>>(new Set())
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -42,41 +43,73 @@ export default function Events() {
       
       console.log('Fetching events for page:', page);
       
-      const response = await apiClient.getAvailableEvents(page, pagination.perPage)
-      const eventsData = response.data
+      // Fetch both available events and enrolled events in parallel
+      const [eventsResponse, enrolledResponse] = await Promise.allSettled([
+        apiClient.getAvailableEvents(page, pagination.perPage),
+        apiClient.getEnrolledEvents().catch(() => ({ data: [] })) // Don't fail if this endpoint doesn't exist
+      ])
+      
+      const eventsData = eventsResponse.status === 'fulfilled' ? eventsResponse.value.data : []
+      const enrolledEvents = enrolledResponse.status === 'fulfilled' ? enrolledResponse.value.data : []
       
       console.log('Events data:', eventsData);
-      console.log('Pagination data:', response.pagination);
+      console.log('Enrolled events:', enrolledEvents);
+      console.log('Pagination data:', eventsResponse.status === 'fulfilled' ? eventsResponse.value.pagination : null);
+      
+      // Create a set of enrolled event IDs for quick lookup
+      // Handle both number and string IDs, and also check nested event objects
+      const enrolledIds = new Set<number>()
+      enrolledEvents.forEach((e: any) => {
+        // Handle different response structures
+        const eventId = e.event_id || e.event?.event_id || e.id || e.event?.id
+        if (eventId) {
+          enrolledIds.add(Number(eventId))
+        }
+      })
+      
+      // Update state with enrolled event IDs
+      setEnrolledEventIds(enrolledIds)
+      
+      console.log('Enrolled event IDs set:', Array.from(enrolledIds))
       
       // Use backend enrollment status directly - don't rely on localStorage
       const updatedEvents = eventsData.map(event => {
+        // Check if this event is in the enrolled events list (handle type conversion)
+        const eventIdNum = Number(event.event_id)
+        const isEnrolledInList = enrolledIds.has(eventIdNum)
+        
         // The backend should provide the correct enrollment status
         // Fix: Ensure we properly check all possible enrollment status indicators
-        const isEnrolled = event.is_enrolled === true || 
+        const isEnrolled = isEnrolledInList ||
+                          event.is_enrolled === true || 
                           event.enrollment_status === 'Enrolled' || 
                           event.enrollment_status === 'Signed Up' ||
+                          event.enrollment_status === 'signed_up' ||
                           event.enrollment_status === 'confirmed' ||
                           event.enrollment_status === 'attended' ||
                           event.can_enroll === false;
         
         const canEnroll = event.can_enroll !== false && !isEnrolled;
         
+        console.log(`Event ${event.event_id}: isEnrolledInList=${isEnrolledInList}, isEnrolled=${isEnrolled}`)
+        
         return {
           ...event,
           is_enrolled: isEnrolled,
-          can_enroll: canEnroll
+          can_enroll: canEnroll,
+          enrollment_status: isEnrolled ? (event.enrollment_status || 'Enrolled') : event.enrollment_status
         }
       })
       
       setEvents(updatedEvents)
       
       // Handle pagination data if available
-      if (response.pagination) {
+      if (eventsResponse.status === 'fulfilled' && eventsResponse.value.pagination) {
         const newPagination = {
-          currentPage: response.pagination.current_page,
-          totalPages: response.pagination.last_page,
-          totalEvents: response.pagination.total,
-          perPage: response.pagination.per_page
+          currentPage: eventsResponse.value.pagination.current_page,
+          totalPages: eventsResponse.value.pagination.last_page,
+          totalEvents: eventsResponse.value.pagination.total,
+          perPage: eventsResponse.value.pagination.per_page
         };
         
         console.log('Setting pagination:', newPagination);
@@ -100,7 +133,7 @@ export default function Events() {
 
   useEffect(() => {
     fetchEvents(1)
-  }, [])
+  }, [user]) // Re-fetch when user changes
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -133,6 +166,9 @@ export default function Events() {
       const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
       const response = await apiClient.enrollInEvent(eventId, volunteerId)
       
+      // Update enrolled event IDs immediately
+      setEnrolledEventIds(prev => new Set(prev).add(eventId))
+      
       // Update local event status immediately (no localStorage needed)
       setEvents(prev => prev.map(e => 
         e.event_id === eventId 
@@ -160,9 +196,12 @@ export default function Events() {
       if (error.message?.includes('non-upcoming events')) {
         errorTitle = 'Event Not Available'
         errorMessage = 'You can only enroll in upcoming events. This event may have already started or ended.'
-      } else if (error.message?.includes('Already enrolled')) {
+      } else if (error.message?.includes('Already enrolled') || error.message?.includes('already enrolled')) {
         errorTitle = 'Already Enrolled'
         errorMessage = 'You are already enrolled in this event. Check your dashboard for enrollment details.'
+        
+        // Update enrolled event IDs immediately
+        setEnrolledEventIds(prev => new Set(prev).add(eventId))
         
         // Update the event to reflect enrollment status
         setEvents(prev => prev.map(e => 
@@ -175,6 +214,11 @@ export default function Events() {
               }
             : e
         ))
+        
+        // Also refresh the events list to ensure consistency
+        setTimeout(() => {
+          fetchEvents(pagination.currentPage)
+        }, 1000)
       } else if (error.message?.includes('event is full') || error.message?.includes('capacity')) {
         errorTitle = 'Event Full'
         errorMessage = 'This event has reached its maximum capacity. Try enrolling in other available events.'
@@ -345,9 +389,16 @@ export default function Events() {
     });
     
     // Check if user is enrolled (use comprehensive check)
-    const isEnrolled = event.is_enrolled === true || 
+    // First check the enrolledEventIds state (most reliable)
+    const eventIdNum = Number(event.event_id)
+    const isEnrolledInState = enrolledEventIds.has(eventIdNum)
+    
+    // Then check event properties
+    const isEnrolled = isEnrolledInState ||
+                      event.is_enrolled === true || 
                       event.enrollment_status === 'Enrolled' || 
                       event.enrollment_status === 'Signed Up' ||
+                      event.enrollment_status === 'signed_up' ||
                       event.enrollment_status === 'confirmed' ||
                       event.enrollment_status === 'attended' ||
                       event.can_enroll === false;

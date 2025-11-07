@@ -88,13 +88,29 @@ export default function EventDetail() {
   const [copied, setCopied] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isSectionCheckInDialogOpen, setIsSectionCheckInDialogOpen] = useState(false)
+  const [enrolledEventIds, setEnrolledEventIds] = useState<Set<number>>(new Set())
 
   // Check if current user is enrolled in this event
   const isUserEnrolled = () => {
     if (!user || !event) return false
-    return event.enrollments.some(enrollment => 
-      enrollment.volunteer.volunteer_id === (user as any).volunteer_id
-    )
+    
+    // First check if event ID is in enrolled events set
+    if (enrolledEventIds.has(event.event_id)) {
+      return true
+    }
+    
+    // Also check enrollments array (fallback)
+    if (event.enrollments && event.enrollments.length > 0) {
+      const userVolunteerId = (user as any).volunteer_id
+      return event.enrollments.some(enrollment => {
+        const enrollmentVolunteerId = enrollment.volunteer?.volunteer_id || enrollment.volunteer_id
+        // Handle both string and number comparisons
+        return String(enrollmentVolunteerId) === String(userVolunteerId) ||
+               Number(enrollmentVolunteerId) === Number(userVolunteerId)
+      })
+    }
+    
+    return false
   }
 
   // Handle enrollment button click
@@ -126,9 +142,24 @@ export default function EventDetail() {
       const volunteerId = user && 'volunteer_id' in user ? user.volunteer_id : undefined;
       await apiClient.enrollInEvent(parseInt(eventId!), volunteerId)
       
-      // Refresh event data to show updated enrollment
-      const response = await apiClient.getEventDetails(parseInt(eventId!))
-      setEvent(response.data as EventDetailData)
+      // Update enrolled event IDs immediately
+      setEnrolledEventIds(prev => new Set(prev).add(parseInt(eventId!)))
+      
+      // Refresh event data and enrolled events to show updated enrollment
+      const [eventResponse, enrolledResponse] = await Promise.allSettled([
+        apiClient.getEventDetails(parseInt(eventId!)),
+        apiClient.getEnrolledEvents().catch(() => ({ data: [] }))
+      ])
+      
+      if (eventResponse.status === 'fulfilled') {
+        setEvent(eventResponse.value.data as EventDetailData)
+      }
+      
+      if (enrolledResponse.status === 'fulfilled') {
+        const enrolledEvents = enrolledResponse.value.data || []
+        const enrolledIds = new Set(enrolledEvents.map((e: any) => e.event_id || e.id))
+        setEnrolledEventIds(enrolledIds)
+      }
       
       toast({
         title: "Enrollment Successful",
@@ -165,6 +196,36 @@ export default function EventDetail() {
             variant: "destructive",
           });
         }
+      } else if (error.message && (error.message.includes('Already enrolled') || error.message.includes('already enrolled'))) {
+        // User is already enrolled - refresh event data to show correct status
+        toast({
+          title: "Already Enrolled",
+          description: "You are already enrolled in this event. Check your dashboard for enrollment details.",
+          variant: "default",
+        });
+        
+        // Update enrolled event IDs immediately
+        setEnrolledEventIds(prev => new Set(prev).add(parseInt(eventId!)))
+        
+        // Refresh event data to show updated enrollment status
+        try {
+          const [eventResponse, enrolledResponse] = await Promise.allSettled([
+            apiClient.getEventDetails(parseInt(eventId!)),
+            apiClient.getEnrolledEvents().catch(() => ({ data: [] }))
+          ])
+          
+          if (eventResponse.status === 'fulfilled') {
+            setEvent(eventResponse.value.data as EventDetailData)
+          }
+          
+          if (enrolledResponse.status === 'fulfilled') {
+            const enrolledEvents = enrolledResponse.value.data || []
+            const enrolledIds = new Set(enrolledEvents.map((e: any) => e.event_id || e.id))
+            setEnrolledEventIds(enrolledIds)
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing event details:', refreshError)
+        }
       } else {
         toast({
           title: "Enrollment Failed",
@@ -185,16 +246,31 @@ export default function EventDetail() {
         setIsLoading(true)
         setError('')
         
-        const response = await apiClient.getEventDetails(parseInt(eventId))
-        setEvent(response.data as EventDetailData)
+        // Fetch both event details and enrolled events in parallel
+        const [eventResponse, enrolledResponse] = await Promise.allSettled([
+          apiClient.getEventDetails(parseInt(eventId)),
+          apiClient.getEnrolledEvents().catch(() => ({ data: [] })) // Don't fail if endpoint doesn't exist
+        ])
         
-        // Log the event data for debugging
-        console.log('Event data:', response.data);
-        if (response.data.image_path) {
-          console.log('Image path:', response.data.image_path);
-          console.log('Image path starts with http:', response.data.image_path.startsWith('http'));
+        if (eventResponse.status === 'fulfilled') {
+          const eventData = eventResponse.value.data as EventDetailData
+          setEvent(eventData)
+          
+          // Log the event data for debugging
+          console.log('Event data:', eventData);
+          if (eventData.image_path) {
+            console.log('Image path:', eventData.image_path);
+            console.log('Image path starts with http:', eventData.image_path.startsWith('http'));
+          }
         }
         
+        // Update enrolled event IDs
+        if (enrolledResponse.status === 'fulfilled') {
+          const enrolledEvents = enrolledResponse.value.data || []
+          const enrolledIds = new Set(enrolledEvents.map((e: any) => e.event_id || e.id))
+          setEnrolledEventIds(enrolledIds)
+          console.log('Enrolled event IDs:', Array.from(enrolledIds))
+        }
 
       } catch (err: any) {
         setError(err.message || 'Failed to fetch event details')
@@ -204,7 +280,7 @@ export default function EventDetail() {
     }
 
     fetchEventDetails()
-  }, [eventId])
+  }, [eventId, user])
 
   // Generate QR codes for event sections
   useEffect(() => {

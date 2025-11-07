@@ -375,10 +375,12 @@ export default function VolunteerCertificates() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
-                      <span className="truncate">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate</span>
+                      <span className="truncate font-bold">
+                        {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate
+                      </span>
                     </CardTitle>
                     <CardDescription className="mt-1 text-sm">
-                      Certificate ID: {certificate.certificate_id}
+                      Certificate Type: <span className="font-semibold text-gray-700">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}</span> | ID: {certificate.certificate_id}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
