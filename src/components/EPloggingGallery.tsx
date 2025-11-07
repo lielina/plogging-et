@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
-  Trash2
+  Trash2,
+  Heart
 } from 'lucide-react'
 import { apiClient, EPloggingPost } from '@/lib/api'
 import { SocialSharing } from '@/lib/social-sharing'
@@ -36,10 +38,15 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
   const { isAuthenticated } = useAuth()
   const [posts, setPosts] = useState<EPPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [likes, setLikes] = useState<Record<number, number>>({}) // Track likes per post
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set()) // Track which posts are liked
+  const observerTarget = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
   // Edit modal state
@@ -68,17 +75,37 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
   useEffect(() => {
     // Reset to first page when switching between my posts and gallery
     setCurrentPage(1)
+    setPosts([])
+    setHasMore(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showMyPosts])
+  }, [showMyPosts, isPublic])
 
+  // Initial load when component mounts or when switching views
   useEffect(() => {
-    fetchPosts()
+    if (isPublic && currentPage === 1) {
+      // For public view, reset posts on first load
+      setPosts([])
+      setHasMore(true)
+      fetchPosts(false) // Initial load
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, showMyPosts, isPublic])
+  }, [showMyPosts, isPublic])
 
-  const fetchPosts = async () => {
+  // Handle page changes for non-public views (regular pagination)
+  useEffect(() => {
+    if (!isPublic) {
+      fetchPosts(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, showMyPosts])
+
+  const fetchPosts = async (append = false) => {
     try {
-      setIsLoading(true)
+      if (append) {
+        setIsLoadingMore(true)
+      } else {
+        setIsLoading(true)
+      }
       setError(null)
 
       const response = isPublic
@@ -113,17 +140,83 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                      : 1)
       }
       
-      setPosts(postsData)
+      if (append && isPublic) {
+        // Append new posts for infinite scroll
+        setPosts(prev => [...prev, ...postsData])
+      } else {
+        // Replace posts for initial load or non-public views
+        setPosts(postsData)
+      }
+      
+      // Initialize likes count for new posts (if not already set)
+      if (isPublic) {
+        setLikes(prev => {
+          const newLikes = { ...prev }
+          postsData.forEach((post: EPPost) => {
+            if (!(post.post_id in newLikes)) {
+              newLikes[post.post_id] = 0 // Initialize with 0 likes
+            }
+          })
+          return newLikes
+        })
+      }
+      
       setTotalPages(lastPage)
       
-      console.log("Extracted pagination info:", { postsCount: postsData.length, totalPages: lastPage, currentPage })
+      // Check if there are more pages to load
+      if (isPublic) {
+        setHasMore(currentPage < lastPage && postsData.length > 0)
+      }
+      
+      console.log("Extracted pagination info:", { postsCount: postsData.length, totalPages: lastPage, currentPage, hasMore: currentPage < lastPage })
     } catch (error: any) {
       console.error("Error fetching ePlogging posts:", error)
       setError(error.message || "Failed to load posts")
     } finally {
       setIsLoading(false)
+      setIsLoadingMore(false)
     }
   }
+
+  // Infinite scroll handler
+  const loadMore = useCallback(() => {
+    if (!isPublic || isLoadingMore || !hasMore || isLoading) return
+    
+    setCurrentPage(prev => prev + 1)
+  }, [isPublic, isLoadingMore, hasMore, isLoading])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!isPublic) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentTarget = observerTarget.current
+    if (currentTarget) {
+      observer.observe(currentTarget)
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget)
+      }
+    }
+  }, [isPublic, hasMore, isLoadingMore, isLoading, loadMore])
+
+  // Fetch more posts when page changes (for infinite scroll)
+  useEffect(() => {
+    if (isPublic && currentPage > 1) {
+      fetchPosts(true) // Append mode
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage])
 
 
   const handleShare = async (post: EPPost) => {
@@ -320,7 +413,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
         </div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Failed to Load Posts</h3>
         <p className="text-gray-600 mb-4">{error}</p>
-        <Button onClick={fetchPosts} variant="outline">
+        <Button onClick={() => fetchPosts(false)} variant="outline">
           Try Again
         </Button>
       </div>
@@ -413,9 +506,26 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                 <CardContent className={`p-4 ${isPublic ? 'pt-3' : ''}`}>
                   {/* Quote */}
                   <div className={`${isPublic ? 'mb-3' : 'mb-3'}`}>
-                    <p className={`text-gray-800 ${isPublic ? 'text-base' : 'text-sm italic'} ${!isPublic ? 'p-2 bg-gray-50 rounded' : ''}`}>
-                      {isPublic ? post.quote : `"${post.quote}"`}
-                    </p>
+                    {isPublic ? (
+                      <>
+                        <p className="text-gray-800 text-base line-clamp-2">
+                          {post.quote}
+                        </p>
+                        {/* Show "Read more" if quote is longer than approximately 2 lines (roughly 150-200 chars) */}
+                        {post.quote && post.quote.length > 150 && (
+                          <Link 
+                            to={`/eplogging/${post.post_id}`}
+                            className="text-green-600 hover:text-green-700 text-sm font-medium mt-1 inline-block"
+                          >
+                            Read more
+                          </Link>
+                        )}
+                      </>
+                    ) : (
+                      <p className={`text-sm italic p-2 bg-gray-50 rounded`}>
+                        {`"${post.quote}"`}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Location and Date - Only show for non-public posts or show location for public */}
@@ -452,6 +562,48 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                           <Share2 className="w-4 h-4" />
                         </Button>
                       </div>
+                    )}
+                    
+                    {/* Like Button - Show for public posts */}
+                    {isPublic && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const isLiked = likedPosts.has(post.post_id)
+                          if (isLiked) {
+                            // Unlike - decrease count
+                            setLikes(prev => ({
+                              ...prev,
+                              [post.post_id]: Math.max((prev[post.post_id] || 0) - 1, 0)
+                            }))
+                            setLikedPosts(prev => {
+                              const newSet = new Set(prev)
+                              newSet.delete(post.post_id)
+                              return newSet
+                            })
+                          } else {
+                            // Like - increase count
+                            setLikes(prev => ({
+                              ...prev,
+                              [post.post_id]: (prev[post.post_id] || 0) + 1
+                            }))
+                            setLikedPosts(prev => new Set(prev).add(post.post_id))
+                          }
+                        }}
+                        className={`transition-colors ${
+                          likedPosts.has(post.post_id) 
+                            ? 'text-red-500 hover:text-red-600' 
+                            : 'text-gray-500 hover:text-red-500'
+                        }`}
+                      >
+                        <Heart 
+                          className={`w-4 h-4 mr-1 ${
+                            likedPosts.has(post.post_id) ? 'fill-current' : ''
+                          }`} 
+                        />
+                        <span className="text-sm font-medium">{likes[post.post_id] || 0}</span>
+                      </Button>
                     )}
                     {showMyPosts && !isPublic && (
                       <div className="flex items-center gap-1 ml-auto">
@@ -494,8 +646,8 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
             ))}
           </div>
 
-          {/* Pagination - Show for My Posts, Public posts, or gallery if multiple pages */}
-          {filteredPosts.length > 0 && (showMyPosts || isPublic || totalPages > 1 || currentPage > 1 || filteredPosts.length === 22) && (
+          {/* Pagination - Only show for non-public views (My Posts or Gallery) */}
+          {!isPublic && filteredPosts.length > 0 && (showMyPosts || totalPages > 1 || currentPage > 1 || filteredPosts.length === 22) && (
             <div className="flex items-center justify-end gap-3 mt-6">
               <Button
                 variant="outline"
@@ -529,6 +681,22 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                 <ChevronRight className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-0.5" />
               </Button>
             </div>
+          )}
+
+          {/* Infinite Scroll Loading Indicator - Only for public view */}
+          {isPublic && (
+            <>
+              {/* Observer target for infinite scroll */}
+              <div ref={observerTarget} className="h-4" />
+              
+              {/* Loading more indicator */}
+              {isLoadingMore && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                  <span className="ml-3 text-gray-600">Loading more posts...</span>
+                </div>
+              )}
+            </>
           )}
         </>
       ) : (

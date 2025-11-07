@@ -20,6 +20,7 @@ import Contact from './pages/Contact'
 import VolunteerCertificates from './pages/VolunteerCertificates'
 import VolunteerBadges from './pages/VolunteerBadges'
 import EPlogging from './pages/EPlogging'
+import EPloggingPostDetail from './pages/EPloggingPostDetail'
 import Gallery from './pages/Gallery'
 import Blog from './pages/Blog'
 import BlogPostPage from './pages/BlogPost'
@@ -116,6 +117,7 @@ function App() {
               <Route path="/blog/:postId" element={<BlogPostPage />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/eplogging" element={<EPlogging />} />
+              <Route path="/eplogging/:postId" element={<EPloggingPostDetail />} />
               <Route path="/eplogging/manage" element={
                 <ProtectedRoute>
                   <EPlogging />

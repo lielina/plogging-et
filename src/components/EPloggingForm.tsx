@@ -34,6 +34,12 @@ export default function EPloggingForm({ onSuccess, onCancel }: EPloggingFormProp
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    
+    // Limit quote to 500 characters
+    if (name === 'quote' && value.length > 500) {
+      return // Don't update if exceeds limit
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -95,6 +101,16 @@ export default function EPloggingForm({ onSuccess, onCancel }: EPloggingFormProp
       toast({
         title: "Required Fields",
         description: "Please fill in quote and location fields.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate quote length (max 500 characters)
+    if (formData.quote.length > 500) {
+      toast({
+        title: "Quote Too Long",
+        description: "Quote must be 500 characters or less. Please shorten your quote.",
         variant: "destructive"
       })
       return
@@ -192,7 +208,12 @@ export default function EPloggingForm({ onSuccess, onCancel }: EPloggingFormProp
 
           {/* Quote */}
           <div className="space-y-2">
-            <Label htmlFor="quote">Inspirational Quote *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="quote">Inspirational Quote *</Label>
+              <span className={`text-xs ${formData.quote.length > 500 ? 'text-red-500' : 'text-gray-500'}`}>
+                {formData.quote.length}/500
+              </span>
+            </div>
             <Textarea
               id="quote"
               name="quote"
@@ -200,8 +221,13 @@ export default function EPloggingForm({ onSuccess, onCancel }: EPloggingFormProp
               onChange={handleInputChange}
               placeholder="Share an inspiring quote or thought about environmental action"
               rows={2}
+              maxLength={500}
               required
+              className={formData.quote.length > 500 ? 'border-red-500' : ''}
             />
+            {formData.quote.length > 500 && (
+              <p className="text-xs text-red-500">Quote exceeds 500 characters. Please shorten it.</p>
+            )}
           </div>
 
           {/* Location */}

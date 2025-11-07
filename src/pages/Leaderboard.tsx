@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, Crown, Medal, Star, Clock, Calendar, Award, Users } from 'lucide-react'
+import { Trophy, Crown, Medal, Star, Clock, Calendar, MapPin, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface TopVolunteer {
@@ -15,7 +15,9 @@ interface TopVolunteer {
   total_hours: string | number;
   total_hours_contributed?: string | number; // Add fallback field
   events_attended: number;
-  badges_earned: number;
+  total_distance?: number | string; // Distance in km
+  distance_km?: number | string; // Alternative field name
+  badges_earned?: number; // Keep for backward compatibility but make optional
   rank_value: string;
 }
 
@@ -263,8 +265,8 @@ export default function Leaderboard() {
                       <span className="text-sm">{topVolunteers[1].events_attended} events</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Award className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                      <span className="text-sm">{topVolunteers[1].badges_earned} badges</span>
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[1].total_distance || topVolunteers[1].distance_km || '0'} km</span>
                     </div>
                   </div>
                 </CardContent>
@@ -293,8 +295,8 @@ export default function Leaderboard() {
                       <span className="text-sm">{topVolunteers[0].events_attended} events</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Award className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                      <span className="text-sm">{topVolunteers[0].badges_earned} badges</span>
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[0].total_distance || topVolunteers[0].distance_km || '0'} km</span>
                     </div>
                   </div>
                 </CardContent>
@@ -323,8 +325,8 @@ export default function Leaderboard() {
                       <span className="text-sm">{topVolunteers[2].events_attended} events</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Award className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                      <span className="text-sm">{topVolunteers[2].badges_earned} badges</span>
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-sm">{topVolunteers[2].total_distance || topVolunteers[2].distance_km || '0'} km</span>
                     </div>
                   </div>
                 </CardContent>
@@ -364,7 +366,7 @@ export default function Leaderboard() {
                       Events
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Badges
+                      Distance
                     </th>
                   </tr>
                 </thead>
@@ -397,8 +399,8 @@ export default function Leaderboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-1">
-                          <Award className="h-4 w-4" />
-                          {volunteer.badges_earned}
+                          <MapPin className="h-4 w-4" />
+                          {volunteer.total_distance || volunteer.distance_km || '0'} km
                         </div>
                       </td>
                     </tr>
