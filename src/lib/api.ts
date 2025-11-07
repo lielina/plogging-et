@@ -50,18 +50,14 @@ export interface Volunteer {
 }
 
 export interface EnrollmentResponse {
+  volunteer_id: number;
+  event_id: number;
   status: string;
-  data: {
-    volunteer_id: number;
-    event_id: number;
-    status: string;
-    updated_at: string;
-    created_at: string;
-    enrollment_id: number;
-    volunteer: Volunteer;
-    event: Event;
-  };
-  message: string;
+  updated_at: string;
+  created_at: string;
+  enrollment_id: number;
+  volunteer: Volunteer;
+  event: Event;
 }
 
 export interface DetailedVolunteer extends Volunteer {
@@ -149,6 +145,15 @@ export interface Event {
   enrollment_status?: string;
   can_enroll?: boolean;
   enrollment_id?: number;
+  enrollments?: Array<{
+    enrollment_id: number;
+    volunteer_id: string | number;
+    event_id: string | number;
+    signup_date: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  }>;
 }
 
 // Add Section interface for event sections
@@ -338,10 +343,10 @@ class ApiClient {
       }
 
       console.log('API Error Response:', errorData);
-      
+
       // Extract error message from various possible response formats
       let errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
-      
+
       // Handle case where message might be in nested structure
       if (typeof errorMessage === 'object') {
         errorMessage = errorMessage.message || JSON.stringify(errorMessage);
@@ -570,12 +575,41 @@ class ApiClient {
   async getEnrolledEvents(): Promise<{ data: Event[] }> {
     try {
       const response = await this.request<{ data: VolunteerEnrollment[] }>('/volunteer/enrollments');
+      console.log('Raw enrolled events response:', response);
       // Transform enrollments to events if needed
       if (response.data && response.data.length > 0) {
-        // Check if response contains events directly or enrollments with event data
-        const events = response.data.map((enrollment: any) => {
+        // Get current volunteer ID from localStorage or token
+        const token = localStorage.getItem('token');
+        let currentVolunteerId: number | null = null;
+
+        if (token) {
+          try {
+            // Decode JWT token to get volunteer ID
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentVolunteerId = payload.volunteer_id || payload.id;
+            console.log('Current volunteer ID from token:', currentVolunteerId);
+          } catch (e) {
+            console.error('Error decoding token:', e);
+          }
+        }
+
+        // Filter enrollments to only include those for the current volunteer
+        const filteredEnrollments = currentVolunteerId
+          ? response.data.filter(enrollment =>
+            Number(enrollment.volunteer_id) === currentVolunteerId
+          )
+          : [];
+        
+        console.log('Current volunteer ID:', currentVolunteerId);
+        console.log('Enrollment volunteer IDs:', response.data.map(e => Number(e.volunteer_id)));
+        
+        console.log('Filtered enrollments for current volunteer:', filteredEnrollments);
+
+        // Transform filtered enrollments to events
+        const events = filteredEnrollments.map((enrollment: any) => {
           // If enrollment has event property, use it
           if (enrollment.event) {
+            console.log('Processing enrollment with event property:', enrollment);
             return {
               ...enrollment.event,
               enrollment_status: enrollment.status,
@@ -583,14 +617,17 @@ class ApiClient {
             };
           }
           // Otherwise, assume the enrollment itself contains event data
+          console.log('Processing enrollment without event property:', enrollment);
           return {
             ...enrollment,
             enrollment_status: enrollment.status || 'Enrolled',
             is_enrolled: true
           };
         });
+        console.log('Transformed events from enrollments:', events);
         return { data: events as Event[] };
       }
+      console.log('No enrolled events found');
       return { data: [] };
     } catch (error) {
       console.error('Error fetching enrolled events:', error);
@@ -601,10 +638,11 @@ class ApiClient {
   // Get volunteer history (enrolled events)
   async getVolunteerHistory(): Promise<{ data: Event[] }> {
     try {
-      const response = await this.request<{ data: any[] }>('/volunteer/history');
+      const response = await this.request<{ data: { enrollments: any[] } }>('/volunteer/history');
       // Transform history data to events if needed
-      if (response.data && response.data.length > 0) {
-        const events = response.data.map((item: any) => {
+      const enrollments = response.data?.enrollments || [];
+      if (enrollments.length > 0) {
+        const events = enrollments.map((item: any) => {
           // If item has event property, use it
           if (item.event) {
             return {
@@ -635,7 +673,9 @@ class ApiClient {
       per_page: perPage.toString()
     });
 
-    return this.request<{ data: Event[], pagination?: any }>(`/volunteer/events?${params.toString()}`);
+    const response = await this.request<{ data: Event[], pagination?: any }>(`/volunteer/events?${params.toString()}`);
+    console.log('Available events response:', response);
+    return response;
   }
 
   async getEventDetails(eventId: number): Promise<{ data: Event }> {
@@ -1077,9 +1117,8 @@ class ApiClient {
     });
   }
 
-  async getVolunteerHistory(): Promise<{ data: any[] }> {
-    return this.request<{ data: any[] }>('/volunteer/history');
-  }
+  // This function was duplicated and has been removed
+  // The correct implementation is above in the file
 
   // Add Notification endpoints
   async getNotifications(): Promise<{ data: any[] }> {
