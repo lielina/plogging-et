@@ -58,50 +58,64 @@ const UserSidebar = () => {
   const handleQRScan = async (result: string) => {
     try {
       // Parse the QR code result
-      // Expected format: "event:{eventId}"
-      let eventId: number | null = null;
+      // Section QR code format: "eventId:sectionId" (e.g., "37:1")
+      const parts = result.split(":");
+      
+      if (parts.length === 2) {
+        // This is a section QR code
+        const eventId = parseInt(parts[0]);
+        const sectionId = parseInt(parts[1]);
+        
+        if (isNaN(eventId) || isNaN(sectionId) || eventId <= 0 || sectionId <= 0) {
+          toast({
+            title: "Invalid QR Code",
+            description: "The scanned QR code is not valid for section check-in.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      if (result.startsWith("event:")) {
-        eventId = parseInt(result.split(":")[1]);
+        // Get user's volunteer ID
+        const volunteerId =
+          user && "volunteer_id" in user ? user.volunteer_id : null;
+        if (!volunteerId) {
+          toast({
+            title: "Authentication Error",
+            description: "Unable to identify volunteer. Please log in again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Perform section-based check-in
+        await apiClient.checkInSection(volunteerId, eventId, sectionId);
+
+        toast({
+          title: "Check-in Successful",
+          description: `You have been successfully checked in to section ${sectionId}!`,
+        });
       } else {
-        eventId = parseInt(result);
-      }
-
-      if (isNaN(eventId) || eventId <= 0) {
+        // Not a section QR code - show error
         toast({
           title: "Invalid QR Code",
-          description: "The scanned QR code is not valid for event check-in.",
+          description: "Please scan a section QR code. Section QR codes have the format: eventId:sectionId",
           variant: "destructive",
         });
-        return;
       }
-
-      // Get user's QR code (volunteer ID)
-      // Check if user is a volunteer before accessing volunteer_id
-      const volunteerId =
-        user && "volunteer_id" in user ? user.volunteer_id : null;
-      if (!volunteerId) {
-        toast({
-          title: "Authentication Error",
-          description: "Unable to identify volunteer. Please log in again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Perform check-in
-      // The QR code parameter should be "volunteer:{volunteerId}" as expected by the API
-      await apiClient.checkIn(eventId, `volunteer:${volunteerId}`);
-
-      toast({
-        title: "Check-in Successful",
-        description: "You have been successfully checked in to the event!",
-      });
     } catch (error: any) {
       console.error("Check-in error:", error);
+      
+      // Handle "already checked in" errors more gracefully
+      let errorMessage = error.message || "Failed to check in. Please try again.";
+      if (errorMessage.toLowerCase().includes("already") && errorMessage.toLowerCase().includes("check")) {
+        errorMessage = "You have already checked in to this section.";
+      } else if (errorMessage.toLowerCase().includes("already enrolled")) {
+        errorMessage = "You are already enrolled in this event. Each section can be checked in independently.";
+      }
+      
       toast({
         title: "Check-in Failed",
-        description: error.message || "Failed to check in. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -114,8 +128,8 @@ const UserSidebar = () => {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScan={handleQRScan}
-        title="Event Check-in"
-        description="Scan the event QR code to check in"
+        title="Section Check-in"
+        description="Scan a section QR code to check in (format: eventId:sectionId)"
       />
 
       {/* Mobile Menu Button */}
