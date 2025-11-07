@@ -427,18 +427,32 @@ export default function Events() {
       }
     }
     
-    // Use our utility function to determine event status
-    const eventStatusInfo = getEventStatus(
+    // Use API status, fallback to calculated status if not available (same logic as admin side)
+    const backendStatus = event.status?.toLowerCase();
+    const calculatedStatusInfo = getEventStatus(
       event.event_date,
       event.start_time,
       event.end_time
     );
     
-    console.log('Event status info for event', event.event_id, ':', eventStatusInfo);
+    // Use backend status if available, otherwise use calculated status
+    const eventStatus = backendStatus || calculatedStatusInfo.status;
+    const eventStatusInfo = {
+      ...calculatedStatusInfo,
+      status: eventStatus as 'upcoming' | 'active' | 'completed' | 'unknown'
+    };
+    
+    console.log('Event status info for event', event.event_id, ':', {
+      backendStatus,
+      calculatedStatus: calculatedStatusInfo.status,
+      finalStatus: eventStatus,
+      eventStatusInfo
+    });
     console.log('Event data:', {
       event_date: event.event_date,
       start_time: event.start_time,
-      end_time: event.end_time
+      end_time: event.end_time,
+      backend_status: event.status
     });
     
     // Check if user is enrolled (use both event property and enrolledEventIds as fallback)
@@ -464,7 +478,7 @@ export default function Events() {
     }
     
     // If event is active (in progress), show appropriate status
-    if (eventStatusInfo.status === 'active') {
+    if (eventStatus === 'active') {
       return {
         disabled: true,
         text: 'Event In Progress',
@@ -475,7 +489,7 @@ export default function Events() {
     }
     
     // If event is completed, show appropriate status
-    if (eventStatusInfo.status === 'completed') {
+    if (eventStatus === 'completed') {
       return {
         disabled: true,
         text: 'Event Ended',
@@ -486,7 +500,7 @@ export default function Events() {
     }
     
     // If event is upcoming and can be enrolled (and user is NOT enrolled), show enroll button
-    if (eventStatusInfo.status === 'upcoming' && eventStatusInfo.canEnroll && !isEnrolled) {
+    if (eventStatus === 'upcoming' && eventStatusInfo.canEnroll && !isEnrolled) {
       return {
         disabled: false,
         text: 'Enroll Now',
@@ -582,23 +596,35 @@ export default function Events() {
                         </CardDescription>
                       </div>
                       {(() => {
-                        // Use our utility function to determine event status for the badge
-                        const eventStatusInfo = getEventStatus(
+                        // Use API status, fallback to calculated status if not available (same logic as admin side)
+                        const backendStatus = event.status?.toLowerCase();
+                        const calculatedStatus = getEventStatus(
                           event.event_date,
                           event.start_time,
                           event.end_time
-                        );
+                        ).status;
+                        
+                        // Use backend status if available, otherwise use calculated status
+                        const status = backendStatus || calculatedStatus;
+                        const statusLower = status?.toLowerCase() || '';
+                        
+                        let badgeVariant: "default" | "secondary" | "destructive" | "outline" = 'secondary';
+                        if (statusLower === 'upcoming') {
+                          badgeVariant = 'default';
+                        } else if (statusLower === 'active') {
+                          badgeVariant = 'destructive';
+                        } else if (statusLower === 'completed') {
+                          badgeVariant = 'secondary';
+                        } else if (statusLower === 'cancelled') {
+                          badgeVariant = 'destructive';
+                        }
                         
                         return (
                           <Badge 
-                            variant={eventStatusInfo.status === 'upcoming' ? 'default' : 
-                                    eventStatusInfo.status === 'active' ? 'destructive' : 
-                                    'secondary'}
+                            variant={badgeVariant}
                             className="ml-2 flex-shrink-0 text-xs px-2 py-0.5"
                           >
-                            {eventStatusInfo.status === 'upcoming' ? 'Upcoming' : 
-                             eventStatusInfo.status === 'active' ? 'Active' : 
-                             'Completed'}
+                            {status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase() || 'Unknown'}
                           </Badge>
                         );
                       })()}

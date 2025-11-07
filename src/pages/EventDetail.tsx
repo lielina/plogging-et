@@ -170,11 +170,18 @@ export default function EventDetail() {
       if (error.message && error.message.includes('Cannot enroll in non-upcoming events')) {
         // Use our utility to check if event should be upcoming
         if (event) {
-          const eventStatusInfo = getEventStatus(
+          // Use API status, fallback to calculated status if not available
+          const backendStatus = event.status?.toLowerCase();
+          const calculatedStatusInfo = getEventStatus(
             event.event_date,
             event.start_time,
             event.end_time
           );
+          const eventStatus = backendStatus || calculatedStatusInfo.status;
+          const eventStatusInfo = {
+            ...calculatedStatusInfo,
+            status: eventStatus as 'upcoming' | 'active' | 'completed' | 'unknown'
+          };
           
           if (eventStatusInfo.canEnroll) {
             toast({
@@ -690,19 +697,33 @@ ${description}
                         start_time: event.start_time, 
                         end_time: event.end_time 
                       });
+                      // Use API status, fallback to calculated status if not available (same logic as admin side)
+                      const backendStatus = event.status?.toLowerCase();
                       const calculatedStatus = getEventStatus(
                         event.event_date,
                         event.start_time,
                         event.end_time
                       );
-                      console.log('Volunteer Calculated Status:', calculatedStatus);
+                      const status = backendStatus || calculatedStatus.status;
+                      const statusLower = status?.toLowerCase() || '';
+                      
+                      console.log('Event Status:', { backendStatus, calculatedStatus: calculatedStatus.status, finalStatus: status });
+                      
+                      let badgeVariant: "default" | "secondary" | "destructive" | "outline" = 'secondary';
+                      if (statusLower === 'active') {
+                        badgeVariant = 'default';
+                      } else if (statusLower === 'cancelled') {
+                        badgeVariant = 'destructive';
+                      } else if (statusLower === 'completed') {
+                        badgeVariant = 'outline';
+                      }
                       
                       return (
                         <Badge 
-                          variant={calculatedStatus.status === 'active' ? 'default' : 'secondary'}
+                          variant={badgeVariant}
                           className="text-sm px-3 py-1 w-fit"
                         >
-                          {calculatedStatus.status}
+                          {status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase() || 'Unknown'}
                         </Badge>
                       );
                     })()}
@@ -713,14 +734,21 @@ ${description}
               <div className="flex flex-wrap gap-3">
                 {/* Enrollment button for regular users - only show if event is upcoming */}
                 {(() => {
-                  const eventStatusInfo = getEventStatus(
+                  // Use API status, fallback to calculated status if not available (same logic as admin side)
+                  const backendStatus = event.status?.toLowerCase();
+                  const calculatedStatusInfo = getEventStatus(
                     event.event_date,
                     event.start_time,
                     event.end_time
                   );
+                  const eventStatus = backendStatus || calculatedStatusInfo.status;
+                  const eventStatusInfo = {
+                    ...calculatedStatusInfo,
+                    status: eventStatus as 'upcoming' | 'active' | 'completed' | 'unknown'
+                  };
                   
                   // Hide button if event is completed or active (not upcoming)
-                  if (eventStatusInfo.status !== 'upcoming') {
+                  if (eventStatus !== 'upcoming') {
                     return null;
                   }
                   
