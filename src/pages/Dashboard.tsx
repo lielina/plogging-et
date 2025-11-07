@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBadges } from '@/contexts/BadgeContext'
 import { useSurvey } from '@/contexts/SurveyContext'
-import { apiClient } from '@/lib/api'
+import { apiClient, type Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Badge as BadgeComponent } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3, Share2 } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { useToast } from '@/hooks/use-toast'
 
@@ -19,6 +20,7 @@ interface DashboardStats {
   certificates_earned: number;
 }
 
+// Update the ProgressData interface to include activity trends data
 interface ProgressData {
   monthlyGoal: number;
   currentProgress: number;
@@ -29,17 +31,16 @@ interface ProgressData {
 export default function Dashboard() {
   const { user } = useAuth()
   const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
+  const { badges, loading: badgesLoading, error: badgesError, refreshBadges } = useBadges()
   const { toast } = useToast()
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [recentEvents, setRecentEvents] = useState<any[]>([])
-  const [badges, setBadges] = useState<any[]>([])
-  const [badgesError, setBadgesError] = useState<string | null>(null)
+  const [recentEvents, setRecentEvents] = useState<Event[]>([])
+  const [badgesEarned, setBadgesEarned] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const location = useLocation()
   const hasCheckedSurvey = useRef(false)
   
-  // Progress tracking data
+  // Progress tracking data - initialize with empty data
   const [progressData, setProgressData] = useState<ProgressData>({
     monthlyGoal: 20, // 20 hours per month goal
     currentProgress: 0,
@@ -117,30 +118,7 @@ export default function Dashboard() {
             // Keep empty array if backend doesn't have data yet
           }),
       
-      // Fetch badges with proper error handling
-      apiClient.getVolunteerBadges()
-        .then(response => {
-          console.log('Badges response:', response)
-          setBadgesError(null)
-          // Ensure badges is an array
-          const badgesData = Array.isArray(response.data) ? response.data : []
-          setBadges(badgesData)
-        })
-        .catch(error => {
-          console.error('Error fetching badges:', error)
-          // More specific error handling for 500 errors
-          if (error.message && error.message.includes('500')) {
-            setBadgesError('Badges service is temporarily unavailable. Please try again later.')
-          } else if (error.message && error.message.includes('404')) {
-            // Handle case where badges endpoint doesn't exist
-            setBadgesError(null) // Don't show error for missing endpoint
-            setBadges([]) // Set empty array
-          } else {
-            setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
-          }
-          // Set badges to empty array so the UI doesn't break
-          setBadges([])
-        })
+      // Badges are now managed by BadgeContext, no need to fetch here
     ]
     
     // Wait for all promises to complete (either resolve or reject)
@@ -163,7 +141,72 @@ export default function Dashboard() {
 
 useEffect(() => {
   fetchDashboardData()
-}, [location.pathname, user, isSurveyOpen, openSurvey])
+}, [location.pathname, user, isSurveyOpen])
+
+// Listen for enrollment updates and refresh dashboard
+useEffect(() => {
+  const handleEnrollmentUpdate = () => {
+    // Refresh enrolled events by combining history and events list
+    Promise.all([
+      apiClient.getVolunteerEnrollments(),
+      apiClient.getAvailableEvents(1, 100)
+    ])
+      .then(([enrollmentsResponse, eventsResponse]) => {
+        // Get enrolled event IDs from history
+        const enrolledEventIds = new Set(
+          enrollmentsResponse.data.map(e => parseInt(e.event_id))
+        );
+        
+        // Map enrollments to events (enrollments contain event data)
+        const enrolledEventsFromHistory = enrollmentsResponse.data.map(enrollment => ({
+          ...enrollment.event,
+          is_enrolled: true,
+          enrollment_status: enrollment.status,
+          enrollment_id: enrollment.enrollment_id
+        }));
+        
+        // Also check events list for enrolled events
+        const enrolledEventsFromList = eventsResponse.data
+          .filter(event => {
+            const isEnrolled = enrolledEventIds.has(event.event_id) ||
+              event.is_enrolled === true || 
+              event.enrollment_status === 'Enrolled' || 
+              event.enrollment_status === 'Signed Up' ||
+              event.enrollment_status === 'confirmed' ||
+              event.enrollment_status === 'attended' ||
+              event.can_enroll === false;
+            return isEnrolled;
+          })
+          .map(event => ({
+            ...event,
+            is_enrolled: true,
+            enrollment_status: event.enrollment_status || 'Signed Up'
+          }));
+        
+        // Combine both lists, removing duplicates
+        const allEnrolledEvents = [...enrolledEventsFromHistory, ...enrolledEventsFromList];
+        const uniqueEnrolledEvents = allEnrolledEvents.filter((event, index, self) =>
+          index === self.findIndex(e => e.event_id === event.event_id)
+        );
+        
+        // Sort by event date (most recent first) and take first 3
+        const sortedEvents = uniqueEnrolledEvents.sort((a, b) => 
+          new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+        );
+        setRecentEvents(sortedEvents.slice(0, 3));
+      })
+      .catch(error => {
+        console.error('Error refreshing enrollments after update:', error)
+        refreshDashboard();
+      });
+  };
+  
+  window.addEventListener('enrollmentUpdated', handleEnrollmentUpdate);
+  
+  return () => {
+    window.removeEventListener('enrollmentUpdated', handleEnrollmentUpdate);
+  };
+}, []);
 
   const refreshDashboard = async () => {
     try {
@@ -219,30 +262,43 @@ useEffect(() => {
             console.error('Error refreshing activity trends:', error)
           }),
       
-        // Refresh badges with proper error handling
-        apiClient.getVolunteerBadges()
+        // Refresh enrolled events by getting enrollments directly
+        apiClient.getVolunteerEnrollments()
           .then(response => {
-            console.log('Refreshing badges response:', response)
-            setBadgesError(null)
-            // Ensure badges is an array
-            const badgesData = Array.isArray(response.data) ? response.data : []
-            setBadges(badgesData)
+            console.log('Refreshing - Enrollments response:', response);
+            // Map enrollments to events (enrollments contain event data)
+            const enrolledEvents = response.data.map(enrollment => ({
+              ...enrollment.event,
+              is_enrolled: true,
+              enrollment_status: enrollment.status,
+              enrollment_id: enrollment.enrollment_id
+            }));
+            // Sort by event date (most recent first) and take first 3
+            const sortedEvents = enrolledEvents.sort((a, b) => 
+              new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+            );
+            setRecentEvents(sortedEvents.slice(0, 3));
           })
           .catch(error => {
-            console.error('Error refreshing badges:', error)
-            // More specific error handling for 500 errors
-            if (error.message && error.message.includes('500')) {
-              setBadgesError('Badges service is temporarily unavailable. Please try again later.')
-            } else if (error.message && error.message.includes('404')) {
-              // Handle case where badges endpoint doesn't exist
-              setBadgesError(null) // Don't show error for missing endpoint
-              setBadges([]) // Set empty array
-            } else {
-              setBadgesError(`Failed to load badges: ${error.message || 'Server error'}`)
-            }
-            // Set badges to empty array so the UI doesn't break
-            setBadges([])
-          })
+            console.error('Error refreshing enrollments:', error)
+            // Fallback to getting all events and filtering if enrollments endpoint fails
+            apiClient.getAvailableEvents(1, 100)
+              .then(response => {
+                const enrolledEvents = response.data.filter(event => 
+                  event.is_enrolled === true || 
+                  event.enrollment_status === 'Enrolled' || 
+                  event.enrollment_status === 'Signed Up' ||
+                  event.enrollment_status === 'confirmed' ||
+                  event.enrollment_status === 'attended' ||
+                  event.can_enroll === false
+                );
+                setRecentEvents(enrolledEvents.slice(0, 3));
+              })
+              .catch(() => setRecentEvents([]))
+          }),
+      
+        // Refresh badges using the badge context
+        refreshBadges()
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -255,6 +311,19 @@ useEffect(() => {
     }
   }
 
+  const handleSurveyComplete = () => {
+    // Mark survey as completed for this user
+    if (user && 'volunteer_id' in user) {
+      const userId = user.volunteer_id;
+      localStorage.setItem(`surveyCompleted_${userId}`, 'true');
+    }
+    closeSurvey();
+  };
+
+  const handleSurveySkip = () => {
+    // User can skip for now, but we'll still show the option in quick actions
+    closeSurvey();
+  };
 
   if (error) {
     return (
@@ -360,7 +429,6 @@ useEffect(() => {
               </p>
             </CardContent>
           </Card>
-
           <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out transform hover:-translate-y-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Waste Collected</CardTitle>
@@ -373,7 +441,6 @@ useEffect(() => {
               </p>
             </CardContent>
           </Card>
-
           <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out transform hover:-translate-y-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Badges Earned</CardTitle>
@@ -595,12 +662,12 @@ useEffect(() => {
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <Badge variant="secondary" className="px-2 py-0.5 text-xs">
+                            <BadgeComponent variant="secondary" className="px-2 py-0.5 text-xs">
                               {event.status}
-                            </Badge>
-                            <Badge variant="outline" className="px-2 py-0.5 text-xs text-green-700 border-green-300">
+                            </BadgeComponent>
+                            <BadgeComponent variant="outline" className="px-2 py-0.5 text-xs text-green-700 border-green-300">
                               {event.enrollment_status || 'Enrolled'}
-                            </Badge>
+                            </BadgeComponent>
                           </div>
                         </div>
                       </Link>
@@ -650,6 +717,10 @@ useEffect(() => {
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Try Again
                   </Button>
+                </div>
+              ) : badgesLoading ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                 </div>
               ) : badges.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -772,8 +843,7 @@ useEffect(() => {
               variant="outline"
               onClick={() => {
                 // Open survey modal
-                const event = new Event('surveyOpen');
-                window.dispatchEvent(event);
+                openSurvey();
               }}
             >
               <FileText className="h-7 w-7" />
@@ -784,4 +854,4 @@ useEffect(() => {
       </div>
     </div>
   )
-}
+};

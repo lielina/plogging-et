@@ -10,35 +10,24 @@ import {
   ImageIcon,
   Calendar,
   Clock,
-  Trophy,
-  Users
+  Trophy
 } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { apiClient } from "@/lib/api";
-import { GalleryImage } from "@/lib/api";
-
-// Define types for blog posts
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string;
-  featured_image_url?: string;
-  published_at: string;
-  meta_data?: {
-    read_time?: string;
-  };
-}
+import { apiClient, GalleryImage } from '@/lib/api';
+import TopVolunteers from "@/components/TopVolunteers";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
   const sectionRefs = useRef<(HTMLDivElement | null)[]>(Array(12).fill(null));  // Updated to 12 sections
+  
+  // State for Gallery and Blog data
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [topVolunteers, setTopVolunteers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [blogPosts, setBlogPosts] = useState<any[]>([]);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(true);
+  const [isLoadingBlog, setIsLoadingBlog] = useState(true);
 
   const faqItems = [
     {
@@ -93,120 +82,61 @@ export default function LandingPage() {
     },
   ];
 
-  // Fetch gallery and blog data
+  // Fetch Gallery Images
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchGalleryImages = async () => {
       try {
-        setLoading(true);
-        
-        // Fetch gallery images (first 6 for the preview)
-        const galleryResponse = await apiClient.getAllGalleryImages(1);
-        const galleryData = galleryResponse?.data?.data || [];
-        setGalleryImages(galleryData.slice(0, 6));
-        
-        // Fetch blog posts (first 3 for the preview)
-        const blogResponse = await apiClient.getAllBlogPosts();
-        let blogData = [];
-        if (Array.isArray(blogResponse.data)) {
-          blogData = blogResponse.data;
-        } else if (blogResponse.data && typeof blogResponse.data === 'object') {
-          const dataObj = blogResponse.data as Record<string, any>;
-          if (Object.hasOwnProperty.call(dataObj, 'posts') && Array.isArray(dataObj.posts)) {
-            blogData = dataObj.posts;
-          } else if (Object.hasOwnProperty.call(dataObj, 'data') && Array.isArray(dataObj.data)) {
-            blogData = dataObj.data;
-          } else if (Object.hasOwnProperty.call(dataObj, 'id')) {
-            blogData = [dataObj];
-          } else {
-            blogData = [];
-          }
-        }
-        setBlogPosts(blogData.slice(0, 3));
-        
-        // Fetch top volunteers for leaderboard preview
-        const leaderboardResponse = await apiClient.getPublicTopVolunteersReport();
-        let leaderboardData = [];
-        if (leaderboardResponse.data.volunteers) {
-          leaderboardData = leaderboardResponse.data.volunteers;
-        } else if (Array.isArray(leaderboardResponse.data)) {
-          leaderboardData = leaderboardResponse.data;
-        } else if (leaderboardResponse.data && typeof leaderboardResponse.data === 'object' && !Array.isArray(leaderboardResponse.data)) {
-          if (Array.isArray(leaderboardResponse.data.data)) {
-            leaderboardData = leaderboardResponse.data.data;
-          } else {
-            leaderboardData = [leaderboardResponse.data];
-          }
-        }
-        setTopVolunteers(leaderboardData.slice(0, 3));
+        setIsLoadingGallery(true);
+        const response = await apiClient.getAllGalleryImages(1);
+        const imagesData = response?.data?.data || [];
+        // Get first 6 images for preview
+        setGalleryImages(imagesData.slice(0, 6));
       } catch (error) {
-        console.error("Error fetching data:", error);
-        // Use static data as fallback
-        setGalleryImages([
-          { id: 1, title: "Community cleanup", image_url: "/story-1.png" } as GalleryImage,
-          { id: 2, title: "Team plogging", image_url: "/story-2.png" } as GalleryImage,
-          { id: 3, title: "Group photo", image_url: "/story-3.png" } as GalleryImage,
-          { id: 4, title: "Before and after", image_url: "/story-4.png" } as GalleryImage,
-          { id: 5, title: "Youth participation", image_url: "/about-5.png" } as GalleryImage,
-          { id: 6, title: "Plogging gear", image_url: "/about-6.png" } as GalleryImage,
-        ]);
-        setBlogPosts([
-          {
-            id: 1,
-            title: "The Environmental Impact of Plogging",
-            excerpt: "Discover how plogging contributes to environmental conservation...",
-            featured_image_url: "/story-1.png",
-            published_at: "2024-05-15",
-            meta_data: { read_time: "5 min read" }
-          },
-          {
-            id: 2,
-            title: "Getting Started with Plogging",
-            excerpt: "Learn everything you need to know to start your plogging journey...",
-            featured_image_url: "/story-2.png",
-            published_at: "2024-05-10",
-            meta_data: { read_time: "4 min read" }
-          },
-          {
-            id: 3,
-            title: "Plogging Events This Weekend",
-            excerpt: "Join us for our upcoming plogging events in Addis Ababa...",
-            featured_image_url: "/story-3.png",
-            published_at: "2024-05-05",
-            meta_data: { read_time: "3 min read" }
-          }
-        ]);
-        setTopVolunteers([
-          {
-            volunteer_id: 1,
-            first_name: "Sarah",
-            last_name: "Johnson",
-            total_hours_contributed: "45.5",
-            events_attended: 12,
-            badges_earned: 3
-          },
-          {
-            volunteer_id: 2,
-            first_name: "Michael",
-            last_name: "Smith",
-            total_hours_contributed: "38.2",
-            events_attended: 10,
-            badges_earned: 2
-          },
-          {
-            volunteer_id: 3,
-            first_name: "Emma",
-            last_name: "Williams",
-            total_hours_contributed: "32.7",
-            events_attended: 8,
-            badges_earned: 4
-          }
-        ]);
+        console.error('Error fetching gallery images:', error);
+        // Fallback to static images if API fails
+        setGalleryImages([]);
       } finally {
-        setLoading(false);
+        setIsLoadingGallery(false);
       }
     };
 
-    fetchData();
+    fetchGalleryImages();
+  }, []);
+
+  // Fetch Blog Posts
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        setIsLoadingBlog(true);
+        const response = await apiClient.getAllBlogPosts();
+        
+        // Handle different possible response structures
+        let postsData: any[] = [];
+        if (Array.isArray(response.data)) {
+          postsData = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          const dataObj = response.data as Record<string, any>;
+          if (Object.hasOwnProperty.call(dataObj, 'posts') && Array.isArray(dataObj.posts)) {
+            postsData = dataObj.posts;
+          } else if (Object.hasOwnProperty.call(dataObj, 'data') && Array.isArray(dataObj.data)) {
+            postsData = dataObj.data;
+          }
+        }
+        
+        // Get first 3 published posts for preview
+        const publishedPosts = postsData
+          .filter(post => post.status === 'published' || !post.status)
+          .slice(0, 3);
+        setBlogPosts(publishedPosts);
+      } catch (error) {
+        console.error('Error fetching blog posts:', error);
+        setBlogPosts([]);
+      } finally {
+        setIsLoadingBlog(false);
+      }
+    };
+
+    fetchBlogPosts();
   }, []);
 
   // Intersection Observer to detect when sections are in view
@@ -593,6 +523,40 @@ export default function LandingPage() {
         />
       </section>
 
+      {/* Top Volunteers Section */}
+      <section
+        ref={el => sectionRefs.current[7] = el as HTMLDivElement | null}
+        className={`py-12 md:py-16 px-4 bg-white w-full transition-all duration-700 transform ${
+          visibleSections.has(7) 
+            ? 'translate-y-0 opacity-100' 
+            : 'translate-y-10 opacity-0'
+        }`}
+      >
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-4">
+              <Trophy className="h-8 w-8 text-green-600 mr-2" />
+              <h2 className="text-3xl md:text-4xl font-bold text-green-800">
+                Top Volunteers
+              </h2>
+            </div>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Celebrating our most dedicated volunteers who are making a difference in our community.
+            </p>
+          </div>
+
+          <TopVolunteers />
+
+          <div className="text-center mt-8">
+            <Link to="/leaderboard">
+              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
+                View Full Leaderboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Gallery Preview Section */}
       <section
         ref={el => sectionRefs.current[8] = el as HTMLDivElement | null}
@@ -615,21 +579,51 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-            {galleryImages.map((image) => (
-              <div key={image.id} className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-                <img
-                  src={image.thumbnail_url || image.image_url || '/placeholder-image.png'}
-                  alt={image.title}
-                  className="w-full h-32 object-cover hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/placeholder-image.png';
-                  }}
-                />
-              </div>
-            ))}
-          </div>
+          {isLoadingGallery ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="w-full h-32 bg-gray-200 rounded-lg"></div>
+                </div>
+              ))}
+            </div>
+          ) : galleryImages.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              {galleryImages.map((image) => (
+                <div key={image.id} className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                  <img
+                    src={image.thumbnail_url || image.image_url || '/placeholder.jpg'}
+                    alt={image.title || 'Gallery image'}
+                    className="w-full h-32 object-cover hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder.jpg';
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Fallback to static images if API returns no data
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+              {[
+                { id: 1, src: '/story-1.png', alt: 'Community cleanup' },
+                { id: 2, src: '/story-2.png', alt: 'Team plogging' },
+                { id: 3, src: '/story-3.png', alt: 'Group photo' },
+                { id: 4, src: '/story-4.png', alt: 'Before and after' },
+                { id: 5, src: '/about-5.png', alt: 'Youth participation' },
+                { id: 6, src: '/about-6.png', alt: 'Plogging gear' },
+              ].map((image) => (
+                <div key={image.id} className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    className="w-full h-32 object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="text-center">
             <Link to="/gallery">
@@ -663,33 +657,108 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {blogPosts.map((post) => (
-              <div key={post.id} className="bg-green-50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
-                <img
-                  src={post.featured_image_url || '/placeholder-image.png'}
-                  alt={post.title}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/placeholder-image.png';
-                  }}
-                />
-                <div className="p-4">
-                  <h3 className="font-bold text-lg mb-2 text-green-800">{post.title}</h3>
-                  <p className="text-gray-600 text-sm mb-3">{post.excerpt}</p>
-                  <div className="flex items-center text-gray-500 text-xs">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    <span className="mr-3">
-                      {post.published_at ? new Date(post.published_at).toLocaleDateString() : 'Unknown date'}
-                    </span>
-                    <Clock className="h-3 w-3 mr-1" />
-                    <span>{post.meta_data?.read_time || 'Unknown'}</span>
+          {isLoadingBlog ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-green-50 rounded-lg overflow-hidden shadow-md animate-pulse">
+                  <div className="w-full h-48 bg-gray-200"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-3"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : blogPosts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {blogPosts.map((post) => (
+                <Link key={post.id} to={`/blog/${post.id}`}>
+                  <div className="bg-green-50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer">
+                    <img
+                      src={post.featured_image_url || post.featured_image || '/story-1.png'}
+                      alt={post.title}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/story-1.png';
+                      }}
+                    />
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-2 text-green-800">{post.title}</h3>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        {post.excerpt || 'Read more about this article...'}
+                      </p>
+                      <div className="flex items-center text-gray-500 text-xs">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        <span className="mr-3">
+                          {post.published_at 
+                            ? new Date(post.published_at).toLocaleDateString() 
+                            : post.created_at 
+                            ? new Date(post.created_at).toLocaleDateString()
+                            : 'Recent'}
+                        </span>
+                        {post.meta_data?.read_time && (
+                          <>
+                            <Clock className="h-3 w-3 mr-1" />
+                            <span>{post.meta_data.read_time}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            // Fallback to static posts if API returns no data
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[
+                {
+                  id: 1,
+                  title: "The Environmental Impact of Plogging",
+                  excerpt: "Discover how plogging contributes to environmental conservation...",
+                  image: "/story-1.png",
+                  date: "May 15, 2024",
+                  readTime: "5 min read"
+                },
+                {
+                  id: 2,
+                  title: "Getting Started with Plogging",
+                  excerpt: "Learn everything you need to know to start your plogging journey...",
+                  image: "/story-2.png",
+                  date: "May 10, 2024",
+                  readTime: "4 min read"
+                },
+                {
+                  id: 3,
+                  title: "Plogging Events This Weekend",
+                  excerpt: "Join us for our upcoming plogging events in Addis Ababa...",
+                  image: "/story-3.png",
+                  date: "May 5, 2024",
+                  readTime: "3 min read"
+                }
+              ].map((post) => (
+                <div key={post.id} className="bg-green-50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="font-bold text-lg mb-2 text-green-800">{post.title}</h3>
+                    <p className="text-gray-600 text-sm mb-3">{post.excerpt}</p>
+                    <div className="flex items-center text-gray-500 text-xs">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      <span className="mr-3">{post.date}</span>
+                      <Clock className="h-3 w-3 mr-1" />
+                      <span>{post.readTime}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="text-center">
             <Link to="/blog">
@@ -701,86 +770,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Leaderboard Preview Section */}
-      <section
-        ref={el => sectionRefs.current[10] = el as HTMLDivElement | null}
-        className={`py-12 md:py-16 px-4 bg-green-50 w-full transition-all duration-700 transform ${
-          visibleSections.has(10) 
-            ? 'translate-y-0 opacity-100' 
-            : 'translate-y-10 opacity-0'
-        }`}
-      >
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center mb-4">
-              <Trophy className="h-8 w-8 text-green-600 mr-2" />
-              <h2 className="text-3xl md:text-4xl font-bold text-green-800">
-                Community Leaders
-              </h2>
-            </div>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Meet our top volunteers who are making a difference in our community
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {topVolunteers.map((volunteer, index) => (
-              <div key={volunteer.volunteer_id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                        <span className="text-green-800 font-bold text-lg">
-                          {index + 1}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg text-green-800">
-                          {volunteer.first_name} {volunteer.last_name}
-                        </h3>
-                      </div>
-                    </div>
-                    {index === 0 && (
-                      <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
-                        TOP
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center text-gray-600">
-                      <Clock className="h-4 w-4 mr-2" />
-                      <span className="font-semibold">{volunteer.total_hours_contributed} hours</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      <span>{volunteer.events_attended} events</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Users className="h-4 w-4 mr-2" />
-                      <span>{volunteer.badges_earned} badges</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link to="/leaderboard-public">
-              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
-                View Full Leaderboard
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section with transition */}
       <section
-        ref={el => sectionRefs.current[11] = el as HTMLDivElement | null}
+        ref={el => sectionRefs.current[10] = el as HTMLDivElement | null}
         className={`w-full flex flex-col items-center mt-12 md:mt-20 transition-all duration-700 delay-700 transform ${
-          visibleSections.has(11)
+          visibleSections.has(10)
             ? 'translate-y-0 opacity-100'
             : 'translate-y-10 opacity-0'
         }`}

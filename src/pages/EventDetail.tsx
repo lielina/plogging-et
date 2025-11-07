@@ -161,6 +161,9 @@ export default function EventDetail() {
         setEnrolledEventIds(enrolledIds)
       }
       
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('enrollmentUpdated', { detail: { eventId: parseInt(eventId!) } }))
+      
       toast({
         title: "Enrollment Successful",
         description: "You have been successfully enrolled in this event.",

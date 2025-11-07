@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { apiClient, VolunteerCertificate } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,9 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar, Award, RefreshCw, Search } from 'lucide-react'
+import { FileText, Download, Calendar, Award, RefreshCw, Search, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { downloadCertificate, CertificateGenerator, defaultTemplates } from '@/lib/certificate-generator'
+import { defaultTemplates, formatDate, generateCertificateId } from '@/lib/certificate-generator'
+import type { CertificateData } from '@/lib/certificate-generator'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
+import CertificatePreview, { getCertificateStyles } from '@/components/ui/CertificatePreview'
+import { createRoot } from 'react-dom/client'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 // Extend the VolunteerCertificate interface to include download state
 interface ExtendedVolunteerCertificate extends VolunteerCertificate {
@@ -23,6 +35,11 @@ export default function VolunteerCertificates() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [previewCertificate, setPreviewCertificate] = useState<ExtendedVolunteerCertificate | null>(null)
+  const [previewData, setPreviewData] = useState<CertificateData | null>(null)
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const certificateRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -95,6 +112,39 @@ export default function VolunteerCertificates() {
     )
   }, [certificates, searchTerm])
 
+  const handlePreview = async (certificate: ExtendedVolunteerCertificate) => {
+    try {
+      setIsGeneratingPreview(true)
+      setPreviewCertificate(certificate)
+      
+      // Create certificate data for preview
+      const certificateData: CertificateData = {
+        volunteerName: `${user?.first_name || 'Volunteer'} ${user?.last_name || ''}`,
+        eventName: certificate.event_id ? `Event #${certificate.event_id}` : `${certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate`,
+        eventDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
+        hoursContributed: parseInt(certificate.hours_on_certificate) || 0,
+        location: 'Addis Ababa, Ethiopia',
+        organizerName: 'Plogging Ethiopia Team',
+        certificateId: `PE-${certificate.certificate_id}`,
+        issueDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
+        badgeType: certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1),
+        totalHours: parseInt(certificate.hours_on_certificate) || 0,
+        rank: 1
+      };
+      
+      setPreviewData(certificateData);
+    } catch (error: any) {
+      console.error('Error generating preview:', error);
+      toast({
+        title: "Preview Failed",
+        description: error.message || "Failed to generate certificate preview. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  }
+
   const handleDownload = async (certificate: ExtendedVolunteerCertificate) => {
     try {
       // Set loading state for this specific certificate
@@ -104,66 +154,94 @@ export default function VolunteerCertificates() {
           : cert
       ));
       
-      // First try to download from the server
-      try {
-        const blob = await apiClient.downloadCertificate(certificate.certificate_id);
-        
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (serverError: any) {
-        // If server download fails, generate locally
-        console.log('Server download failed, generating locally:', serverError);
-        
-        // Create certificate data for local generation
-        const certificateData = {
+      setDownloading(true);
+      
+      // Create certificate data
+      const certificateData: CertificateData = {
           volunteerName: `${user?.first_name || 'Volunteer'} ${user?.last_name || ''}`,
-          eventName: certificate.event_id ? `Event #${certificate.event_id}` : 'Community Service',
-          eventDate: certificate.generation_date ? new Date(certificate.generation_date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }) : new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
+          eventName: certificate.event_id ? `Event #${certificate.event_id}` : `${certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate`,
+        eventDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
           hoursContributed: parseInt(certificate.hours_on_certificate) || 0,
           location: 'Addis Ababa, Ethiopia',
-          organizerName: 'Plogging Ethiopia',
+        organizerName: 'Plogging Ethiopia Team',
           certificateId: `PE-${certificate.certificate_id}`,
-          issueDate: certificate.generation_date ? new Date(certificate.generation_date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }) : new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
-          badgeType: 'Volunteer',
+        issueDate: certificate.generation_date ? formatDate(new Date(certificate.generation_date)) : formatDate(new Date()),
+          badgeType: certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1),
           totalHours: parseInt(certificate.hours_on_certificate) || 0,
           rank: 1
         };
         
-        // Generate and download locally using the new utility function
-        try {
-          // Use the appreciation certificate template
-          const template = defaultTemplates.find(t => t.id === 'appreciation-certificate') || defaultTemplates[0];
-          const generator = new CertificateGenerator(template);
-          generator.downloadCertificate(certificateData, `Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`);
-        } catch (localError) {
-          console.error('Error generating local certificate with utility function:', localError);
-          throw localError;
-        }
+      // Create temporary certificate element with styles
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.width = '1200px';
+      tempDiv.style.height = '800px';
+      
+      // Create style element with certificate styles
+      const styleElement = document.createElement('style');
+      styleElement.textContent = getCertificateStyles();
+      tempDiv.appendChild(styleElement);
+      
+      // Render CertificatePreview component in temporary div
+      const certificateContainer = document.createElement('div');
+      certificateContainer.style.width = '1200px';
+      certificateContainer.style.height = '800px';
+      tempDiv.appendChild(certificateContainer);
+      
+      // Render React component
+      const root = createRoot(certificateContainer);
+      root.render(
+        <div style={{ width: '1200px', height: '800px' }}>
+          <CertificatePreview data={certificateData} borderVariant="green" />
+        </div>
+      );
+      
+      document.body.appendChild(tempDiv);
 
+      // Wait for React to render and images to load
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Capture with html2canvas - target the certificate element
+      const certificateElement = certificateContainer.querySelector('.certificate') as HTMLElement;
+      if (!certificateElement) {
+        throw new Error('Certificate element not found');
       }
+
+      const canvas = await html2canvas(certificateElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Convert to PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgWidthInMM = imgWidth * ratio;
+      const imgHeightInMM = imgHeight * ratio;
+      const xOffset = (pdfWidth - imgWidthInMM) / 2;
+      const yOffset = (pdfHeight - imgHeightInMM) / 2;
+
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidthInMM, imgHeightInMM);
+      
+      // Download
+      pdf.save(`Certificate_${certificate.certificate_id}_${certificate.certificate_type}.pdf`);
+
+      // Cleanup
+      root.unmount();
+      document.body.removeChild(tempDiv);
 
       toast({
         title: "Download Complete",
@@ -171,33 +249,13 @@ export default function VolunteerCertificates() {
       });
     } catch (error: any) {
       console.error('Error downloading certificate:', error);
-      // Check if it's the specific error about missing file path
-      if (error.message && error.message.includes('regenerate')) {
-        toast({
-          title: "Certificate Not Available",
-          description: "This certificate is not available for download and may need to be regenerated. Please contact an administrator.",
-          variant: "destructive"
-        });
-      } else if (error.message && (error.message.includes('500') || error.message.includes('Internal Server Error'))) {
-        toast({
-          title: "Server Error",
-          description: "There was a server error while trying to download your certificate. Please try again later.",
-          variant: "destructive"
-        });
-      } else if (error.message && error.message.includes('404')) {
-        toast({
-          title: "Certificate Not Found",
-          description: "The certificate file could not be found. Please contact an administrator to regenerate it.",
-          variant: "destructive"
-        });
-      } else {
         toast({
           title: "Download Failed",
           description: error.message || "Failed to download certificate. Please try again.",
           variant: "destructive"
         });
-      }
     } finally {
+      setDownloading(false);
       // Reset loading state for this specific certificate
       setCertificates(prev => prev.map(cert => 
         cert.certificate_id === certificate.certificate_id 
@@ -207,7 +265,8 @@ export default function VolunteerCertificates() {
     }
   }
 
-  const formatDate = (dateString: string) => {
+
+  const formatDateString = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -375,10 +434,15 @@ export default function VolunteerCertificates() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
-                      <span className="truncate font-bold">
+                      <span className="truncate">
                         {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)} Certificate
                       </span>
                     </CardTitle>
+                    <div className="mt-2">
+                      <Badge className={`${getCertificateTypeColor(certificate.certificate_type)} text-xs sm:text-sm`}>
+                        {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}
+                      </Badge>
+                    </div>
                     <CardDescription className="mt-1 text-sm">
                       Certificate Type: <span className="font-semibold text-gray-700">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}</span> | ID: {certificate.certificate_id}
                     </CardDescription>
@@ -396,10 +460,20 @@ export default function VolunteerCertificates() {
               <CardContent>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">Certificate Type</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Award className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                      <p className="text-xs sm:text-sm font-semibold">
+                        {certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
                     <p className="text-xs sm:text-sm font-medium text-gray-500">Generated Date</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                      <p className="text-xs sm:text-sm">{formatDate(certificate.generation_date)}</p>
+                      <p className="text-xs sm:text-sm">{formatDateString(certificate.generation_date)}</p>
                     </div>
                   </div>
                   
@@ -420,7 +494,17 @@ export default function VolunteerCertificates() {
                     </div>
                   )}
                   
-                  <div className="flex items-end sm:col-span-1 lg:col-span-1">
+                  <div className="flex items-end gap-2 sm:col-span-1 lg:col-span-1">
+                    <Button 
+                      onClick={() => handlePreview(certificate)}
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs sm:text-sm border-green-500 text-green-700 hover:bg-green-50"
+                      disabled={isGeneratingPreview}
+                    >
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                      Preview
+                    </Button>
                     <Button 
                       onClick={() => handleDownload(certificate)}
                       size="sm"
@@ -481,6 +565,162 @@ export default function VolunteerCertificates() {
           </CardContent>
         </Card>
       )}
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewCertificate} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewCertificate(null)
+          setPreviewData(null)
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Certificate Preview</DialogTitle>
+            <DialogDescription>
+              {previewCertificate && `Preview of ${previewCertificate.certificate_type.charAt(0).toUpperCase() + previewCertificate.certificate_type.slice(1)} Certificate #${previewCertificate.certificate_id}`}
+            </DialogDescription>
+          </DialogHeader>
+          {previewData && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold">{previewData.volunteerName}</h3>
+                  <p className="text-gray-600">{previewData.eventName}</p>
+                  <p className="text-gray-600">
+                    <span className="font-medium">Type:</span> {previewCertificate && previewCertificate.certificate_type ? previewCertificate.certificate_type.charAt(0).toUpperCase() + previewCertificate.certificate_type.slice(1) : ''}
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        setDownloading(true);
+                        
+                        if (!certificateRef.current) {
+                          toast({
+                            title: "Error",
+                            description: "Certificate preview not available",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+
+                        const certificateElement = certificateRef.current.querySelector('.certificate') as HTMLElement;
+                        if (!certificateElement) {
+                          toast({
+                            title: "Error",
+                            description: "Certificate element not found",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+
+                        // Clone the certificate element to capture at full size
+                        const clonedElement = certificateElement.cloneNode(true) as HTMLElement;
+                        clonedElement.style.position = 'absolute';
+                        clonedElement.style.left = '-9999px';
+                        clonedElement.style.top = '-9999px';
+                        clonedElement.style.transform = 'none';
+                        clonedElement.style.width = '1200px';
+                        clonedElement.style.height = '800px';
+                        document.body.appendChild(clonedElement);
+
+                        // Wait for layout
+                        await new Promise(resolve => setTimeout(resolve, 100));
+
+                        try {
+                          // Capture with html2canvas
+                          const canvas = await html2canvas(clonedElement, {
+                            scale: 2,
+                            useCORS: true,
+                            logging: false,
+                            backgroundColor: '#ffffff',
+                          });
+
+                          // Convert to PDF
+                          const imgData = canvas.toDataURL('image/png');
+                          const pdf = new jsPDF({
+                            orientation: 'landscape',
+                            unit: 'mm',
+                            format: 'a4'
+                          });
+
+                          const pdfWidth = pdf.internal.pageSize.getWidth();
+                          const pdfHeight = pdf.internal.pageSize.getHeight();
+                          const imgWidth = canvas.width;
+                          const imgHeight = canvas.height;
+                          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                          const imgWidthInMM = imgWidth * ratio;
+                          const imgHeightInMM = imgHeight * ratio;
+                          const xOffset = (pdfWidth - imgWidthInMM) / 2;
+                          const yOffset = (pdfHeight - imgHeightInMM) / 2;
+
+                          pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidthInMM, imgHeightInMM);
+                          pdf.save(`certificate-${previewData.volunteerName.replace(/\s+/g, '-')}.pdf`);
+                        } finally {
+                          // Cleanup
+                          document.body.removeChild(clonedElement);
+                        }
+                        
+                        toast({
+                          title: "Download Complete",
+                          description: "Certificate downloaded successfully.",
+                        });
+                      } catch (err) {
+                        console.error('Error downloading certificate:', err);
+                        toast({
+                          title: "Download Failed",
+                          description: "Failed to download certificate.",
+                          variant: "destructive"
+                        });
+                      } finally {
+                        setDownloading(false);
+                      }
+                    }}
+                    disabled={downloading}
+                  >
+                    {downloading ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Preview
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Certificate Preview */}
+              <div className="flex justify-center overflow-auto">
+                <div ref={certificateRef} className="transform scale-75 origin-center">
+                  <div style={{ width: '800px' }}>
+                    <CertificatePreview data={previewData} borderVariant="green" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {!previewData && (
+            <div className="text-center py-12 text-gray-500">
+            {isGeneratingPreview ? (
+                <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Generating preview...</p>
+                </div>
+              </div>
+              ) : (
+                "No preview available"
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Information Card */}
       <Card className="mt-8 bg-green-50 border-green-200">

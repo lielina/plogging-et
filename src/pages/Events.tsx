@@ -46,7 +46,7 @@ export default function Events() {
       // Fetch both available events and enrolled events in parallel
       const [eventsResponse, enrolledResponse] = await Promise.allSettled([
         apiClient.getAvailableEvents(page, pagination.perPage),
-        apiClient.getEnrolledEvents()
+        apiClient.getEnrolledEvents().catch(() => ({ data: [] })) // Don't fail if this endpoint doesn't exist
       ])
       
       const eventsData = eventsResponse.status === 'fulfilled' ? eventsResponse.value.data : []

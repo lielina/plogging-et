@@ -52,6 +52,8 @@ const Layout = () => {
                           location.pathname.startsWith('/profile') || 
                           location.pathname.startsWith('/leaderboard') ||
                           location.pathname.startsWith('/certificates') ||
+                          location.pathname.startsWith('/badges') ||
+                          location.pathname.startsWith('/eplogging') ||
                           location.pathname.startsWith('/survey') ||
                           location.pathname === '/events';
 
@@ -111,14 +113,8 @@ const Layout = () => {
       {/* Use UserSidebar component for proper vertical sidebar */}
       {isAuthenticated && isDashboardRoute && <UserSidebar />}
       
-      {/* Main content area - dynamically adjust margin based on sidebar state */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-        isAuthenticated && isDashboardRoute 
-          ? isCollapsed 
-            ? 'md:ml-20'  // Collapsed sidebar width
-            : 'md:ml-64'  // Expanded sidebar width
-          : ''
-      }`}>
+      {/* Main content area */}
+      <div className={`flex-1 flex flex-col ${isAuthenticated && isDashboardRoute ? 'ml-0 md:ml-64' : ''}`}>
         {/* Header - only show on non-dashboard pages or for unauthenticated users */}
         {(!isAuthenticated || !isDashboardRoute) && (
           <header className="bg-white shadow-sm">
@@ -135,25 +131,24 @@ const Layout = () => {
                   </Link>
                 </div>
 
-                {/* Desktop Navigation */}
-                <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12 mr-6 lg:mr-10">
+                {/* Right side - Desktop Navigation + Mobile Menu Button */}
+                <div className="flex items-center">
+                  {/* Desktop Navigation */}
+                  <nav className="hidden lg:flex items-center space-x-8 xl:space-x-12 mr-6 lg:mr-10">
                   {[
                     { name: "Home", to: "/" },
-                    { name: "About", to: "/#aboutus" },
+                    { name: "Event", to: "/events" },
+                    { name: "ePlogging", to: "/eplogging" },
                     { name: "Membership", to: "/membership" },
                     { name: "Gallery", to: "/gallery" },
                     { name: "Blog", to: "/blog" },
-                    { name: "Event", to: "/events" },
                     { name: "Contact", to: "/contact" },
                   ].map((link) => {
                     const isHomeActive =
                       location.pathname === "/" && location.hash === "";
-                    const isAboutActive = location.hash === "#aboutus";
                     let isActive = false;
                     if (link.to === "/") {
                       isActive = isHomeActive;
-                    } else if (link.to === "/#aboutus") {
-                      isActive = isAboutActive;
                     } else {
                       isActive = location.pathname === link.to;
                     }
@@ -244,16 +239,17 @@ const Layout = () => {
                       Login
                     </NavLink>
                   )}
-                </nav>
+                  </nav>
 
-                {/* Mobile Menu Button */}
-                <button
-                  className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  aria-label="Toggle menu"
-                >
-                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                </button>
+                  {/* Mobile Menu Button */}
+                  <button
+                    className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    aria-label="Toggle menu"
+                  >
+                    <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                  </button>
+                </div>
               </div>
 
               {/* Mobile Navigation */}
@@ -262,21 +258,19 @@ const Layout = () => {
                   <div className="flex flex-col space-y-3">
                     {[
                       { name: "Home", to: "/" },
-                      { name: "About", to: "/#aboutus" },
+                      { name: "Event", to: "/events" },
+                      { name: "ePlogging", to: "/eplogging" },
                       { name: "Membership", to: "/membership" },
                       { name: "Gallery", to: "/gallery" },
                       { name: "Blog", to: "/blog" },
-                      { name: "Event", to: "/events" },
                       { name: "Contact", to: "/contact" },
+                      
                     ].map((link) => {
                       const isHomeActive =
                         location.pathname === "/" && location.hash === "";
-                      const isAboutActive = location.hash === "#aboutus";
                       let isActive = false;
                       if (link.to === "/") {
                         isActive = isHomeActive;
-                      } else if (link.to === "/#aboutus") {
-                        isActive = isAboutActive;
                       } else {
                         isActive = location.pathname === link.to;
                       }
