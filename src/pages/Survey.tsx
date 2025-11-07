@@ -81,16 +81,76 @@ const Survey: React.FC = () => {
     }
   };
 
+  // Validate survey data
+  const validateSurvey = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (!surveyData.plogging_location || surveyData.plogging_location.trim() === '') {
+      errors.push('Location of Plogging is required');
+    }
+    
+    if (!surveyData.age || surveyData.age <= 0) {
+      errors.push('Age must be a valid positive number');
+    }
+    
+    if (!surveyData.gender) {
+      errors.push('Gender is required');
+    }
+    
+    if (!surveyData.education_level || surveyData.education_level === '') {
+      errors.push('Education level is required');
+    }
+    
+    if (!surveyData.residence_area || surveyData.residence_area === '') {
+      errors.push('Residence area is required');
+    }
+    
+    if (!surveyData.employment_status || surveyData.employment_status === '') {
+      errors.push('Employment status is required');
+    }
+    
+    if (!surveyData.main_reason || surveyData.main_reason === '') {
+      errors.push('Main reason for participation is required');
+    }
+    
+    if (surveyData.main_reason === 'other' && (!surveyData.main_reason_other || surveyData.main_reason_other.trim() === '')) {
+      errors.push('Please specify your main reason');
+    }
+    
+    if (!surveyData.future_participation_likelihood || surveyData.future_participation_likelihood < 1 || surveyData.future_participation_likelihood > 5) {
+      errors.push('Future participation likelihood is required');
+    }
+    
+    if (!surveyData.participation_factors || surveyData.participation_factors.length === 0) {
+      errors.push('Please select at least one participation factor');
+    }
+    
+    if (!surveyData.barriers_to_participation || surveyData.barriers_to_participation.length === 0) {
+      errors.push('Please select at least one barrier to participation');
+    }
+    
+    if (surveyData.barriers_to_participation?.includes('other') && (!surveyData.barriers_to_participation_other || surveyData.barriers_to_participation_other.trim() === '')) {
+      errors.push('Please specify other barriers to participation');
+    }
+    
+    if (!surveyData.overall_satisfaction || surveyData.overall_satisfaction === '') {
+      errors.push('Overall satisfaction is required');
+    }
+    
+    return { isValid: errors.length === 0, errors };
+  };
+
   // Submit survey
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       
-      // Validate required fields
-      if (!surveyData.plogging_location || !surveyData.age || !surveyData.gender) {
+      // Validate survey data
+      const validation = validateSurvey();
+      if (!validation.isValid) {
         toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
+          title: "Validation Error",
+          description: validation.errors.join('. '),
           variant: "destructive"
         });
         return;
@@ -107,9 +167,24 @@ const Survey: React.FC = () => {
       // Navigate to dashboard after successful submission
       navigate('/dashboard');
     } catch (error: any) {
+      // Extract specific error messages
+      let errorMessage = "Failed to submit survey. Please try again.";
+      
+      if (error.message) {
+        if (error.message.includes('validation')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('required')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('invalid')) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to submit survey. Please try again.",
+        title: "Submission Error",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

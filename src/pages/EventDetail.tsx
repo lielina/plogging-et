@@ -464,8 +464,9 @@ export default function EventDetail() {
 
   // Social Media Sharing Functions
   const getShareUrl = () => {
-    // Use the public/user-side URL
-    return `${FRONTEND_URL}/events/${eventId}`;
+    // Use current window location to get the base URL dynamically
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/events/${eventId}`;
   }
 
   const getShareText = () => {
@@ -710,25 +711,40 @@ ${description}
                 <p className="text-gray-600 text-base sm:text-lg">{event.location_name}</p>
               </div>
               <div className="flex flex-wrap gap-3">
-                {/* Enrollment button for regular users */}
-                <Button 
-                  variant="default"
-                  onClick={handleEnrollClick}
-                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                  disabled={isUserEnrolled()}
-                >
-                  {isUserEnrolled() ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Enrolled
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Enroll Now
-                    </>
-                  )}
-                </Button>
+                {/* Enrollment button for regular users - only show if event is upcoming */}
+                {(() => {
+                  const eventStatusInfo = getEventStatus(
+                    event.event_date,
+                    event.start_time,
+                    event.end_time
+                  );
+                  
+                  // Hide button if event is completed or active (not upcoming)
+                  if (eventStatusInfo.status !== 'upcoming') {
+                    return null;
+                  }
+                  
+                  return (
+                    <Button 
+                      variant="default"
+                      onClick={handleEnrollClick}
+                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                      disabled={isUserEnrolled()}
+                    >
+                      {isUserEnrolled() ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Enrolled
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Enroll Now
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
                 
                 <Button 
                   variant="outline"

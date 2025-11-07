@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3 } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3, Share2 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import SurveyModal from '@/components/SurveyModal'
+import { useToast } from '@/hooks/use-toast'
 
 interface DashboardStats {
   total_events_attended: number;
@@ -29,6 +29,7 @@ interface ProgressData {
 export default function Dashboard() {
   const { user } = useAuth()
   const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
+  const { toast } = useToast()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<any[]>([])
   const [badges, setBadges] = useState<any[]>([])
@@ -254,19 +255,6 @@ useEffect(() => {
     }
   }
 
-  const handleSurveyComplete = () => {
-    // Mark survey as completed for this user
-    if (user && 'volunteer_id' in user) {
-      const userId = user.volunteer_id;
-      localStorage.setItem(`surveyCompleted_${userId}`, 'true');
-    }
-    closeSurvey();
-  };
-
-  const handleSurveySkip = () => {
-    // User can skip for now, but we'll still show the option in quick actions
-    closeSurvey();
-  };
 
   if (error) {
     return (
@@ -306,14 +294,6 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50">
-      {/* Survey Modal */}
-      <SurveyModal 
-        open={isSurveyOpen} 
-        onClose={closeSurvey} 
-        onSurveyComplete={handleSurveyComplete} 
-        onSkip={handleSurveySkip}
-      />
-      
       {/* Enhanced Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 rounded-lg mb-6">
         <div className="flex items-center gap-4">
@@ -673,39 +653,75 @@ useEffect(() => {
                 </div>
               ) : badges.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {badges.map((badge) => (
-                    <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200">
-                      <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                        {badge.image_url ? (
-                          <img 
-                            src={badge.image_url} 
-                            alt={badge.badge_name}
-                            className="h-10 w-10 rounded-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              const parent = e.currentTarget.parentElement;
-                              if (parent) {
-                                const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
-                                if (fallback) fallback.style.display = 'block';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
-                      </div>
-                      <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {badge.description}
-                      </p>
-                      {badge.pivot && badge.pivot.earned_date && (
-                        <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
-                          <span className="text-xs text-yellow-800 font-medium">
-                            Earned: {new Date(badge.pivot.earned_date).toLocaleDateString()}
-                          </span>
+                  {badges.map((badge) => {
+                    const shareBadge = () => {
+                      const shareText = `I earned the ${badge.badge_name} badge! ${badge.description} 🏆 #PloggingEthiopia #Badge`;
+                      const shareUrl = window.location.origin + '/dashboard';
+                      
+                      if (navigator.share) {
+                        navigator.share({
+                          title: `${badge.badge_name} Badge`,
+                          text: shareText,
+                          url: shareUrl
+                        }).catch(() => {
+                          // Fallback to copying to clipboard
+                          navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                          toast({
+                            title: "Link Copied",
+                            description: "Badge information copied to clipboard!",
+                          });
+                        });
+                      } else {
+                        // Fallback: copy to clipboard
+                        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                        toast({
+                          title: "Link Copied",
+                          description: "Badge information copied to clipboard!",
+                        });
+                      }
+                    };
+                    
+                    return (
+                      <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200 relative group">
+                        <button
+                          onClick={shareBadge}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-white/50"
+                          title="Share badge"
+                        >
+                          <Share2 className="h-4 w-4 text-gray-600" />
+                        </button>
+                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                          {badge.image_url ? (
+                            <img 
+                              src={badge.image_url} 
+                              alt={badge.badge_name}
+                              className="h-10 w-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
+                                  if (fallback) fallback.style.display = 'block';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                          {badge.description}
+                        </p>
+                        {badge.pivot && badge.pivot.earned_date && (
+                          <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
+                            <span className="text-xs text-yellow-800 font-medium">
+                              Earned: {new Date(badge.pivot.earned_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -730,7 +746,7 @@ useEffect(() => {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8">
+        <div className="mt-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
           <div className="grid gap-4 md:grid-cols-4">
             <Button className="h-20 flex flex-col items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md" asChild>
