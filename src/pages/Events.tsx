@@ -599,57 +599,10 @@ export default function Events() {
                           <Clock className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{event.estimated_duration_hours} hours</span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600 min-w-0">
-                          <Users className="h-4 w-4 flex-shrink-0" />
-                          <span className="truncate">Max {event.max_volunteers}</span>
-                        </div>
+                        
                       </div>
 
-                      {/* Event Status Indicator */}
-                      <div className="flex items-center justify-between pt-2">
-                        {(() => {
-                          // Use our utility function to determine event status
-                          const eventStatusInfo = getEventStatus(
-                            event.event_date,
-                            event.start_time,
-                            event.end_time
-                          );
-                          
-                          console.log('Event badge status for event', event.event_id, ':', eventStatusInfo);
-                          
-                          return (
-                            <Badge 
-                              variant={
-                                eventStatusInfo.status === 'upcoming' ? 'default' : 
-                                eventStatusInfo.status === 'active' ? 'destructive' : 
-                                'secondary'
-                              }
-                              className="text-xs px-2 py-1"
-                            >
-                              {eventStatusInfo.status === 'upcoming' ? 'Upcoming' : 
-                               eventStatusInfo.status === 'active' ? 'In Progress' : 
-                               eventStatusInfo.status === 'completed' ? 'Completed' : 
-                               'Not Available'}
-                            </Badge>
-                          );
-                        })()}
-                        
-                        {/* Enrollment Status */}
-                        {(() => {
-                          const buttonState = getButtonState(event);
-                          // Show enrolled badge if user is enrolled (use backend status only)
-                          const isEnrolled = event.is_enrolled === true;
-                          
-                          if (isEnrolled) {
-                            return (
-                              <Badge variant="outline" className="text-xs px-2 py-1 text-green-700 border-green-300">
-                                Enrolled
-                              </Badge>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
+                      
 
                       {/* Enrollment Status (if enrolled) */}
                       {(() => {
