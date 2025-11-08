@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, ArrowRight, CheckCircle, ChevronLeft, ChevronRight, Share2, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getEventStatus, generateEventShareLink, copyToClipboard } from '../utils/eventUtils';
 
@@ -673,7 +673,12 @@ export default function Events() {
                           <Clock className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{event.estimated_duration_hours} hours</span>
                         </div>
-                        
+                        {event.waste_collected_kg !== undefined && event.waste_collected_kg !== null && (
+                          <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                            <Trash2 className="h-4 w-4 flex-shrink-0 text-orange-600" />
+                            <span className="truncate">{event.waste_collected_kg} kg</span>
+                          </div>
+                        )}
                       </div>
 
                       

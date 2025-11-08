@@ -137,6 +137,7 @@ export interface Event {
   estimated_duration_hours: number | string;
   max_volunteers: number;
   status: string;
+  waste_collected_kg?: number | string; // Waste collected in kg
   qr_code_path?: string;
   image_path?: string; // Add image_path field
   sections?: Section[]; // Add sections property

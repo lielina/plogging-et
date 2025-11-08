@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, Scan, Plus, User, Share2, Facebook, Twitter, Linkedin, MessageCircle, Copy, Check, Edit, QrCode, X, Clock as ClockIcon, Download } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, Scan, Plus, User, Share2, Facebook, Twitter, Linkedin, MessageCircle, Copy, Check, Edit, QrCode, X, Clock as ClockIcon, Download, Trash2 } from 'lucide-react'
 import QRCode from 'qrcode'
 import QRScanner from '@/components/ui/qr-scanner'
 import Map from '@/components/ui/map'
@@ -1051,7 +1051,7 @@ ${description}
                 <CardTitle className="text-xl font-semibold text-gray-900">Event Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${event.waste_collected_kg ? 'lg:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
                   <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -1059,13 +1059,15 @@ ${description}
                     <p className="text-xl sm:text-2xl font-bold text-green-700">{event.estimated_duration_hours}</p>
                     <p className="text-xs sm:text-sm text-green-600">Hours</p>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  {event.waste_collected_kg !== undefined && event.waste_collected_kg !== null && (
+                    <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Trash2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                      </div>
+                      <p className="text-xl sm:text-2xl font-bold text-orange-700">{event.waste_collected_kg}</p>
+                      <p className="text-xs sm:text-sm text-orange-600">Waste Collected (kg)</p>
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold text-blue-700">{event.max_volunteers}</p>
-                    <p className="text-xs sm:text-sm text-blue-600">Max Volunteers</p>
-                  </div>
+                  )}
                   <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
                       <User className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
