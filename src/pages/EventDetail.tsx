@@ -299,10 +299,16 @@ export default function EventDetail() {
       
       const newQrCodes: Record<number, string> = {}
       
-      for (let i = 0; i < event.sections.length; i++) {
+      // Generate QR codes for each section using their actual section_id
+      for (let index = 0; index < event.sections.length; index++) {
+        const section = event.sections[index] as Section
         try {
-          // Generate QR code with format: eventId:sectionId
-          const qrData = `${event.event_id}:${i + 1}`
+          // Use the actual section_id from the section object
+          // If section_id is not available, fall back to array index + 1
+          const sectionId = section.section_id || (index + 1)
+          
+          // Generate QR code with format: eventId:sectionId (using actual section_id)
+          const qrData = `${event.event_id}:${sectionId}`
           const qrCodeUrl = await QRCode.toDataURL(qrData, {
             width: 200,
             margin: 2,
@@ -311,9 +317,10 @@ export default function EventDetail() {
               light: '#FFFFFF'
             }
           })
-          newQrCodes[i + 1] = qrCodeUrl
+          // Store using section_id as key
+          newQrCodes[sectionId] = qrCodeUrl
         } catch (qrError) {
-          console.error(`Failed to generate QR code for section ${i + 1}:`, qrError)
+          console.error(`Failed to generate QR code for section ${section.section_id || section.section_name}:`, qrError)
         }
       }
       
@@ -577,16 +584,53 @@ ${description}
     }
   }
 
-  // User Check-in Function (removed event QR code check-in)
+  // User Check-in Function - handles section QR codes
   const handleUserCheckIn = async (qrData: string) => {
     try {
-      // Only allow section-based check-in
-      setScanResult('Please scan a section QR code instead of the event QR code')
+      // Parse QR data to check if it's a section QR code (format: eventId:sectionId)
+      const parts = qrData.split(':')
+      
+      if (parts.length === 2) {
+        // This is a section QR code
+        const scannedEventId = parseInt(parts[0])
+        const sectionId = parseInt(parts[1])
+        
+        if (isNaN(scannedEventId) || isNaN(sectionId)) {
+          setScanResult('Invalid section QR code format.')
+          toast({
+            title: "Invalid QR Code",
+            description: "The scanned QR code format is invalid.",
+            variant: "destructive",
+          })
+          return
+        }
+        
+        if (scannedEventId !== parseInt(eventId!)) {
+          setScanResult(`Wrong event! This QR code is for event ${scannedEventId}, but you're trying to check in to event ${eventId}`)
+          toast({
+            title: "Wrong Event",
+            description: `This QR code is for event ${scannedEventId}, but you're trying to check in to event ${eventId}`,
+            variant: "destructive",
+          })
+          return
+        }
+        
+        // Check in to the section
+        await handleSectionCheckIn(sectionId)
+      } else {
+        // This is not a section QR code - show error
+        setScanResult('Please scan a section QR code instead of the event QR code')
+        toast({
+          title: "Invalid QR Code",
+          description: "Please scan a section QR code to check in. Section QR codes have the format: eventId:sectionId",
+          variant: "destructive",
+        })
+      }
     } catch (err: any) {
       setScanResult(err.message || 'Check-in failed')
       toast({
         title: "Check-in Failed",
-        description: err.message || "Failed to check in to the event.",
+        description: err.message || "Failed to check in to the section.",
         variant: "destructive",
       })
     }
@@ -605,12 +649,17 @@ ${description}
       if (!isEnrolled) {
         setScanResult('You are not enrolled in this event')
         setIsSectionCheckInDialogOpen(false)
+        toast({
+          title: "Not Enrolled",
+          description: "You must be enrolled in this event before checking in to a section.",
+          variant: "destructive",
+        })
         return
       }
       
       // Call the section-based check-in API
       await apiClient.checkInSection(user.volunteer_id, parseInt(eventId!), sectionId)
-      setScanResult('Check-in to section successful!')
+      setScanResult(`Check-in to section ${sectionId} successful!`)
       setIsSectionCheckInDialogOpen(false)
       
       // Refresh event data to show updated attendance
@@ -619,13 +668,24 @@ ${description}
       
       toast({
         title: "Check-in Successful",
-        description: "You have been successfully checked in to the section.",
+        description: `You have been successfully checked in to section ${sectionId}.`,
       })
     } catch (err: any) {
-      setScanResult(err.message || 'Section check-in failed')
+      // Handle different error types more gracefully
+      let errorMessage = err.message || 'Section check-in failed'
+      
+      // Check if it's an "already checked in" error for this specific section
+      if (errorMessage.toLowerCase().includes("already") && errorMessage.toLowerCase().includes("check")) {
+        errorMessage = `You have already checked in to section ${sectionId}.`
+      } else if (errorMessage.toLowerCase().includes("already enrolled")) {
+        // This shouldn't happen for section check-ins, but handle it anyway
+        errorMessage = "You are already enrolled in this event. Each section can be checked in independently."
+      }
+      
+      setScanResult(errorMessage)
       toast({
         title: "Check-in Failed",
-        description: err.message || "Failed to check in to the section.",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -901,48 +961,54 @@ ${description}
                           </div>
                           <div className="flex flex-col items-center p-2 bg-white rounded">
                             <div className="flex flex-col items-center">
-                              {sectionQrCodes[index + 1] ? (
-                                <>
-                                  <img 
-                                    src={sectionQrCodes[index + 1]}
-                                    alt={`Section ${index + 1} QR Code`}
-                                    className="w-16 h-16 object-contain"
-                                  />
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="text-xs mt-2"
-                                    onClick={() => {
-                                      // Create a temporary canvas to scale the QR code for download
-                                      const canvas = document.createElement('canvas')
-                                      const ctx = canvas.getContext('2d')
-                                      const img = new Image()
-                                      img.onload = () => {
-                                        canvas.width = img.width * 4
-                                        canvas.height = img.height * 4
-                                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
-                                        const dataUrl = canvas.toDataURL('image/png')
-                                        
-                                        // Create download link
-                                        const link = document.createElement('a')
-                                        link.href = dataUrl
-                                        link.download = `section-${index + 1}-${section.section_name.replace(/\s+/g, '-')}-qr-code.png`
-                                        document.body.appendChild(link)
-                                        link.click()
-                                        document.body.removeChild(link)
-                                      }
-                                      img.src = sectionQrCodes[index + 1]
-                                    }}
-                                  >
-                                    <Download className="h-3 w-3 mr-1" />
-                                    Download
-                                  </Button>
-                                </>
-                              ) : (
-                                <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
-                                </div>
-                              )}
+                              {(() => {
+                                // Use actual section_id, fallback to index + 1 if not available
+                                const sectionId = section.section_id || (index + 1)
+                                const qrCode = sectionQrCodes[sectionId]
+                                
+                                return qrCode ? (
+                                  <>
+                                    <img 
+                                      src={qrCode}
+                                      alt={`Section ${section.section_name} QR Code`}
+                                      className="w-16 h-16 object-contain"
+                                    />
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-xs mt-2"
+                                      onClick={() => {
+                                        // Create a temporary canvas to scale the QR code for download
+                                        const canvas = document.createElement('canvas')
+                                        const ctx = canvas.getContext('2d')
+                                        const img = new Image()
+                                        img.onload = () => {
+                                          canvas.width = img.width * 4
+                                          canvas.height = img.height * 4
+                                          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+                                          const dataUrl = canvas.toDataURL('image/png')
+                                          
+                                          // Create download link
+                                          const link = document.createElement('a')
+                                          link.href = dataUrl
+                                          link.download = `section-${sectionId}-${section.section_name.replace(/\s+/g, '-')}-qr-code.png`
+                                          document.body.appendChild(link)
+                                          link.click()
+                                          document.body.removeChild(link)
+                                        }
+                                        img.src = qrCode
+                                      }}
+                                    >
+                                      <Download className="h-3 w-3 mr-1" />
+                                      Download
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+                                  </div>
+                                )
+                              })()}
                               <span className="text-xs text-gray-600 mt-2">Scan to Check In</span>
                             </div>
                           </div>
