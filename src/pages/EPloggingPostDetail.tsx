@@ -186,7 +186,7 @@ export default function EPloggingPostDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-6 sm:py-8 max-w-2xl">
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -226,10 +226,11 @@ export default function EPloggingPostDetail() {
         </CardContent>
 
         {/* Image */}
-        <div className="relative">
+        <div className="relative w-full bg-gray-50">
           <img
             src={post.image_url || post.image_path}
-            className="w-full h-auto max-h-[600px] object-cover bg-gray-50"
+            className="w-full h-auto object-contain"
+            style={{ maxHeight: '600px', maxWidth: '100%', display: 'block' }}
             alt={post.quote || 'ePlogging post'}
           />
         </div>

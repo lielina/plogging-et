@@ -580,6 +580,17 @@ ${description}
   // User Check-in Function (removed event QR code check-in)
   const handleUserCheckIn = async (qrData: string) => {
     try {
+      // Check if event is active
+      if (event && event.status?.toLowerCase() !== 'active') {
+        toast({
+          title: "Check-in Not Available",
+          description: "Check-in is only available for active events.",
+          variant: "destructive",
+        })
+        setIsCheckInScannerOpen(false)
+        return
+      }
+      
       // Only allow section-based check-in
       setScanResult('Please scan a section QR code instead of the event QR code')
     } catch (err: any) {
@@ -597,6 +608,17 @@ ${description}
     if (!user || !('volunteer_id' in user)) return
     
     try {
+      // Check if event is active
+      if (event && event.status?.toLowerCase() !== 'active') {
+        toast({
+          title: "Check-in Not Available",
+          description: "Check-in is only available for active events.",
+          variant: "destructive",
+        })
+        setIsSectionCheckInDialogOpen(false)
+        return
+      }
+      
       // Check if volunteer is enrolled in the event
       const isEnrolled = event?.enrollments.some(enrollment => 
         enrollment.volunteer.volunteer_id === user.volunteer_id
@@ -781,7 +803,8 @@ ${description}
                   variant="outline"
                   onClick={() => setIsCheckInScannerOpen(true)}
                   className="bg-white hover:bg-gray-50 w-full sm:w-auto"
-                  disabled={!isUserEnrolled()}
+                  disabled={!isUserEnrolled() || (event.status?.toLowerCase() !== 'active')}
+                  title={event.status?.toLowerCase() !== 'active' ? 'Check-in is only available for active events' : ''}
                 >
                   <Scan className="h-4 w-4 mr-2" />
                   <span className="whitespace-nowrap">Check In</span>
@@ -1156,7 +1179,17 @@ ${description}
       {/* User Check-in QR Scanner */}
       <QRScanner
         isOpen={isCheckInScannerOpen}
-        onClose={() => setIsCheckInScannerOpen(false)}
+        onClose={() => {
+          setIsCheckInScannerOpen(false)
+          // Show error if event is not active
+          if (event && event.status?.toLowerCase() !== 'active') {
+            toast({
+              title: "Check-in Not Available",
+              description: "Check-in is only available for active events.",
+              variant: "destructive",
+            })
+          }
+        }}
         onScan={handleUserCheckIn}
         title="Section Check-in"
         description="Scan a section QR code to check in"

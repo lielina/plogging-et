@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge as BadgeComponent } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3, Share2 } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3, Share2, Navigation } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { useToast } from '@/hooks/use-toast'
 
@@ -16,6 +16,9 @@ interface DashboardStats {
   total_events_attended: number;
   total_hours_contributed: number;
   total_waste_collected: number;
+  total_distance?: number;
+  total_distance_km?: number;
+  distance_km?: number;
   badges_earned: number;
   certificates_earned: number;
 }
@@ -25,7 +28,7 @@ interface ProgressData {
   monthlyGoal: number;
   currentProgress: number;
   weeklyProgress: number[];
-  activityData: { month: string; events: number; hours: number; waste: number }[];
+  activityData: { month: string; events: number; hours: number; distance: number }[];
 }
 
 export default function Dashboard() {
@@ -106,10 +109,57 @@ export default function Dashboard() {
         apiClient.getActivityTrends()
           .then(response => {
             console.log('Activity trends response:', response);
-            if (response.data && response.data.length > 0) {
+            if (response.data) {
+              // Parse the API response structure
+              const data = response.data as any
+              const monthlyHours = data.monthly_hours || []
+              const monthlyEvents = data.monthly_events || []
+              const monthlyDistance = data.monthly_distance || []
+              
+              // Create a map to combine data by month
+              const monthMap = new Map<string, { month: string; events: number; hours: number; distance: number }>()
+              
+              // Add hours data
+              monthlyHours.forEach((item: any) => {
+                const month = item.month || ''
+                const hours = parseFloat(item.total_hours || 0)
+                if (!monthMap.has(month)) {
+                  monthMap.set(month, { month, events: 0, hours: 0, distance: 0 })
+                }
+                const existing = monthMap.get(month)!
+                existing.hours = hours
+              })
+              
+              // Add events data
+              monthlyEvents.forEach((item: any) => {
+                const month = item.month || ''
+                const events = parseInt(item.total_events || 0)
+                if (!monthMap.has(month)) {
+                  monthMap.set(month, { month, events: 0, hours: 0, distance: 0 })
+                }
+                const existing = monthMap.get(month)!
+                existing.events = events
+              })
+              
+              // Add distance data if available
+              monthlyDistance.forEach((item: any) => {
+                const month = item.month || ''
+                const distance = parseFloat(item.total_distance || item.distance_km || 0)
+                if (!monthMap.has(month)) {
+                  monthMap.set(month, { month, events: 0, hours: 0, distance: 0 })
+                }
+                const existing = monthMap.get(month)!
+                existing.distance = distance
+              })
+              
+              // Convert map to array and sort by month
+              const mappedData = Array.from(monthMap.values()).sort((a, b) => 
+                a.month.localeCompare(b.month)
+              )
+              
               setProgressData(prev => ({
                 ...prev,
-                activityData: response.data
+                activityData: mappedData
               }))
             }
           })
@@ -251,10 +301,57 @@ useEffect(() => {
         apiClient.getActivityTrends()
           .then(response => {
             console.log('Refreshing - Activity trends response:', response);
-            if (response.data && response.data.length > 0) {
+            if (response.data) {
+              // Parse the API response structure
+              const data = response.data as any
+              const monthlyHours = data.monthly_hours || []
+              const monthlyEvents = data.monthly_events || []
+              const monthlyDistance = data.monthly_distance || []
+              
+              // Create a map to combine data by month
+              const monthMap = new Map<string, { month: string; events: number; hours: number; distance: number }>()
+              
+              // Add hours data
+              monthlyHours.forEach((item: any) => {
+                const month = item.month || ''
+                const hours = parseFloat(item.total_hours || 0)
+                if (!monthMap.has(month)) {
+                  monthMap.set(month, { month, events: 0, hours: 0, distance: 0 })
+                }
+                const existing = monthMap.get(month)!
+                existing.hours = hours
+              })
+              
+              // Add events data
+              monthlyEvents.forEach((item: any) => {
+                const month = item.month || ''
+                const events = parseInt(item.total_events || 0)
+                if (!monthMap.has(month)) {
+                  monthMap.set(month, { month, events: 0, hours: 0, distance: 0 })
+                }
+                const existing = monthMap.get(month)!
+                existing.events = events
+              })
+              
+              // Add distance data if available
+              monthlyDistance.forEach((item: any) => {
+                const month = item.month || ''
+                const distance = parseFloat(item.total_distance || item.distance_km || 0)
+                if (!monthMap.has(month)) {
+                  monthMap.set(month, { month, events: 0, hours: 0, distance: 0 })
+                }
+                const existing = monthMap.get(month)!
+                existing.distance = distance
+              })
+              
+              // Convert map to array and sort by month
+              const mappedData = Array.from(monthMap.values()).sort((a, b) => 
+                a.month.localeCompare(b.month)
+              )
+              
               setProgressData(prev => ({
                 ...prev,
-                activityData: response.data
+                activityData: mappedData
               }))
             }
           })
@@ -431,13 +528,15 @@ useEffect(() => {
           </Card>
           <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out transform hover:-translate-y-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Waste Collected</CardTitle>
-              <Trophy className="h-5 w-5 text-green-600" />
+              <CardTitle className="text-sm font-medium">Total Distance</CardTitle>
+              <Navigation className="h-5 w-5 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.total_waste_collected || 0} kg</div>
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">
+                {stats?.total_distance || stats?.total_distance_km || stats?.distance_km || 0} km
+              </div>
               <p className="text-xs text-muted-foreground">
-                Total waste collected
+                Total distance covered
               </p>
             </CardContent>
           </Card>
@@ -548,10 +647,12 @@ useEffect(() => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600">Waste (kg)</span>
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Distance (km)</span>
                   </div>
-                  <span className="font-semibold">{stats?.total_waste_collected || 0}</span>
+                  <span className="font-semibold">
+                    {stats?.total_distance || stats?.total_distance_km || stats?.distance_km || 0}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t">
                   <div className="flex items-center gap-2">
@@ -609,11 +710,11 @@ useEffect(() => {
                     />
                     <Line 
                       type="monotone" 
-                      dataKey="waste" 
-                      stroke="#f59e0b" 
+                      dataKey="distance" 
+                      stroke="#a855f7" 
                       strokeWidth={3} 
-                      dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                      name="Waste Collected (kg)"
+                      dot={{ fill: '#a855f7', strokeWidth: 2, r: 4 }}
+                      name="Distance (km)"
                     />
                   </LineChart>
                 </ResponsiveContainer>

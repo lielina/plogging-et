@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +36,7 @@ type EPPost = EPloggingPost & { hours_spent?: number }
 
 export default function EPloggingGallery({ showMyPosts = false, isPublic = false, className }: EPloggingGalleryProps) {
   const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
   const [posts, setPosts] = useState<EPPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -458,7 +459,15 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
         <>
           <div className={`grid gap-6 ${isPublic ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {filteredPosts.map((post) => (
-              <Card key={post.post_id} className={`overflow-hidden hover:shadow-lg transition-shadow ${isPublic ? 'shadow-md' : ''}`}>
+              <Card 
+                key={post.post_id} 
+                className={`overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${isPublic ? 'shadow-md' : ''}`}
+                onClick={() => {
+                  if (isPublic) {
+                    navigate(`/eplogging/${post.post_id}`)
+                  }
+                }}
+              >
                 {/* Facebook-like Header - Only show for public posts */}
                 {isPublic && (
                   <CardContent className="p-4 pb-3 border-b">
@@ -511,15 +520,6 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                         <p className="text-gray-800 text-base line-clamp-2">
                           {post.quote}
                         </p>
-                        {/* Show "Read more" if quote is longer than approximately 2 lines (roughly 150-200 chars) */}
-                        {post.quote && post.quote.length > 150 && (
-                          <Link 
-                            to={`/eplogging/${post.post_id}`}
-                            className="text-green-600 hover:text-green-700 text-sm font-medium mt-1 inline-block"
-                          >
-                            Read more
-                          </Link>
-                        )}
                       </>
                     ) : (
                       <p className={`text-sm italic p-2 bg-gray-50 rounded`}>
@@ -556,7 +556,10 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleShare(post)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleShare(post)
+                          }}
                           className="text-gray-500"
                         >
                           <Share2 className="w-4 h-4" />
@@ -569,7 +572,8 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation()
                           const isLiked = likedPosts.has(post.post_id)
                           if (isLiked) {
                             // Unlike - decrease count
@@ -610,7 +614,10 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openEdit(post)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEdit(post)
+                          }}
                           className="h-8 px-2 text-gray-700"
                         >
                           <Pencil className="w-4 h-4" />
@@ -621,6 +628,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                               variant="destructive"
                               size="sm"
                               className="h-8 px-2"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
