@@ -444,7 +444,7 @@ export default function VolunteerCertificates() {
                       </Badge>
                     </div>
                     <CardDescription className="mt-1 text-sm">
-                      Certificate Type: <span className="font-semibold text-gray-700">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}</span> | ID: {certificate.certificate_id}
+                      Certificate Type: <span className="font-semibold text-gray-700">{certificate.certificate_type.charAt(0).toUpperCase() + certificate.certificate_type.slice(1)}</span>
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
