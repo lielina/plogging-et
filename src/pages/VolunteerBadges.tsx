@@ -27,6 +27,8 @@ export default function VolunteerBadges() {
   const [badgeData, setBadgeData] = useState<VolunteerBadgeData | null>(null)
   const [isLoading, setIsLoading] = useState(false) // Add loading state
   const [localError, setLocalError] = useState<string | null>(null) // Add local error state
+  const [totalEvents, setTotalEvents] = useState<number | undefined>(undefined)
+  const [totalDistance, setTotalDistance] = useState<number | undefined>(undefined)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -36,17 +38,13 @@ export default function VolunteerBadges() {
     }
     
     fetchVolunteerData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, navigate])
-
-  const fetchVolunteerData = async () => {
-    try {
-      setIsLoading(true); // Set local loading state
-      setLocalError(null); // Clear local error state
-      
-      await refreshBadges()
-      
-      // Set badge data for the volunteer
-      if (user && 'volunteer_id' in user) {
+  
+  // Update badge data when badges change
+  useEffect(() => {
+    if (user && 'volunteer_id' in user) {
+      if (badges.length > 0) {
         setBadgeData({
           volunteerName: `${user.first_name} ${user.last_name}`,
           totalHours: user.total_hours_contributed,
@@ -55,7 +53,47 @@ export default function VolunteerBadges() {
           achievementDate: new Date().toISOString(),
           badgeId: `BADGE-${user.volunteer_id}-${Date.now()}`
         })
+      } else {
+        setBadgeData(null)
       }
+    }
+  }, [badges.length, user])
+
+  const fetchVolunteerData = async () => {
+    try {
+      setIsLoading(true); // Set local loading state
+      setLocalError(null); // Clear local error state
+      
+      // Fetch badges and statistics in parallel
+      const [badgesResult, statsResult] = await Promise.allSettled([
+        refreshBadges(),
+        apiClient.getVolunteerStatistics().catch(() => null)
+      ])
+      
+      // Set total events and distance if statistics were fetched successfully
+      let distanceValue: number | undefined = undefined
+      
+      if (statsResult.status === 'fulfilled' && statsResult.value?.data) {
+        setTotalEvents(statsResult.value.data.total_events_attended)
+        // Try different possible field names for distance
+        const distance = statsResult.value.data.total_distance_covered || 
+                        statsResult.value.data.total_distance || 
+                        statsResult.value.data.distance_km ||
+                        statsResult.value.data.distance
+        distanceValue = distance ? parseFloat(String(distance)) : undefined
+      }
+      
+      // Also check user profile for total_kilometers if statistics don't have it
+      if (!distanceValue && user && 'total_kilometers' in user) {
+        const profileDistance = (user as any).total_kilometers
+        if (profileDistance !== null && profileDistance !== undefined && profileDistance !== '') {
+          distanceValue = parseFloat(String(profileDistance))
+        }
+      }
+      
+      setTotalDistance(distanceValue)
+      
+      // Badge data will be updated by the useEffect that watches badges.length
     } catch (error: any) {
       console.error('Error fetching volunteer data:', error)
       setLocalError(error.message || 'Failed to load volunteer data') // Use local error state
@@ -120,7 +158,8 @@ export default function VolunteerBadges() {
     )
   }
 
-  if (!user || !badgeData) {
+  // If no badges are earned, show the "No Badges" message instead of "No Badge Data"
+  if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
         <div className="text-center">
@@ -132,8 +171,9 @@ export default function VolunteerBadges() {
     )
   }
 
-  const nextMilestone = getNextMilestone(badgeData.totalHours)
-  const achievements = getAchievementStats(badgeData.totalHours)
+  // Only calculate milestones if badgeData exists (i.e., volunteer has badges)
+  const nextMilestone = badgeData ? getNextMilestone(badgeData.totalHours) : null
+  const achievements = badgeData ? getAchievementStats(badgeData.totalHours) : []
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
@@ -155,26 +195,68 @@ export default function VolunteerBadges() {
         </div>
       </div>
 
-      {/* Badge Generator */}
-      <div className="mb-8">
-        {user && 'volunteer_id' in user ? (
-          <VolunteerBadge 
-            volunteerData={user} 
-            onBadgeGenerated={(data) => setBadgeData(data)}
-          />
-        ) : (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">Badge Not Available</h3>
-              <p className="text-gray-500">Volunteer badge is only available for volunteer accounts.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Badge Generator - Show badge card only if volunteer has badges */}
+      {!loading && (
+        <div className="mb-8">
+          {user && 'volunteer_id' in user ? (
+            <>
+              {/* Show badge card only if badges exist */}
+              {badges.length > 0 && (
+                <VolunteerBadge 
+                  volunteerData={user} 
+                  onBadgeGenerated={(data) => setBadgeData(data)}
+                  hideRegenerate={true}
+                  totalEvents={totalEvents}
+                  badgeName={badges[0]?.badge_name || 'Badge'}
+                  totalDistance={
+                    badges[0]?.min_kilometers ? 
+                      parseFloat(String(badges[0].min_kilometers)) : 
+                      (totalDistance !== undefined ? totalDistance : 
+                        (user && 'total_kilometers' in user && (user as any).total_kilometers ? 
+                          parseFloat(String((user as any).total_kilometers)) : 
+                          undefined))
+                  }
+                  hasBadges={true}
+                />
+              )}
+              
+              {/* Show message if no badges */}
+              {badges.length === 0 && (
+                <Card className="border-white-200">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Award className="w-10 h-10 text-yellow-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Badge Not Received Yet</h3>
+                    <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                      You haven't received your volunteer badge yet. Start participating in events and contributing hours to earn your first badge!
+                    </p>
+                    <div className="mt-6 space-y-2 text-sm text-gray-500">
+                      <p>To earn your badge, you need to:</p>
+                      <ul className="list-disc list-inside space-y-1 max-w-sm mx-auto text-left">
+                        <li>Participate in plogging events</li>
+                        <li>Complete event surveys</li>
+                        <li>Accumulate volunteer hours</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">Badge Not Available</h3>
+                <p className="text-gray-500">Volunteer badge is only available for volunteer accounts.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
-      {/* Volunteer Stats */}
-      {user && 'volunteer_id' in user && badgeData && (
+      {/* Volunteer Stats - Only show if user has badges */}
+      {badges.length > 0 && user && 'volunteer_id' in user && badgeData && nextMilestone && (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardContent className="p-4 sm:p-6">
@@ -214,8 +296,8 @@ export default function VolunteerBadges() {
         </div>
       )}
 
-      {/* Achievement Progress */}
-      {user && 'volunteer_id' in user && badgeData && (
+      {/* Achievement Progress - Only show if user has badges */}
+      {badges.length > 0 && user && 'volunteer_id' in user && badgeData && nextMilestone && (
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         {/* Next Milestone */}
         <Card>
