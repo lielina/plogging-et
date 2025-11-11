@@ -42,8 +42,8 @@ export const BadgeProvider: React.FC<BadgeProviderProps> = ({ children }) => {
       setError(null);
       const response = await apiClient.getVolunteerBadges();
       
-      // Ensure we always have an array
-      const badgesData = Array.isArray(response.data) ? response.data : [];
+      // Response should already be an array from the API client, but ensure it is
+      const badgesData = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);
       setBadges(badgesData);
     } catch (err: any) {
       console.error('Error fetching badges:', err);
@@ -58,8 +58,8 @@ export const BadgeProvider: React.FC<BadgeProviderProps> = ({ children }) => {
     try {
       const response = await apiClient.getVolunteerBadges();
       
-      // Ensure we always have an array
-      const currentBadges = Array.isArray(response.data) ? response.data : [];
+      // Response should already be an array from the API client, but ensure it is
+      const currentBadges = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);
       
       // Find newly earned badges by comparing badge IDs
       const previousBadgeIds = new Set(previousBadges.map(b => b.badge_id));
