@@ -32,7 +32,11 @@ interface EPloggingGalleryProps {
   className?: string
 }
 
-type EPPost = EPloggingPost & { hours_spent?: number }
+type EPPost = EPloggingPost & { 
+  hours_spent?: number
+  likes_count?: number
+  is_liked?: boolean
+}
 
 export default function EPloggingGallery({ showMyPosts = false, isPublic = false, className }: EPloggingGalleryProps) {
   const { isAuthenticated } = useAuth()
@@ -48,6 +52,7 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
   const [likes, setLikes] = useState<Record<number, number>>({}) // Track likes per post
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set()) // Track which posts are liked
   const observerTarget = useRef<HTMLDivElement>(null)
+  const likeRequests = useRef<Set<number>>(new Set())
   const { toast } = useToast()
 
   // Edit modal state
@@ -57,6 +62,74 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
   const [editImage, setEditImage] = useState<File | null>(null)
   const [editPreview, setEditPreview] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
+
+// handle like post
+const handleLikePost = useCallback(async (post: EPPost) => {
+  if (!isAuthenticated) {
+    toast({
+      title: 'Sign in required',
+      description: 'Please log in to like this post.',
+      variant: 'destructive',
+    });
+    return;
+  }
+
+  const postId = post.post_id;
+  if (likeRequests.current.has(postId)) return;
+  likeRequests.current.add(postId);
+
+  const previouslyLiked = likedPosts.has(postId) || post.is_liked === true;
+  const previousCount = likes[postId] ?? post.likes_count ?? 0;
+
+  // Optimistic UI
+  setLikedPosts(prev => {
+    const next = new Set(prev);
+    previouslyLiked ? next.delete(postId) : next.add(postId);
+    return next;
+  });
+  setLikes(prev => ({
+    ...prev,
+    [postId]: Math.max((prev[postId] ?? previousCount) + (previouslyLiked ? -1 : 1), 0),
+  }));
+
+  try {
+    // Use only one API for both like/unlike
+    const response = await apiClient.likeEPloggingPost(postId);
+    console.log('Like/unlike response:', response);
+    const responseData: any = response?.data ?? response;
+
+    if (typeof responseData?.likes_count === 'number') {
+      setLikes(prev => ({ ...prev, [postId]: responseData.likes_count }));
+    }
+
+    if (typeof responseData?.is_liked === 'boolean') {
+      setLikedPosts(prev => {
+        const next = new Set(prev);
+        responseData.is_liked ? next.add(postId) : next.delete(postId);
+        return next;
+      });
+    }
+  } catch (error: any) {
+    // Rollback UI
+    setLikedPosts(prev => {
+      const next = new Set(prev);
+      previouslyLiked ? next.add(postId) : next.delete(postId);
+      return next;
+    });
+
+    setLikes(prev => ({ ...prev, [postId]: previousCount }));
+
+    toast({
+      title: previouslyLiked ? 'Unlike failed' : 'Like failed',
+      description: error?.message || 'Could not update like. Please try again.',
+      variant: 'destructive',
+    });
+  } finally {
+    likeRequests.current.delete(postId);
+  }
+}, [isAuthenticated, likedPosts, likes, toast]);
+
+
 
   // Delete action handler
   const handleDeletePost = async (postId: number) => {
@@ -152,13 +225,25 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       // Initialize likes count for new posts (if not already set)
       if (isPublic) {
         setLikes(prev => {
-          const newLikes = { ...prev }
+          const nextLikes = append ? { ...prev } : {}
           postsData.forEach((post: EPPost) => {
-            if (!(post.post_id in newLikes)) {
-              newLikes[post.post_id] = 0 // Initialize with 0 likes
+            nextLikes[post.post_id] = post.likes_count ?? (prev[post.post_id] ?? 0)
+          })
+          return nextLikes
+        })
+
+        setLikedPosts(prev => {
+          const nextSet = append ? new Set(prev) : new Set<number>()
+          postsData.forEach((post: EPPost) => {
+            if (post.is_liked === true) {
+              nextSet.add(post.post_id)
+            } else if (post.is_liked === false) {
+              nextSet.delete(post.post_id)
+            } else if (!append) {
+              nextSet.delete(post.post_id)
             }
           })
-          return newLikes
+          return nextSet
         })
       }
       
@@ -458,8 +543,12 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
       {filteredPosts.length > 0 ? (
         <>
           <div className={`grid gap-6 ${isPublic ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-            {filteredPosts.map((post) => (
-              <Card 
+            {filteredPosts.map((post) => {
+              const isPostLiked = likedPosts.has(post.post_id) || post.is_liked === true
+              const likeCount = likes[post.post_id] ?? post.likes_count ?? 0
+
+              return (
+                <Card 
                 key={post.post_id} 
                 className={`overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${isPublic ? 'shadow-md' : ''}`}
                 onClick={() => {
@@ -574,39 +663,20 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
-                          const isLiked = likedPosts.has(post.post_id)
-                          if (isLiked) {
-                            // Unlike - decrease count
-                            setLikes(prev => ({
-                              ...prev,
-                              [post.post_id]: Math.max((prev[post.post_id] || 0) - 1, 0)
-                            }))
-                            setLikedPosts(prev => {
-                              const newSet = new Set(prev)
-                              newSet.delete(post.post_id)
-                              return newSet
-                            })
-                          } else {
-                            // Like - increase count
-                            setLikes(prev => ({
-                              ...prev,
-                              [post.post_id]: (prev[post.post_id] || 0) + 1
-                            }))
-                            setLikedPosts(prev => new Set(prev).add(post.post_id))
-                          }
+                          handleLikePost(post)
                         }}
                         className={`transition-colors ${
-                          likedPosts.has(post.post_id) 
+                          isPostLiked 
                             ? 'text-red-500 hover:text-red-600' 
                             : 'text-gray-500 hover:text-red-500'
                         }`}
                       >
                         <Heart 
                           className={`w-4 h-4 mr-1 ${
-                            likedPosts.has(post.post_id) ? 'fill-current' : ''
+                            isPostLiked ? 'fill-current' : ''
                           }`} 
                         />
-                        <span className="text-sm font-medium">{likes[post.post_id] || 0}</span>
+                        <span className="text-sm font-medium">{likeCount}</span>
                       </Button>
                     )}
                     {showMyPosts && !isPublic && (
@@ -650,8 +720,9 @@ export default function EPloggingGallery({ showMyPosts = false, isPublic = false
                     )}
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+                </Card>
+              )
+            })}
           </div>
 
           {/* Pagination - Only show for non-public views (My Posts or Gallery) */}
