@@ -1416,6 +1416,13 @@ class ApiClient {
 }
 
 
+// ePloging post like and unlike actions
+  async likeEPloggingPost(post_id: number): Promise<any> {
+    return this.request(`/volunteer/eplogging/${post_id}/like`, {
+      method: "PUT", 
+    });
+  }
+
 
   // Get paginated ePlogging posts
   async getEPloggingPosts(page = 1, perPage = 12): Promise<any> {
