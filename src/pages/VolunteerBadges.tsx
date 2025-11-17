@@ -245,6 +245,104 @@ export default function VolunteerBadges() {
           </Card>
         </div>
       )}
+        {/* Achievement Progress - Only show if user has badges */}
+      {badge && user && 'volunteer_id' in user && badgeData && nextMilestone && (
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
+        {/* Next Milestone */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-green-800 flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Next Milestone
+            </CardTitle>
+            <CardDescription>
+              Keep volunteering to reach your next achievement level
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Progress to {nextMilestone.level}</span>
+                <span className="text-sm text-gray-500">{badgeData.totalHours}/{nextMilestone.target} hours</span>
+              </div>
+              
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-green-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((badgeData.totalHours / nextMilestone.target) * 100, 100)}%` }}
+                ></div>
+              </div>
+              
+              <div className="text-center">
+                <p className="text-lg font-semibold text-gray-800">
+                  {nextMilestone.remaining} hours remaining
+                </p>
+                <p className="text-sm text-gray-600">
+                  to become a {nextMilestone.level}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Achievements */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-green-800 flex items-center gap-2">
+              <Trophy className="w-5 h-5" />
+              Achievements
+            </CardTitle>
+            <CardDescription>
+              Your volunteer journey milestones
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {achievements.map((achievement, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${achievement.achieved ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                    <achievement.icon className="w-4 h-4" />
+                  </div>
+                  <span className={`text-sm ${achievement.achieved ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
+                    {achievement.text}
+                  </span>
+                  {achievement.achieved && (
+                    <Badge className="bg-green-100 text-green-800 text-xs">
+                      ✓
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {/* Information Card */}
+      <Card className="bg-green-50 border-green-200">
+        <CardHeader>
+          <CardTitle className="text-green-800">About Volunteer Badges</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <h3 className="font-medium text-green-700 mb-2">About Your Badge</h3>
+              <p className="text-sm text-green-600">
+                Your volunteer badge showcases your commitment to environmental action and community service. 
+                The badge includes your total service hours and can be shared on social media to inspire others.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-medium text-green-700 mb-2">Sharing Your Badge</h3>
+              <p className="text-sm text-green-600">
+                Share your volunteer badge on social media to inspire others and showcase your environmental commitment. 
+                Your badge includes your total service hours.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
