@@ -191,6 +191,14 @@ export default function VolunteerBadges() {
                 <p className="text-gray-600 mb-4 max-w-md mx-auto">
                   You haven't received your volunteer badge yet. Start participating in events and contributing hours to earn your first badge!
                 </p>
+                  <div className="mt-6 space-y-2 text-sm text-gray-500">
+                      <p>To earn your badge, you need to:</p>
+                      <ul className="list-disc list-inside space-y-1 max-w-sm mx-auto text-left">
+                        <li>Participate in plogging events</li>
+                        <li>Complete event surveys</li>
+                        <li>Accumulate volunteer hours</li>
+                      </ul>
+                    </div>
               </CardContent>
             </Card>
           )}
