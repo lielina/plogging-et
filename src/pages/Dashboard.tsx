@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useBadges } from '@/contexts/BadgeContext'
+import { useBadge} from '@/contexts/BadgeContext'
 import { useSurvey } from '@/contexts/SurveyContext'
 import { apiClient, type Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { Calendar, Clock, MapPin, Users, Trophy, Award, FileText, RefreshCw, BarChart3, Share2, Navigation } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { useToast } from '@/hooks/use-toast'
+import VolunteerBadge from '@/components/VolunteerBadge'
 
 interface DashboardStats {
   total_events_attended: number;
@@ -19,8 +20,10 @@ interface DashboardStats {
   total_distance?: number;
   total_distance_km?: number;
   distance_km?: number;
+  distance?: number;
   badges_earned: number;
   certificates_earned: number;
+  total_distance_covered?: number;
 }
 
 // Update the ProgressData interface to include activity trends data
@@ -34,7 +37,7 @@ interface ProgressData {
 export default function Dashboard() {
   const { user } = useAuth()
   const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
-  const { badges, loading: badgesLoading, error: badgesError, refreshBadges } = useBadges()
+  const { badge, loading: badgesLoading, error: badgesError, refreshBadge } = useBadge()
   const { toast } = useToast()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<Event[]>([])
@@ -395,7 +398,7 @@ useEffect(() => {
           }),
       
         // Refresh badges using the badge context
-        refreshBadges()
+        refreshBadge()
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -790,131 +793,82 @@ useEffect(() => {
             </CardContent>
           </Card>
 
-          {/* Badges */}
-          <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Award className="h-6 w-6 text-green-700" />
-                Your Badges
-              </CardTitle>
-              <CardDescription>
-                Achievement badges you've earned
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {badgesError ? (
-                <div className="text-center py-8">
-                  <Award className="h-16 w-16 text-red-300 mx-auto mb-4" />
-                  <p className="text-red-600 text-lg font-medium">{badgesError}</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    There was an issue loading your badges. This won't affect your account.
-                  </p>
-                  <Button 
-                    onClick={refreshDashboard} 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Try Again
-                  </Button>
-                </div>
-              ) : badgesLoading ? (
-                <div className="flex items-center justify-center min-h-[200px]">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-              ) : badges.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {badges.map((badge) => {
-                    const shareBadge = () => {
-                      const shareText = `I earned the ${badge.badge_name} badge! ${badge.description} 🏆 #PloggingEthiopia #Badge`;
-                      const shareUrl = window.location.origin + '/dashboard';
-                      
-                      if (navigator.share) {
-                        navigator.share({
-                          title: `${badge.badge_name} Badge`,
-                          text: shareText,
-                          url: shareUrl
-                        }).catch(() => {
-                          // Fallback to copying to clipboard
-                          navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                          toast({
-                            title: "Link Copied",
-                            description: "Badge information copied to clipboard!",
-                          });
-                        });
-                      } else {
-                        // Fallback: copy to clipboard
-                        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                        toast({
-                          title: "Link Copied",
-                          description: "Badge information copied to clipboard!",
-                        });
-                      }
-                    };
-                    
-                    return (
-                      <div key={badge.badge_id} className="text-center p-4 border rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors duration-200 flex flex-col items-center justify-center border-yellow-200 relative group">
-                        <button
-                          onClick={shareBadge}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-white/50"
-                          title="Share badge"
-                        >
-                          <Share2 className="h-4 w-4 text-gray-600" />
-                        </button>
-                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                          {badge.image_url ? (
-                            <img 
-                              src={badge.image_url} 
-                              alt={badge.badge_name}
-                              className="h-10 w-10 rounded-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const parent = e.currentTarget.parentElement;
-                                if (parent) {
-                                  const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
-                                  if (fallback) fallback.style.display = 'block';
-                                }
-                              }}
-                            />
-                          ) : null}
-                          <Award className="h-8 w-8 text-white fallback-icon" style={{ display: badge.image_url ? 'none' : 'block' }} />
-                        </div>
-                        <h4 className="font-semibold text-base text-gray-800">{badge.badge_name}</h4>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                          {badge.description}
-                        </p>
-                        {badge.pivot && badge.pivot.earned_date && (
-                          <div className="mt-2 px-2 py-1 bg-yellow-100 rounded-full">
-                            <span className="text-xs text-yellow-800 font-medium">
-                              Earned: {new Date(badge.pivot.earned_date).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600 text-lg">No badges earned yet</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Participate in events and achieve milestones to earn badges!
-                  </p>
-                  <Button 
-                    onClick={refreshDashboard} 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Check Again
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+       {/* Badges */}
+<Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2 text-xl">
+      <Award className="h-6 w-6 text-green-700" />
+      Your Badges
+    </CardTitle>
+    <CardDescription>
+      Achievement badges you've earned
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    {badgesError ? (
+      <div className="text-center py-8">
+        <Award className="h-16 w-16 text-red-300 mx-auto mb-4" />
+        <p className="text-red-600 text-lg font-medium">{badgesError}</p>
+        <p className="text-sm text-gray-500 mt-2">
+          There was an issue loading your badges. This won't affect your account.
+        </p>
+        <Button 
+          onClick={refreshDashboard} 
+          variant="outline" 
+          size="sm" 
+          className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Try Again
+        </Button>
+      </div>
+    ) : badgesLoading ? (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      </div>
+    ) : user && 'volunteer_id' in user ? (
+      <>
+        {/* Show badge card only if badge exists */}
+        {badge ? (
+          <VolunteerBadge 
+            volunteerData={user} 
+            hideSocialSharing={true}
+            hideRegenerate={true}
+            totalEvents={stats?.total_events_attended}
+            badgeName={badge.badge_name || 'Badge'}
+            totalDistance={
+              badge.min_kilometers
+                ? parseFloat(String(badge.min_kilometers))
+                : stats?.total_distance_covered ||
+                  stats?.total_distance ||
+                  stats?.distance_km ||
+                  stats?.distance ||
+                  (user && 'total_kilometers' in user ? parseFloat(String(user.total_kilometers)) : 0)
+            }
+            hasBadges={true}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg">No badges earned yet</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Participate in events and achieve milestones to earn badges!
+            </p>
+          </div>
+        )}
+      </>
+    ) : (
+      <div className="text-center py-8">
+        <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <p className="text-gray-600 text-lg">Badge Not Available</p>
+        <p className="text-sm text-gray-500 mt-2">
+          Volunteer badge is only available for volunteer accounts.
+        </p>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
         </div>
 
         {/* Quick Actions */}

@@ -1,32 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useBadges } from '@/contexts/BadgeContext'
+import { useBadge } from '@/contexts/BadgeContext'
 import { apiClient } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { 
-  Award, 
-  Clock, 
-  User, 
-  RefreshCw, 
-  Trophy,
-  Star,
-  Target,
-  Zap
-} from 'lucide-react'
+import { Award, Clock, Trophy, Target, Star, Zap, RefreshCw } from 'lucide-react'
 import VolunteerBadge from '@/components/VolunteerBadge'
 import { VolunteerBadgeData } from '@/lib/badge-generator'
 
 export default function VolunteerBadges() {
   const navigate = useNavigate()
   const { isAuthenticated, user } = useAuth()
-  const { badges, loading, error, refreshBadges } = useBadges()
+  const { badge, loading, error, refreshBadge } = useBadge()
   const [badgeData, setBadgeData] = useState<VolunteerBadgeData | null>(null)
-  const [isLoading, setIsLoading] = useState(false) // Add loading state
-  const [localError, setLocalError] = useState<string | null>(null) // Add local error state
+  const [isLoading, setIsLoading] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [totalEvents, setTotalEvents] = useState<number | undefined>(undefined)
+  const [totalDistance, setTotalDistance] = useState<number | undefined>(undefined)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -34,56 +27,78 @@ export default function VolunteerBadges() {
       navigate('/login')
       return
     }
-    
     fetchVolunteerData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, navigate])
+
+  // Update badge data when badge object changes
+  useEffect(() => {
+    if (user && 'volunteer_id' in user && badge) {
+      setBadgeData({
+        volunteerName: `${user.first_name} ${user.last_name}`,
+        totalHours: user.total_hours_contributed,
+        profileImageUrl: user.profile_image_url || user.profile_image,
+        volunteerId: user.volunteer_id,
+        achievementDate: new Date().toISOString(),
+        badgeId: `BADGE-${user.volunteer_id}-${Date.now()}`
+      })
+    } else {
+      setBadgeData(null)
+    }
+  }, [badge, user])
 
   const fetchVolunteerData = async () => {
     try {
-      setIsLoading(true); // Set local loading state
-      setLocalError(null); // Clear local error state
-      
-      await refreshBadges()
-      
-      // Set badge data for the volunteer
-      if (user && 'volunteer_id' in user) {
-        setBadgeData({
-          volunteerName: `${user.first_name} ${user.last_name}`,
-          totalHours: user.total_hours_contributed,
-          profileImageUrl: user.profile_image_url || user.profile_image,
-          volunteerId: user.volunteer_id,
-          achievementDate: new Date().toISOString(),
-          badgeId: `BADGE-${user.volunteer_id}-${Date.now()}`
-        })
+      setIsLoading(true)
+      setLocalError(null)
+
+      const [badgeResult, statsResult] = await Promise.allSettled([
+        refreshBadge(),
+        apiClient.getVolunteerStatistics().catch(() => null)
+      ])
+
+      // Set total events and distance
+      if (statsResult.status === 'fulfilled' && statsResult.value?.data) {
+        setTotalEvents(statsResult.value.data.total_events_attended)
+        const distance = statsResult.value.data.total_distance_covered ||
+                         statsResult.value.data.total_distance ||
+                         statsResult.value.data.distance_km ||
+                         statsResult.value.data.distance
+        setTotalDistance(distance ? parseFloat(String(distance)) : undefined)
       }
-    } catch (error: any) {
-      console.error('Error fetching volunteer data:', error)
-      setLocalError(error.message || 'Failed to load volunteer data') // Use local error state
+
+      // Fallback: use user profile distance
+      if (!totalDistance && user && 'total_kilometers' in user) {
+        const profileDistance = (user as any).total_kilometers
+        if (profileDistance !== null && profileDistance !== undefined && profileDistance !== '') {
+          setTotalDistance(parseFloat(String(profileDistance)))
+        }
+      }
+
+    } catch (err: any) {
+      console.error(err)
+      setLocalError(err.message || 'Failed to load volunteer data')
     } finally {
-      setIsLoading(false); // Clear local loading state
+      setIsLoading(false)
     }
   }
 
-
   const getNextMilestone = (currentHours: number) => {
-    // Simple milestone progression without badge levels
     const nextTarget = Math.ceil(currentHours / 10) * 10 + 10
     return { target: nextTarget, remaining: nextTarget - currentHours, level: `${nextTarget} Hours` }
   }
 
   const getAchievementStats = (totalHours: number) => {
     const stats = []
-    
     if (totalHours >= 1) stats.push({ icon: Star, text: 'First Hour', achieved: true })
     if (totalHours >= 10) stats.push({ icon: Target, text: '10 Hours', achieved: true })
     if (totalHours >= 25) stats.push({ icon: Award, text: '25 Hours', achieved: true })
     if (totalHours >= 50) stats.push({ icon: Trophy, text: '50 Hours', achieved: true })
     if (totalHours >= 100) stats.push({ icon: Zap, text: '100 Hours', achieved: true })
-    
     return stats
   }
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -96,7 +111,7 @@ export default function VolunteerBadges() {
     )
   }
 
-  if (error) {
+  if (error || localError) {
     return (
       <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -105,7 +120,7 @@ export default function VolunteerBadges() {
               <Award className="w-8 h-8 text-red-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Failed to Load Badge</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-gray-600 mb-4">{error || localError}</p>
             <Button 
               onClick={fetchVolunteerData} 
               variant="outline"
@@ -120,7 +135,7 @@ export default function VolunteerBadges() {
     )
   }
 
-  if (!user || !badgeData) {
+  if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 bg-gray-50 min-h-screen">
         <div className="text-center">
@@ -132,90 +147,106 @@ export default function VolunteerBadges() {
     )
   }
 
-  const nextMilestone = getNextMilestone(badgeData.totalHours)
-  const achievements = getAchievementStats(badgeData.totalHours)
+  const nextMilestone = badgeData ? getNextMilestone(badgeData.totalHours) : null
+  const achievements = badgeData ? getAchievementStats(badgeData.totalHours) : []
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Volunteer Badge</h1>
-            <p className="text-sm sm:text-base text-gray-600">Your personalized volunteer achievement badge and sharing options</p>
-          </div>
-          <Button 
-            onClick={fetchVolunteerData} 
-            variant="outline"
-            className="border-green-500 text-green-700 hover:bg-green-50 w-full sm:w-auto"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">My Volunteer Badge</h1>
+          <p className="text-sm sm:text-base text-gray-600">Your personalized volunteer achievement badge and sharing options</p>
         </div>
+        <Button 
+          onClick={fetchVolunteerData} 
+          variant="outline"
+          className="border-green-500 text-green-700 hover:bg-green-50 w-full sm:w-auto"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {/* Badge Generator */}
-      <div className="mb-8">
-        {user && 'volunteer_id' in user ? (
-          <VolunteerBadge 
-            volunteerData={user} 
-            onBadgeGenerated={(data) => setBadgeData(data)}
-          />
-        ) : (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">Badge Not Available</h3>
-              <p className="text-gray-500">Volunteer badge is only available for volunteer accounts.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Volunteer Stats */}
-      {user && 'volunteer_id' in user && badgeData && (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+      {/* Badge Section */}
+      {user && 'volunteer_id' in user ? (
+        <>
+          {badge ? (
+            <VolunteerBadge
+              volunteerData={user}
+              onBadgeGenerated={(data) => setBadgeData(data)}
+              hideRegenerate={true}
+              totalEvents={totalEvents}
+              badgeName={badge.badge_name || 'Badge'}
+              totalDistance={badge.min_kilometers ? parseFloat(String(badge.min_kilometers)) : totalDistance}
+              hasBadges={true}
+            />
+          ) : (
+            <Card className="border-white-200">
+              <CardContent className="p-8 text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Award className="w-10 h-10 text-yellow-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Badge Not Received Yet</h3>
+                <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                  You haven't received your volunteer badge yet. Start participating in events and contributing hours to earn your first badge!
+                </p>
+                  <div className="mt-6 space-y-2 text-sm text-gray-500">
+                      <p>To earn your badge, you need to:</p>
+                      <ul className="list-disc list-inside space-y-1 max-w-sm mx-auto text-left">
+                        <li>Participate in plogging events</li>
+                        <li>Complete event surveys</li>
+                        <li>Accumulate volunteer hours</li>
+                      </ul>
+                    </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
         <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mr-3 flex-shrink-0" />
-              <div className="min-w-0">
+          <CardContent className="p-8 text-center">
+            <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">Badge Not Available</h3>
+            <p className="text-gray-500">Volunteer badge is only available for volunteer accounts.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats Section */}
+      {badge && badgeData && nextMilestone && (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <Card>
+            <CardContent className="p-4 sm:p-6 flex items-center gap-3">
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+              <div>
                 <p className="text-xl sm:text-2xl font-bold text-gray-900">{badgeData.totalHours}</p>
                 <p className="text-xs sm:text-sm text-gray-600">Total Hours</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <Target className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mr-3 flex-shrink-0" />
-              <div className="min-w-0">
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 sm:p-6 flex items-center gap-3">
+              <Target className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+              <div>
                 <p className="text-xl sm:text-2xl font-bold text-gray-900">{nextMilestone.remaining}</p>
                 <p className="text-xs sm:text-sm text-gray-600">Hours to Next Level</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 mr-3 flex-shrink-0" />
-              <div className="min-w-0">
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 sm:p-6 flex items-center gap-3">
+              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
+              <div>
                 <p className="text-xl sm:text-2xl font-bold text-gray-900">{achievements.length}</p>
                 <p className="text-xs sm:text-sm text-gray-600">Achievements</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </div>
       )}
-
-      {/* Achievement Progress */}
-      {user && 'volunteer_id' in user && badgeData && (
+        {/* Achievement Progress - Only show if user has badges */}
+      {badge && user && 'volunteer_id' in user && badgeData && nextMilestone && (
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         {/* Next Milestone */}
         <Card>

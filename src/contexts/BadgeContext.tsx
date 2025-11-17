@@ -4,19 +4,19 @@ import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 interface BadgeContextType {
-  badges: VolunteerBadge[];
+  badge: VolunteerBadge | null;
   loading: boolean;
   error: string | null;
-  refreshBadges: () => Promise<void>;
-  checkForNewBadges: (previousBadges: VolunteerBadge[]) => Promise<VolunteerBadge[]>;
+  refreshBadge: () => Promise<void>;
+  checkForNewBadge: (previousBadge: VolunteerBadge | null) => Promise<VolunteerBadge | null>;
 }
 
 const BadgeContext = createContext<BadgeContextType | undefined>(undefined);
 
-export const useBadges = () => {
+export const useBadge = () => {
   const context = useContext(BadgeContext);
-  if (context === undefined) {
-    throw new Error('useBadges must be used within a BadgeProvider');
+  if (!context) {
+    throw new Error('useBadge must be used within a BadgeProvider');
   }
   return context;
 };
@@ -26,82 +26,68 @@ interface BadgeProviderProps {
 }
 
 export const BadgeProvider: React.FC<BadgeProviderProps> = ({ children }) => {
-  const [badges, setBadges] = useState<VolunteerBadge[]>([]);
+  const [badge, setBadge] = useState<VolunteerBadge | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
 
-  const fetchBadges = async () => {
+  const fetchBadge = async () => {
     if (!isAuthenticated || !user || !('volunteer_id' in user)) {
-      setBadges([]);
+      setBadge(null);
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.getVolunteerBadges();
-      
-      // Ensure we always have an array
-      const badgesData = Array.isArray(response.data) ? response.data : [];
-      setBadges(badgesData);
+      const response = await apiClient.getVolunteerBadge(); // object-only API
+
+      setBadge(response.data ?? null);
     } catch (err: any) {
-      console.error('Error fetching badges:', err);
-      setError(err.message || 'Failed to load badges');
-      setBadges([]);
+      console.error('Error fetching badge:', err);
+      setError(err.message || 'Failed to load badge');
+      setBadge(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const checkForNewBadges = async (previousBadges: VolunteerBadge[]): Promise<VolunteerBadge[]> => {
+  const checkForNewBadge = async (previousBadge: VolunteerBadge | null): Promise<VolunteerBadge | null> => {
     try {
-      const response = await apiClient.getVolunteerBadges();
-      
-      // Ensure we always have an array
-      const currentBadges = Array.isArray(response.data) ? response.data : [];
-      
-      // Find newly earned badges by comparing badge IDs
-      const previousBadgeIds = new Set(previousBadges.map(b => b.badge_id));
-      const newBadges = currentBadges.filter(badge => !previousBadgeIds.has(badge.badge_id));
-      
-      // Update state with current badges
-      setBadges(currentBadges);
-      
-      // Show notifications for new badges
-      newBadges.forEach(badge => {
+      const response = await apiClient.getVolunteerBadge();
+      const currentBadge = response.data ?? null;
+
+      if (currentBadge && (!previousBadge || previousBadge.badge_id !== currentBadge.badge_id)) {
+        setBadge(currentBadge);
         toast({
           title: "New Badge Earned! 🎉",
-          description: `You've earned the "${badge.badge_name}" badge: ${badge.description}`,
+          description: `You've earned the "${currentBadge.badge_name}" badge: ${currentBadge.description}`,
         });
-      });
-      
-      return newBadges;
+        return currentBadge;
+      }
+
+      return null;
     } catch (err: any) {
-      console.error('Error checking for new badges:', err);
-      return [];
+      console.error('Error checking for new badge:', err);
+      return null;
     }
   };
 
-  const refreshBadges = async () => {
-    await fetchBadges();
+  const refreshBadge = async () => {
+    await fetchBadge();
   };
 
   useEffect(() => {
-    fetchBadges();
+    fetchBadge();
   }, [isAuthenticated, user]);
 
   const value = {
-    badges,
+    badge,
     loading,
     error,
-    refreshBadges,
-    checkForNewBadges
+    refreshBadge,
+    checkForNewBadge,
   };
 
-  return (
-    <BadgeContext.Provider value={value}>
-      {children}
-    </BadgeContext.Provider>
-  );
+  return <BadgeContext.Provider value={value}>{children}</BadgeContext.Provider>;
 };

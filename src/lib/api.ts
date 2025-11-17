@@ -24,9 +24,9 @@ export interface SurveyRequest {
   plogging_location: string;
   age: number;
   gender: 'male' | 'female' | 'other';
-  education_level: string;
-  residence_area: string;
-  employment_status: string;
+  education_level?: string | null;
+  residence_area?: string | null;
+  employment_status?: string | null;
   main_reason: string;
   main_reason_other?: string | null;
   future_participation_likelihood: number;
@@ -85,10 +85,14 @@ export interface VolunteerEnrollment {
 export interface VolunteerBadge {
   badge_id: number;
   badge_name: string;
-  description: string;
-  image_url: string;
-  criteria_type: string;
-  criteria_value: number;
+  description: string | null;
+  image_url: string | null;
+  image?: string | null; // Some APIs may use 'image' instead of 'image_url'
+  criteria_type?: string;
+  criteria_value?: number;
+  min_events?: number;
+  min_hours?: number;
+  min_kilometers?: string | number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -397,8 +401,23 @@ class ApiClient {
 
       // Include validation errors if present
       if (errorData.errors) {
-        const validationErrors = Object.values(errorData.errors).flat().join(', ');
-        errorMessage = `${errorMessage}. ${validationErrors}`;
+        // Format validation errors more clearly
+        const errorMessages: string[] = [];
+        if (typeof errorData.errors === 'object') {
+          Object.entries(errorData.errors).forEach(([field, messages]) => {
+            if (Array.isArray(messages)) {
+              messages.forEach((msg: string) => {
+                errorMessages.push(`${field}: ${msg}`);
+              });
+            } else {
+              errorMessages.push(`${field}: ${messages}`);
+            }
+          });
+        }
+        const validationErrors = errorMessages.length > 0 
+          ? errorMessages.join(', ') 
+          : Object.values(errorData.errors).flat().join(', ');
+        throw new Error(`${errorMessage}: ${validationErrors}`);
       }
 
       // Include status code in error message for better debugging
@@ -483,6 +502,10 @@ class ApiClient {
               return blob;
             }
           }
+          // If 404, image doesn't exist - throw specific error
+          if (response.status === 404) {
+            throw new Error('Image not found (404)');
+          }
           // If 401/403, fall through to try with auth
           if (response.status === 401 || response.status === 403) {
             console.log('Public fetch returned 401/403, trying with auth...');
@@ -515,6 +538,10 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        // Handle 404 specifically
+        if (response.status === 404) {
+          throw new Error('Image not found (404)');
+        }
         throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
       }
 
@@ -527,8 +554,12 @@ class ApiClient {
 
       return blob;
     } catch (error: any) {
-      // Provide helpful error message for CORS issues
+      // Don't treat 404 errors as CORS errors
       const errorMessage = error.message || String(error);
+      if (errorMessage.includes('404') || errorMessage.includes('Image not found')) {
+        throw error; // Re-throw 404 errors as-is
+      }
+      // Provide helpful error message for CORS issues
       if (errorMessage === 'CORS_BLOCKED_PUBLIC' || errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch') || errorMessage.includes('blocked')) {
         // Re-throw with a clear message that the image element method should be used
         throw new Error('CORS_BLOCKED');
@@ -968,21 +999,44 @@ class ApiClient {
     });
   }
 
-  async getVolunteerBadges(): Promise<{ data: VolunteerBadge[] }> {
-    try {
-      const response = await this.request<{ data: VolunteerBadge[] }>('/volunteer/badges');
-      // Ensure we always return an array, even if the response is malformed
-      if (!response.data || !Array.isArray(response.data)) {
-        console.warn('Badges API returned invalid data structure:', response);
-        return { data: [] };
-      }
-      return response;
-    } catch (error) {
-      console.error('Error fetching volunteer badges:', error);
-      // Return empty array on error to prevent UI breakage
-      return { data: [] };
+async getVolunteerBadge(): Promise<{ data: VolunteerBadge | null }> {
+  try {
+    const response = await this.request<any>('/volunteer/profile');
+    console.log('Raw badge API response:', response);
+
+    const profileData = response.data;
+
+    if (!profileData) {
+      console.warn('Badge API returned no data:', response);
+      return { data: null };
     }
+
+    // If profile has a 'badge' object
+    if (profileData.badge && typeof profileData.badge === 'object') {
+      const badge = profileData.badge;
+      if ('badge_id' in badge && badge.badge_id !== null) {
+        console.log('Badge API returned single badge object:', badge);
+        return { data: badge as VolunteerBadge };
+      } else {
+        console.log('Badge API returned empty badge object');
+        return { data: null };
+      }
+    }
+
+    // Fallback: if profileData itself is a badge object
+    if (typeof profileData === 'object' && 'badge_id' in profileData) {
+      console.log('Badge API returned badge object directly:', profileData);
+      return { data: profileData as VolunteerBadge };
+    }
+
+    console.warn('Badge API returned invalid data structure, no badge found:', response);
+    return { data: null };
+  } catch (error) {
+    console.error('Error fetching volunteer badge:', error);
+    return { data: null };
   }
+}
+
 
   async getVolunteerCertificates(): Promise<{ data: VolunteerCertificate[] }> {
     return this.request<{ data: VolunteerCertificate[] }>('/volunteer/certificates');
@@ -1448,13 +1502,34 @@ class ApiClient {
 
   async createEPloggingPost(data: EPloggingSubmission): Promise<any> {
     const formData = new FormData();
-    formData.append("location", data.location);
+    
+    // Ensure location is a string and trim whitespace
+    const locationValue = (data.location || "").trim();
+    
+    // Append fields in order: text fields first, then file
+    // Some backends process FormData fields in order
     formData.append("quote", data.quote);
+    formData.append("location", locationValue);
     formData.append("image", data.image);
-    return this.request("/volunteer/eplogging", {
+    
+    // Debug: Log FormData contents (before sending)
+    console.log('Creating ePlogging post with FormData:', {
+      location: locationValue,
+      quote: data.quote,
+      image: data.image?.name || 'No image'
+    });
+    
+    // Verify FormData entries (create array first to avoid consuming iterator)
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
+      console.log(`FormData[${key}]:`, value instanceof File ? `File: ${value.name}` : value);
+    });
+    
+    const response = await this.request<any>("/volunteer/eplogging", {
       method: "POST",
       body: formData,
-    });
+    }); 
+    return response;
   }
 
   async updateEPloggingPost(
@@ -1462,17 +1537,46 @@ class ApiClient {
     data: Partial<EPloggingSubmission>
   ): Promise<any> {
     const formData = new FormData();
-    if (data.quote) formData.append("quote", data.quote);
-    if (data.location) formData.append("location", data.location);
+    
+    // Ensure location is a string and trim whitespace if provided
+    const locationValue = data.location !== undefined ? (data.location || "").trim() : undefined;
+    
+    // Append fields in order: text fields first, then file
+    if (data.quote !== undefined) formData.append("quote", data.quote);
+    if (locationValue !== undefined) formData.append("location", locationValue);
     if (data.image) formData.append("image", data.image);
     // Some backends (e.g., Laravel) require method override for multipart updates
     formData.append("_method", "PUT");
 
-    return this.request(`/volunteer/eplogging/${post_id}`, {
+    // Debug: Log FormData contents (before sending)
+    console.log('Updating ePlogging post with FormData:', {
+      post_id,
+      location: locationValue,
+      quote: data.quote,
+      hasImage: !!data.image
+    });
+    
+    // Verify FormData entries (create array first to avoid consuming iterator)
+    const entries = Array.from(formData.entries());
+    entries.forEach(([key, value]) => {
+      console.log(`FormData[${key}]:`, value instanceof File ? `File: ${value.name}` : value);
+    });
+
+    const response = await this.request<any>(`/volunteer/eplogging/${post_id}`, {
       method: "POST",
       body: formData,
       headers: {},
     });
+    
+    // Validate response - check if location was saved
+    if (response?.data && locationValue !== undefined && !response.data.location && locationValue) {
+      console.warn('⚠️ Location field was sent but not returned in response:', {
+        sent: locationValue,
+        response: response.data
+      });
+    }
+    
+    return response;
   }
 
   async deleteEPloggingPost(post_id: number): Promise<{ message: string }> {

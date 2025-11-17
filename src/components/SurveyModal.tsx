@@ -84,6 +84,8 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
 
   // Submit survey
   const handleSubmit = async () => {
+    let surveyPayload: any = null;
+    
     try {
       setIsSubmitting(true);
       
@@ -147,7 +149,7 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
       }
 
       // Prepare survey data for submission
-      const surveyPayload: any = { ...surveyData };
+      surveyPayload = { ...surveyData };
       
       // Handle event_id - only include if it's a valid number
       if (surveyPayload.event_id && surveyPayload.event_id > 0) {
@@ -169,16 +171,29 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
       // Handle main_reason_other - set to null if not 'other'
       if (surveyPayload.main_reason !== 'other') {
         surveyPayload.main_reason_other = null;
-      } else if (!surveyPayload.main_reason_other) {
+      } else if (!surveyPayload.main_reason_other || surveyPayload.main_reason_other.trim() === '') {
         surveyPayload.main_reason_other = null;
       }
 
       // Handle barriers_to_participation_other - set to null if 'other' not selected
       if (!surveyPayload.barriers_to_participation.includes('other')) {
         surveyPayload.barriers_to_participation_other = null;
-      } else if (!surveyPayload.barriers_to_participation_other) {
+      } else if (!surveyPayload.barriers_to_participation_other || surveyPayload.barriers_to_participation_other.trim() === '') {
         surveyPayload.barriers_to_participation_other = null;
       }
+
+      // Handle optional string fields - convert empty strings to empty string (not null)
+      // Backend may require these fields but accept empty strings
+      const optionalStringFields = ['education_level', 'residence_area', 'employment_status'];
+      optionalStringFields.forEach(field => {
+        if (surveyPayload[field] === undefined || surveyPayload[field] === null) {
+          // Set to empty string if undefined/null
+          surveyPayload[field] = '';
+        } else if (typeof surveyPayload[field] === 'string') {
+          // Trim whitespace but keep as empty string if empty
+          surveyPayload[field] = surveyPayload[field].trim();
+        }
+      });
 
       // Remove undefined values
       Object.keys(surveyPayload).forEach(key => {
@@ -186,6 +201,11 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
           delete surveyPayload[key as keyof typeof surveyPayload];
         }
       });
+
+      // Ensure required string fields are not empty
+      if (surveyPayload.plogging_location) {
+        surveyPayload.plogging_location = surveyPayload.plogging_location.trim();
+      }
 
       console.log('Survey payload being sent:', surveyPayload); // For debugging
 
@@ -202,13 +222,26 @@ const SurveyModal: React.FC<SurveyModalProps> = ({ open, onClose, onSurveyComple
       onClose();
     } catch (error: any) {
       console.error('Survey submission error:', error);
+      console.error('Survey payload that failed:', surveyPayload);
       
       // Try to get more detailed error information
       let errorMessage = error.message || "Failed to submit survey. Please try again.";
       
-      // If we have more detailed error information from the API
-      if (error.message && error.message.includes('Validation failed')) {
-        errorMessage = "There was a validation error with your submission. Please check all fields and try again.";
+      // Extract validation errors from the error message
+      if (error.message) {
+        // Check if it's a validation error with details
+        if (error.message.includes('Validation failed') || error.message.includes('validation')) {
+          // Try to extract field-specific errors
+          const errorMatch = error.message.match(/([a-z_]+):\s*([^,]+)/gi);
+          if (errorMatch && errorMatch.length > 0) {
+            const fieldErrors = errorMatch.map((m: string) => m.trim()).join(', ');
+            errorMessage = `Validation error: ${fieldErrors}. Please check all fields and try again.`;
+          } else {
+            errorMessage = "There was a validation error with your submission. Please check all required fields are filled correctly.";
+          }
+        } else if (error.message.includes('required') || error.message.includes('must')) {
+          errorMessage = `Validation error: ${error.message}. Please fill in all required fields.`;
+        }
       }
       
       toast({

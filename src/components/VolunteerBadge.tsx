@@ -15,7 +15,8 @@ import {
   RefreshCw,
   Award,
   Clock,
-  User
+  User,
+  Calendar
 } from 'lucide-react'
 import { VolunteerBadgeGenerator, VolunteerBadgeData, generateBadgeId } from '@/lib/badge-generator'
 import { SocialSharing } from '@/lib/social-sharing'
@@ -31,9 +32,14 @@ interface VolunteerBadgeProps {
   }
   onBadgeGenerated?: (badgeData: VolunteerBadgeData) => void
   hideSocialSharing?: boolean
+  hideRegenerate?: boolean
+  totalEvents?: number
+  badgeName?: string
+  totalDistance?: number
+  hasBadges?: boolean
 }
 
-export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSocialSharing = false }: VolunteerBadgeProps) {
+export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSocialSharing = false, hideRegenerate = false, totalEvents, badgeName, totalDistance, hasBadges = false }: VolunteerBadgeProps) {
   const [badgeData, setBadgeData] = useState<VolunteerBadgeData | null>(null)
   const [badgeImageUrl, setBadgeImageUrl] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -43,20 +49,42 @@ export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSo
   const volunteerName = `${volunteerData.first_name} ${volunteerData.last_name}`
 
   useEffect(() => {
-    generateBadge()
-  }, [volunteerData])
+    // Only generate badge if user has badges (hasBadges prop)
+    if (hasBadges) {
+      generateBadge()
+    } else {
+      // Clear badge data if no badges (user hasn't earned badges)
+      setBadgeData(null)
+      setBadgeImageUrl('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volunteerData, totalEvents, badgeName, totalDistance, hasBadges])
 
   const generateBadge = async () => {
+    // Don't generate badge if user has no badges
+    if (!hasBadges) {
+      setBadgeData(null)
+      setBadgeImageUrl('')
+      return
+    }
+
     try {
       setIsGenerating(true)
+      
+      // Only include profile image URL if it exists and is not empty
+      const profileImageUrl = volunteerData.profile_image_url || volunteerData.profile_image
+      const validProfileImageUrl = profileImageUrl && profileImageUrl.trim() !== '' ? profileImageUrl : undefined
       
       const badgeData: VolunteerBadgeData = {
         volunteerName,
         totalHours: volunteerData.total_hours_contributed,
-        profileImageUrl: volunteerData.profile_image_url || volunteerData.profile_image,
+        profileImageUrl: validProfileImageUrl,
         volunteerId: volunteerData.volunteer_id,
         achievementDate: new Date().toISOString(),
-        badgeId: generateBadgeId()
+        badgeId: generateBadgeId(),
+        totalEvents: totalEvents,
+        badgeName: badgeName,
+        totalDistance: totalDistance
       }
 
       const generator = new VolunteerBadgeGenerator()
@@ -163,39 +191,40 @@ export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSo
     }
   }
 
+  // Only show badge card if volunteer has earned badges
+  // Use hasBadges prop as the primary check - this comes from badges.length > 0
+  // hasBadges is passed from parent: badges.length > 0
+  if (!hasBadges) {
+    return null
+  }
+  
+  // Volunteer has earned a badge - show the badge card
   return (
     <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
       {/* Badge Preview */}
       <Card className="border-green-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-green-800 flex items-center gap-2">
-                <Award className="w-5 h-5" />
-                Volunteer Badge
-              </CardTitle>
-              <CardDescription>
-                Your personalized volunteer achievement badge
-              </CardDescription>
-            </div>
-            <Button
-              onClick={generateBadge}
-              disabled={isGenerating}
-              variant="outline"
-              size="sm"
-            >
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Regenerate
-                </>
-              )}
-            </Button>
+            {!hideRegenerate && (
+              <Button
+                onClick={generateBadge}
+                disabled={isGenerating}
+                variant="outline"
+                size="sm"
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Regenerate
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -222,23 +251,6 @@ export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSo
                 <div className="text-center text-gray-500">
                   <Award className="w-12 h-12 mx-auto mb-2" />
                   <p className="text-sm">Badge will appear here</p>
-                </div>
-              </div>
-            )}
-
-            {/* Badge Information */}
-            {badgeData && (
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-gray-800">{volunteerName}</h3>
-                <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{badgeData.totalHours} hours</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <User className="w-4 h-4" />
-                    <span>Volunteer #{badgeData.volunteerId}</span>
-                  </div>
                 </div>
               </div>
             )}
