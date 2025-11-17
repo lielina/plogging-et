@@ -999,66 +999,44 @@ class ApiClient {
     });
   }
 
- async getVolunteerBadges(): Promise<{ data: VolunteerBadge[] }> {
-    try {
-      const response = await this.request<any>('/volunteer/profile');
-      console.log('Raw badges API response:', response);
-      
-      // Handle different response structures
-      // Case 1: Response has a 'data' field with profile data
-      const profileData = response.data;
-      
-      if (!profileData) {
-        console.warn('Badges API returned no data:', response);
-        return { data: [] };
-      }
-      
-      // Check if profile has a 'badges' array (plural)
-      if (Array.isArray(profileData.badges)) {
-        // Filter out empty objects and ensure badges have badge_id
-        const validBadges = profileData.badges.filter((badge: any) => 
-          badge && typeof badge === 'object' && 'badge_id' in badge && badge.badge_id !== null
-        );
-        console.log('Badges API returned badges array:', validBadges);
-        return { data: validBadges };
-      }
-      
-      // Check if profile has a 'badge' object (singular) - might be empty {}
-      if (profileData.badge && typeof profileData.badge === 'object') {
-        // Check if badge object is not empty and has badge_id
-        if ('badge_id' in profileData.badge && profileData.badge.badge_id !== null) {
-          console.log('Badges API returned single badge object, converting to array:', profileData.badge);
-          return { data: [profileData.badge as VolunteerBadge] };
-        } else {
-          // Empty badge object {} - return empty array
-          console.log('Badges API returned empty badge object, returning empty array');
-          return { data: [] };
-        }
-      }
-      
-      // If badgesData is directly an array (unlikely but handle it)
-      if (Array.isArray(profileData)) {
-        const validBadges = profileData.filter((badge: any) => 
-          badge && typeof badge === 'object' && 'badge_id' in badge && badge.badge_id !== null
-        );
-        console.log('Badges API returned array directly:', validBadges);
-        return { data: validBadges };
-      }
-      
-      // If badgesData is a single object with badge_id
-      if (typeof profileData === 'object' && profileData !== null && 'badge_id' in profileData) {
-        console.log('Badges API returned single badge object, converting to array:', profileData);
-        return { data: [profileData as VolunteerBadge] };
-      }
-      
-      console.warn('Badges API returned invalid data structure, no badges found:', response);
-      return { data: [] };
-    } catch (error) {
-      console.error('Error fetching volunteer badges:', error);
-      // Return empty array on error to prevent UI breakage
-      return { data: [] };
+async getVolunteerBadge(): Promise<{ data: VolunteerBadge | null }> {
+  try {
+    const response = await this.request<any>('/volunteer/profile');
+    console.log('Raw badge API response:', response);
+
+    const profileData = response.data;
+
+    if (!profileData) {
+      console.warn('Badge API returned no data:', response);
+      return { data: null };
     }
+
+    // If profile has a 'badge' object
+    if (profileData.badge && typeof profileData.badge === 'object') {
+      const badge = profileData.badge;
+      if ('badge_id' in badge && badge.badge_id !== null) {
+        console.log('Badge API returned single badge object:', badge);
+        return { data: badge as VolunteerBadge };
+      } else {
+        console.log('Badge API returned empty badge object');
+        return { data: null };
+      }
+    }
+
+    // Fallback: if profileData itself is a badge object
+    if (typeof profileData === 'object' && 'badge_id' in profileData) {
+      console.log('Badge API returned badge object directly:', profileData);
+      return { data: profileData as VolunteerBadge };
+    }
+
+    console.warn('Badge API returned invalid data structure, no badge found:', response);
+    return { data: null };
+  } catch (error) {
+    console.error('Error fetching volunteer badge:', error);
+    return { data: null };
   }
+}
+
 
   async getVolunteerCertificates(): Promise<{ data: VolunteerCertificate[] }> {
     return this.request<{ data: VolunteerCertificate[] }>('/volunteer/certificates');

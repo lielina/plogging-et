@@ -205,15 +205,6 @@ export default function VolunteerBadge({ volunteerData, onBadgeGenerated, hideSo
       <Card className="border-green-200">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-green-800 flex items-center gap-2">
-                <Award className="w-5 h-5" />
-                Volunteer Badge
-              </CardTitle>
-              <CardDescription>
-                Your personalized volunteer achievement badge
-              </CardDescription>
-            </div>
             {!hideRegenerate && (
               <Button
                 onClick={generateBadge}

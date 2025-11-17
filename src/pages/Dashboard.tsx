@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useBadges } from '@/contexts/BadgeContext'
+import { useBadge} from '@/contexts/BadgeContext'
 import { useSurvey } from '@/contexts/SurveyContext'
 import { apiClient, type Event } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,7 +37,7 @@ interface ProgressData {
 export default function Dashboard() {
   const { user } = useAuth()
   const { isSurveyOpen, closeSurvey, openSurvey } = useSurvey()
-  const { badges, loading: badgesLoading, error: badgesError, refreshBadges } = useBadges()
+  const { badge, loading: badgesLoading, error: badgesError, refreshBadge } = useBadge()
   const { toast } = useToast()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentEvents, setRecentEvents] = useState<Event[]>([])
@@ -398,7 +398,7 @@ useEffect(() => {
           }),
       
         // Refresh badges using the badge context
-        refreshBadges()
+        refreshBadge()
       ]
       
       // Wait for all promises to complete (either resolve or reject)
@@ -793,88 +793,82 @@ useEffect(() => {
             </CardContent>
           </Card>
 
-          {/* Badges */}
-          <Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Award className="h-6 w-6 text-green-700" />
-                Your Badges
-              </CardTitle>
-              <CardDescription>
-                Achievement badges you've earned
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {badgesError ? (
-                <div className="text-center py-8">
-                  <Award className="h-16 w-16 text-red-300 mx-auto mb-4" />
-                  <p className="text-red-600 text-lg font-medium">{badgesError}</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    There was an issue loading your badges. This won't affect your account.
-                  </p>
-                  <Button 
-                    onClick={refreshDashboard} 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Try Again
-                  </Button>
-                </div>
-              ) : badgesLoading ? (
-                <div className="flex items-center justify-center min-h-[200px]">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-              ) : user && 'volunteer_id' in user ? (
-                <>
-                  {/* Show badge card only if badges exist */}
-                  {badges.length > 0 && (
-                    <VolunteerBadge 
-                      volunteerData={user} 
-                      hideSocialSharing={true}
-                      hideRegenerate={true}
-                      totalEvents={stats?.total_events_attended}
-                      badgeName={badges[0]?.badge_name || 'Badge'}
-                      totalDistance={
-                        badges[0]?.min_kilometers ? 
-                          parseFloat(String(badges[0].min_kilometers)) : 
-                          (stats ? (
-                            (stats as any).total_distance_covered || 
-                            (stats as any).total_distance || 
-                            (stats as any).distance_km ||
-                            (stats as any).distance
-                          ) : 
-                          (user && 'total_kilometers' in user && (user as any).total_kilometers ? 
-                            parseFloat(String((user as any).total_kilometers)) : 
-                            undefined))
-                      }
-                      hasBadges={true}
-                    />
-                  )}
-                  
-                  {/* Show message if no badges */}
-                  {badges.length === 0 && (
-                    <div className="text-center py-8">
-                      <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-600 text-lg">No badges earned yet</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Participate in events and achieve milestones to earn badges!
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600 text-lg">Badge Not Available</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Volunteer badge is only available for volunteer accounts.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+       {/* Badges */}
+<Card className="hover:shadow-lg transition-shadow duration-300 ease-in-out">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2 text-xl">
+      <Award className="h-6 w-6 text-green-700" />
+      Your Badges
+    </CardTitle>
+    <CardDescription>
+      Achievement badges you've earned
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    {badgesError ? (
+      <div className="text-center py-8">
+        <Award className="h-16 w-16 text-red-300 mx-auto mb-4" />
+        <p className="text-red-600 text-lg font-medium">{badgesError}</p>
+        <p className="text-sm text-gray-500 mt-2">
+          There was an issue loading your badges. This won't affect your account.
+        </p>
+        <Button 
+          onClick={refreshDashboard} 
+          variant="outline" 
+          size="sm" 
+          className="mt-4 border-green-500 text-green-700 hover:bg-green-50"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Try Again
+        </Button>
+      </div>
+    ) : badgesLoading ? (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      </div>
+    ) : user && 'volunteer_id' in user ? (
+      <>
+        {/* Show badge card only if badge exists */}
+        {badge ? (
+          <VolunteerBadge 
+            volunteerData={user} 
+            hideSocialSharing={true}
+            hideRegenerate={true}
+            totalEvents={stats?.total_events_attended}
+            badgeName={badge.badge_name || 'Badge'}
+            totalDistance={
+              badge.min_kilometers
+                ? parseFloat(String(badge.min_kilometers))
+                : stats?.total_distance_covered ||
+                  stats?.total_distance ||
+                  stats?.distance_km ||
+                  stats?.distance ||
+                  (user && 'total_kilometers' in user ? parseFloat(String(user.total_kilometers)) : 0)
+            }
+            hasBadges={true}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg">No badges earned yet</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Participate in events and achieve milestones to earn badges!
+            </p>
+          </div>
+        )}
+      </>
+    ) : (
+      <div className="text-center py-8">
+        <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <p className="text-gray-600 text-lg">Badge Not Available</p>
+        <p className="text-sm text-gray-500 mt-2">
+          Volunteer badge is only available for volunteer accounts.
+        </p>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
         </div>
 
         {/* Quick Actions */}
