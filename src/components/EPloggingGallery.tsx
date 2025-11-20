@@ -305,47 +305,69 @@ const handleLikePost = useCallback(async (post: EPPost) => {
   }, [currentPage])
 
 
-  const handleShare = async (post: EPPost) => {
-    try {
-      const shareData = {
-        text: `Check out this ePlogging post: "${post.quote}"`,
-        url: `${window.location.origin}/eplogging/${post.post_id}`
-      }
+const handleShare = async (post: EPPost, showTextAndUrl: boolean = true) => {
+  if (showTextAndUrl) {
+    // Your working code that sends text, URL, and image URL
+    const postUrl = `${window.location.origin}/eplogging/${post.post_id}`;
 
-      if (navigator.share) {
-        await navigator.share(shareData)
-      } else {
-        await SocialSharing.copyToClipboard({
-          volunteerName: `${post.volunteer.first_name} ${post.volunteer.last_name}`,
-          totalHours: post.hours_spent ?? 0,
-          volunteerId: post.volunteer.volunteer_id,
-          achievementDate: post.created_at,
-          badgeId: `EPLOGGING-${post.post_id}`
-        })
-        toast({
-          title: "Link Copied",
-          description: "Post link has been copied to clipboard.",
-        })
-      }
-    } catch (error) {
-      console.error('Error sharing post:', error)
-      // Fallback: try to copy URL directly
+    const fullText =
+      `Check out this ePlogging post:\n\n` +
+      `"${post.quote}"\n\n` +
+      `Post Link: ${postUrl}\n` +
+      `${post.image_url ? `Image: ${post.image_url}` : ""}`;
+
+    const shareData: ShareData = {
+      title: "ePlogging Post",
+      text: fullText,
+    };
+
+    try {
+      await navigator.share(shareData);
+    } catch {
+      // fallback: copy text to clipboard
+      await navigator.clipboard.writeText(fullText);
+      toast({
+        title: "Copied",
+        description: "Post text and image link copied to clipboard.",
+      });
+    }
+  } else {
+    // Show only image (file sharing)
+    if (post.image_url) {
       try {
-        const shareUrl = `${window.location.origin}/eplogging/${post.post_id}`
-        await navigator.clipboard.writeText(shareUrl)
-        toast({
-          title: "Link Copied",
-          description: "Post link has been copied to clipboard.",
+        // Fetch the image and convert to File object
+        const imageResponse = await fetch(post.image_url)
+        const imageBlob = await imageResponse.blob()
+        const imageFile = new File([imageBlob], 'eplogging-image.jpg', { 
+          type: imageBlob.type || 'image/jpeg' 
         })
-      } catch (clipboardError) {
+        
+        const shareData: ShareData = {
+          files: [imageFile]
+        };
+
+        if (navigator.share) {
+          await navigator.share(shareData);
+        }
+      } catch (error) {
+        console.error('Error sharing image:', error);
         toast({
           title: "Share Failed",
-          description: "Could not copy link. Please try again.",
+          description: "Could not share image. Please try again.",
           variant: "destructive"
-        })
+        });
       }
+    } else {
+      toast({
+        title: "No Image",
+        description: "This post doesn't have an image to share.",
+        variant: "destructive"
+      });
     }
   }
+};
+
+
 
   const openEdit = (post: EPPost) => {
     setEditingPost(post)
