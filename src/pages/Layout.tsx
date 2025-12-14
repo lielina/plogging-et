@@ -445,7 +445,7 @@ const Layout = () => {
             </section>
 
             {/* Footer Bottom */}
-            <div className="w-full flex py-2 text-white items-center justify-around bg-green-500/80 text-sm">
+            <div className="w-full flex flex-col md:flex-row py-2 text-white items-center justify-center md:justify-around gap-2 md:gap-0 bg-green-500/80 text-sm">
               <p>&copy; 2024 Plogging-Ethiopia, All rights reserved.</p>
               <p>
                 Powered by{" "}

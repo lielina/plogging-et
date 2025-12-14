@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { apiClient, Event } from '@/lib/api'
+import { apiClient, Event, Image_Base_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -636,7 +636,7 @@ export default function Events() {
                       {event.image_path && (
                         <div className="rounded-md overflow-hidden border h-32 flex items-center justify-center bg-gray-50">
                           <img 
-                            src={event.image_path.startsWith('http') ? event.image_path : `https://ploggingapi.pixeladdis.com/${event.image_path.startsWith('/') ? event.image_path.slice(1) : event.image_path}`}
+                            src={event.image_path.startsWith('http') ? event.image_path : `${Image_Base_URL}/${event.image_path.startsWith('/') ? event.image_path.slice(1) : event.image_path}`}
                             alt={`${event.event_name} preview`}
                             className="w-full h-full object-cover"
                             onError={(e) => {

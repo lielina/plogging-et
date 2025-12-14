@@ -1,9 +1,10 @@
 // Frontend URL configuration
-export const FRONTEND_URL = 'https://plogging-user-wyci.vercel.app';
+export const FRONTEND_URL = 'https://ploggingethiopia.org';
 
 // API Base URL configuration
-const BASE_URL = 'https://ploggingapi.pixeladdis.com/api/v1';
+const BASE_URL = 'https://updated-api.ploggingethiopia.org/api/v1';
 
+export const Image_Base_URL = 'https://updated-api.ploggingethiopia.org';
 // Additional Types from Postman Collection
 export interface ChangePasswordRequest {
   current_password: string;
@@ -437,7 +438,7 @@ class ApiClient {
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       // Full URL - extract the path part if it's from the API server
       const apiBaseMatch = imageUrl.match(/https?:\/\/[^/]+(\/.*)/);
-      if (apiBaseMatch && imageUrl.includes('ploggingapi.pixeladdis.com')) {
+      if (apiBaseMatch && imageUrl.includes('updated-api.ploggingethiopia.org')) {
         // Try to fetch through API base URL if it's from the same server
         const path = apiBaseMatch[1];
         // Check if path starts with /uploads or /api
@@ -455,8 +456,7 @@ class ApiClient {
       // Relative path - prepend API base URL (without /api/v1 for uploads)
       if (imageUrl.startsWith('/uploads')) {
         // Construct full URL for uploads
-        const baseUrl = this.baseURL.replace('/api/v1', '');
-        url = `${baseUrl}${imageUrl}`;
+        url = `${Image_Base_URL}${imageUrl}`;
       } else {
         url = `${this.baseURL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
       }
@@ -834,7 +834,7 @@ class ApiClient {
     if (response.data && response.data.image_path && !response.data.image_path.startsWith('http')) {
       // If the image_path is relative, make it absolute and ensure it has a leading slash
       const imagePath = response.data.image_path.startsWith('/') ? response.data.image_path.slice(1) : response.data.image_path;
-      response.data.image_path = `https://ploggingapi.pixeladdis.com/${imagePath}`;
+      response.data.image_path = `${Image_Base_URL}/${imagePath}`;
     }
 
     return response;

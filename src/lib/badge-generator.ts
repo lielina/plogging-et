@@ -1,6 +1,6 @@
 import jsPDF from "jspdf"
 import QRCode from 'qrcode'
-import { FRONTEND_URL } from './api'
+import { FRONTEND_URL, Image_Base_URL } from './api'
 
 export interface VolunteerBadgeData {
   volunteerName: string
@@ -164,8 +164,7 @@ export class VolunteerBadgeGenerator {
       }
       // If it's a relative path starting with /uploads, construct full URL
       if (url.startsWith('/uploads') || url.startsWith('uploads')) {
-        const baseUrl = 'https://ploggingapi.pixeladdis.com'
-        return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`
+        return `${Image_Base_URL}${url.startsWith('/') ? '' : '/'}${url}`
       }
       return url
     } catch {

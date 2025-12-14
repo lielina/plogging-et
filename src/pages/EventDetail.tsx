@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { apiClient, Event, Section, FRONTEND_URL } from '@/lib/api'
+import { apiClient, Event, Section, FRONTEND_URL, Image_Base_URL } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -898,7 +898,7 @@ ${description}
                 <CardContent>
                   <div className="flex justify-center">
                     <img 
-                      src={event.image_path.startsWith('http') ? event.image_path : `https://ploggingapi.pixeladdis.com/${event.image_path.startsWith('/') ? event.image_path.slice(1) : event.image_path}`}
+                      src={event.image_path.startsWith('http') ? event.image_path : `${Image_Base_URL}/${event.image_path.startsWith('/') ? event.image_path.slice(1) : event.image_path}`}
                       alt={`${event.event_name} - Event Image`}
                       className="max-w-full h-auto rounded-lg shadow-md object-cover"
                       style={{ maxHeight: '400px' }}
